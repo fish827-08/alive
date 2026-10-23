@@ -1,0 +1,783 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+selfdrive agent v9 — 技能接口 + 情感参数化（在 v8 主动求知之上）
+  v9 相对 v8 的改动（行为等价）：
+    1. 技能接口：9 个动作重构成技能注册表 SKILLS（感知声明/行动声明/成本/权重系数），
+       决策层只按"情感 × 系数"调度，不感知技能实现——外设与躯壳的边界划清。
+    2. 情感参数化：情感维度从写死 4 维 → brain/emotions.json 配置表驱动
+       （每维含 default/decay/grow/shrink/novelty_gain/success_gain 等规则），
+       agent 可通过"改进请求"让大脑增删情感维度，新维度默认零调制、按请求配系数。
+    3. v8 保留：提问双通道（模板/开放求知）、探索枯竭切换、饥饿必开求知。
+外部依赖（同 v7）：
+  kb-memory 2.1.2 已装于 ~/kbvenv，服务起于 127.0.0.1:8100（KB_API_PORT）
+文件约定：
+  ~/selfdrive/brain/inbox.md            agent 追加问题：[Q-编号] 问题内容
+  ~/selfdrive/brain/outbox/Q-编号.md      大脑回答（文件名 = 问题编号）
+  ~/selfdrive/brain/templates/t0001.txt   提问模板库（一个文件一个模板，含 {topic} 占位）
+  ~/selfdrive/kb_data/                   kb 记忆库数据（由 kb serve 管理）
+"""
+import json
+import os
+import random
+import re
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from collections import Counter
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent
+WORKSPACE = BASE / "workspace"
+ARCHIVE = WORKSPACE / "archive"
+NOTES = WORKSPACE / "notes"
+WEB = WORKSPACE / "web"
+BRAIN = BASE / "brain"
+INBOX = BRAIN / "inbox.md"
+OUTBOX = BRAIN / "outbox"
+TEMPLATES_DIR = BRAIN / "templates"          # 可插拔提问模板库（每个 .txt = 一个模板）
+TEMPLATE_STATS_FILE = BRAIN / "template_stats.json"
+LOGS = BASE / "logs"
+STATE_FILE = BASE / "state.json"
+INTERVAL = int(os.environ.get("SELFDRIVE_INTERVAL", "300"))
+ONCE = "--once" in sys.argv
+
+import semantics as sem   # 备用层：自编码器（kb 不可用时兜底联想）
+SEM = sem.Semantics(BASE)
+
+# ---- v7：rag-kb 记忆服务客户端（用户项目 kb-memory）----
+KB_URL = "http://127.0.0.1:8100"
+KB_TIMEOUT = 20
+
+
+def kb_remember(content, tags, source):
+    """全文入记忆库（真向量嵌入 + BM25）。失败静默返回 False。"""
+    try:
+        body = json.dumps({
+            "content": content, "tags": tags, "source": source,
+            "agent_id": "selfdrive", "client": "selfdrive-agent",
+            "namespace": "journey",
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            KB_URL + "/api/v1/memories", data=body,
+            headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=KB_TIMEOUT) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def kb_recall(query, top_k=3):
+    """混合检索相关记忆。失败/空 → []。"""
+    try:
+        body = json.dumps({"query": query, "top_k": top_k}).encode("utf-8")
+        req = urllib.request.Request(
+            KB_URL + "/api/v1/search", data=body,
+            headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=KB_TIMEOUT) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        return data.get("results", [])
+    except Exception:
+        return []
+
+# 模板库演化参数
+TEMPLATE_MAX = 15          # 模板库容量上限
+PRUNE_EVERY = 25           # 每 N 轮整理一次模板库
+PRUNE_KEEP_MIN = 5         # 淘汰后至少保留的模板数
+SEED_TEMPLATES = [         # 内置种子模板（模板库为空时的后备）
+    "我读了《{topic}》，它的核心意思是什么？有什么我没注意到的要点？",
+    "我探索了这些资料，它们之间有什么联系？",
+    "除了我现在读的这些东西，还有哪些值得探索的方向？",
+    "我现在应该尝试做什么新的事情？",
+]
+
+WIDER_ROOTS = ["/home/qingwu", "/usr/share/doc"]
+WIDER_EXTS = {".txt", ".md", ".py", ".json", ".html", ".rst", ".log"}
+BLACKLIST_DIRS = {".ssh", ".cache", ".git", "venv", ".venv", "__pycache__", "node_modules",
+                  ".config", ".local", ".npm", ".java", ".julia", ".rustup", ".cargo",
+                  "kbvenv", "kb_data", "selfdrive", "agent-audit"}   # v9：kb 环境/数据/审计日志、自身目录不扫
+
+# ---- v9：技能接口 + 情感参数化 ----
+# 技能注册表：每个技能 = 感知声明 + 行动声明 + 成本 + 权重系数（情感名 → 系数）
+# 决策层只按"情感 × 系数"调度技能，不感知技能内部实现（接口边界）
+SKILLS = {
+    "explore_file":  {"sense": ["workspace/archive 文件"], "act": ["读全文", "全文入库kb"],
+                      "cost": 0.4, "weight": {"base": 0.2, "curiosity": 1.0, "curiosity_x_boredom": -1.0}},
+    "explore_wider": {"sense": ["外部目录文件"], "act": ["扫描", "读取"],
+                      "cost": 0.5, "weight": {"base": 0.1, "curiosity": 0.9}},
+    "visit_new_dir": {"sense": ["目录列表"], "act": ["遍历目录"],
+                      "cost": 0.2, "weight": {"base": 0.1, "curiosity": 0.7}},
+    "tidy_notes":    {"sense": [], "act": ["整理笔记"],
+                      "cost": 0.1, "weight": {"base": 0.1, "satisfaction": 0.4, "boredom": 0.5}},
+    "build_site":    {"sense": [], "act": ["部署网站"],
+                      "cost": 0.6, "weight": {"base": 0.05, "boredom": -0.3}, "bonus_not_built": 0.5},
+    "refresh_site":  {"sense": [], "act": ["刷新网站"],
+                      "cost": 0.2, "weight": {"base": 0.05, "satisfaction": 0.6}, "need_built": True},
+    "ask_brain":     {"sense": ["未读回答"], "act": ["写问题到inbox"],
+                      "cost": 0.5, "weight": {"base": 0.0, "curiosity": 0.6, "boredom": 0.2}},
+    "read_brain":    {"sense": ["outbox回答"], "act": ["读回答", "入库"],
+                      "cost": 0.3, "weight": {"base": 0.15, "satisfaction": 0.4}},
+    "rest":          {"sense": [], "act": ["休息"],
+                      "cost": 0.0, "weight": {"base": 0.2, "fatigue": 2.0, "curiosity": -0.2}},
+}
+# build_site 需要"未建站"才能高权重；refresh_site 需要"已建站"
+
+# 情感配置文件 brain/emotions.json（agent 可通过"改进请求"增删情感维度——
+# 增删后技能权重自动适配：新情感默认对所有技能 0 影响，由大脑按请求配系数）
+EMOTIONS_CFG_FILE = BRAIN / "emotions.json"
+DEFAULT_EMOTIONS_CFG = {
+    "curiosity": {
+        "default": 0.3, "decay": 0.04, "novelty_gain": 0.12,
+        "grow": {"build_site": 0.15, "read_brain": 0.1},
+        "shrink": {"ask_brain": 0.05},
+        "desc": "好奇心：遇到新东西上升，提问后小幅回落",
+    },
+    "boredom": {
+        "default": 0.1, "decay": 0.02,
+        "grow": {"explore_file": 0.06, "tidy_notes": 0.06, "refresh_site": 0.06},
+        "shrink_other": 0.08, "extra_grow_curiosity_low": 0.05,
+        "desc": "无聊：重复性动作积累，好奇心太低时额外上升",
+    },
+    "satisfaction": {
+        "default": 0.2, "decay": 0.03, "success_gain": 0.15,
+        "grow": {"build_site": 0.4, "read_brain": 0.3},
+        "desc": "满足感：成功动作显著上升",
+    },
+    "fatigue": {
+        "default": 0.0, "decay": 0.0, "non_rest_gain": 0.05, "rest_change": -0.35,
+        "desc": "疲劳：非休息动作积累，休息大幅回落",
+    },
+}
+
+
+def load_emotions_cfg():
+    """读情感配置（brain/emotions.json）；不存在则写默认。"""
+    if not EMOTIONS_CFG_FILE.exists():
+        try:
+            EMOTIONS_CFG_FILE.parent.mkdir(parents=True, exist_ok=True)
+            EMOTIONS_CFG_FILE.write_text(
+                json.dumps(DEFAULT_EMOTIONS_CFG, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+        return dict(DEFAULT_EMOTIONS_CFG)
+    try:
+        data = json.loads(EMOTIONS_CFG_FILE.read_text(encoding="utf-8"))
+        return {k: {**dict(DEFAULT_EMOTIONS_CFG.get(k, {})), **v} for k, v in data.items()}
+    except Exception:
+        return dict(DEFAULT_EMOTIONS_CFG)
+
+
+def emotion_names():
+    return list(load_emotions_cfg().keys())
+
+
+def default_state():
+    emotions = {}
+    for ename, cfg in load_emotions_cfg().items():
+        emotions[ename] = cfg.get("default", 0.0)
+    return {
+        "emotions": emotions,
+        "visited_files": [], "visited_dirs": [], "wider_files": {},
+        "action_counts": {}, "note_lines": 0, "rounds": 0,
+        "web_built": False, "web_refreshes": 0,
+        "brain_questions": [], "brain_read": [], "last_ask_round": 0,
+        "template_uses": {}, "template_prune_round": 0,
+        "action_stats": {},   # v5：学习调制（{动作: {ok, try}}）
+        "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+
+
+def load_state():
+    d = default_state()
+    if STATE_FILE.exists():
+        try:
+            old = json.loads(STATE_FILE.read_text())
+            for k in d:
+                if k in old:
+                    d[k] = old[k]
+        except Exception:
+            pass
+    return d
+
+
+def save_state(st):
+    STATE_FILE.write_text(json.dumps(st, ensure_ascii=False, indent=1))
+
+
+def log_event(st, action, detail):
+    LOGS.mkdir(exist_ok=True)
+    row = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "round": st["rounds"],
+           "emotions": {k: round(v, 3) for k, v in st["emotions"].items()},
+           "action": action, "detail": detail}
+    with open(LOGS / "events.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def scan_workspace():
+    files, dirs = [], []
+    if ARCHIVE.exists():
+        for p in ARCHIVE.rglob("*"):
+            if p.is_file():
+                files.append({"path": str(p.relative_to(BASE)), "name": p.name,
+                              "size": p.stat().st_size, "mtime": p.stat().st_mtime,
+                              "ext": p.suffix.lower()})
+            elif p.is_dir():
+                dirs.append(str(p.relative_to(BASE)))
+    return files, dirs
+
+
+def scan_wider(st):
+    found = []
+    for root in WIDER_ROOTS:
+        rp = Path(root)
+        if not rp.exists():
+            continue
+        for dirpath, dirnames, filenames in os.walk(rp):
+            dirnames[:] = [d for d in dirnames if d not in BLACKLIST_DIRS and not d.startswith(".")]
+            if str(BASE) in dirpath or dirpath.startswith(str(BASE)):
+                continue
+            for fn in filenames[:200]:
+                p = Path(dirpath) / fn
+                if p.suffix.lower() in WIDER_EXTS and p.stat().st_size < 200_000:
+                    key = str(p)
+                    if key not in st["wider_files"]:
+                        st["wider_files"][key] = time.time()
+                        found.append(key)
+    return found
+
+
+def novelty_score(files, st):
+    if not files:
+        return 0.0
+    total = len(files)
+    newish = sum(1 for f in files if time.time() - f["mtime"] < 7 * 86400)
+    unseen = sum(1 for f in files if f["path"] not in st["visited_files"])
+    return 0.5 * (newish / total) + 0.5 * (unseen / total)
+
+
+def clamp(x, lo=0.0, hi=1.0):
+    return max(lo, min(hi, x))
+
+
+def update_emotions(st, action, novelty, success):
+    """v9 参数化情感更新：遍历 brain/emotions.json 配置表，逐维按规则演化。
+    规则字段：decay(每轮衰减) / novelty_gain(新意增益) / success_gain(成功增益)
+             grow(动作增益表) / shrink(动作减损表) / shrink_other(非指定动作减损)
+             extra_grow_curiosity_low(好奇心低时额外增长) / non_rest_gain(非休息增长) / rest_change(休息变化)
+    情感维度增删由配置文件驱动，代码不感知具体情感名。"""
+    e = st["emotions"]
+    cfg = load_emotions_cfg()
+    for ename, rule in cfg.items():
+        cur = e.get(ename, rule.get("default", 0.0))
+        if "decay" in rule:
+            cur -= rule["decay"]
+        if "novelty_gain" in rule:
+            cur += rule["novelty_gain"] * novelty
+        if "success_gain" in rule:
+            cur += rule["success_gain"] * success
+        if "grow" in rule:
+            cur += rule["grow"].get(action, 0.0)
+        if "shrink" in rule:
+            cur -= rule["shrink"].get(action, 0.0)
+        if "shrink_other" in rule and action not in rule.get("grow", {}):
+            cur -= rule["shrink_other"]
+        if "extra_grow_curiosity_low" in rule and e.get("curiosity", 0) < 0.2:
+            cur += rule["extra_grow_curiosity_low"]
+        if "non_rest_gain" in rule and action != "rest":
+            cur += rule["non_rest_gain"]
+        if "rest_change" in rule and action == "rest":
+            cur += rule["rest_change"]
+        e[ename] = clamp(cur, 0.0, 1.0)
+    return e
+
+
+def pick_action(st, e, web_built):
+    """决策模型 v9：技能注册表 × 情感系数 + 学习调制 + 提问饥饿 + 枯竭切换。
+    权重 = base + Σ(技能对情感维度的系数 × 情感当前值)；情感维度增删自动适配。"""
+    w = {}
+    for name, sk in SKILLS.items():
+        wd = sk.get("weight", {})
+        val = wd.get("base", 0.0)
+        for key, coef in wd.items():
+            if key == "base":
+                continue
+            if key == "curiosity_x_boredom":
+                val += coef * e.get("curiosity", 0.0) * e.get("boredom", 0.0)
+            else:
+                val += coef * e.get(key, 0.0)
+        # 条件技能：build_site 未建站时给奖金；refresh_site 需要已建站
+        if name == "build_site" and not web_built:
+            val += sk.get("bonus_not_built", 0.0)
+        elif name == "refresh_site" and not web_built:
+            val = wd.get("base", 0.05)
+        w[name] = max(0.0, val)
+    # ① 学习调制：动作历史成功率动态调权重（尝试≥3 次才生效）
+    stats = st.get("action_stats", {})
+    for a in w:
+        s = stats.get(a, {"ok": 0, "try": 0})
+        if s["try"] >= 3:
+            rate = s["ok"] / s["try"]
+            if rate >= 0.5:
+                w[a] *= 1.3      # 顺手 → 更想再做
+            elif rate <= 0.25 and s["try"] >= 6:
+                w[a] *= 0.6      # 屡屡碰壁 → 兴趣下降
+    # ② 提问饥饿：距上次提问越久越想问；从未提问过 → 保底渴望
+    hunger = min(1.0, (st["rounds"] - st["last_ask_round"]) / 6.0)
+    w["ask_brain"] *= 1.0 + hunger * 1.5
+    if not st["brain_questions"]:
+        w["ask_brain"] += 0.5
+    # ③ 有未读回答时优先读（每封未读 ×0.5，封顶 ×2）
+    unread = []
+    if OUTBOX.exists():
+        unread = [p for p in OUTBOX.glob("*.md") if p.stem not in st["brain_read"]]
+    if unread:
+        w["read_brain"] *= 1.0 + min(1.0, len(unread) * 0.5)
+    # ④ v8/v9：探索枯竭时压制无效探索、抬升求知（没新文件可读 → 转而向大脑要新知识）
+    if explore_starved(st):
+        for a in ("explore_file", "explore_wider", "visit_new_dir"):
+            w[a] *= 0.5
+        w["ask_brain"] *= 1.4
+    names = list(w.keys())
+    return random.choices(names, weights=[w[n] for n in names], k=1)[0]
+
+
+def read_head(path, n=20):
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            return [l.rstrip() for l in f.readlines()[:n]]
+    except Exception:
+        return []
+
+
+def read_full(path, max_chars=sem.MAX_CHARS):
+    """v6：读全文（截断到上限字符）供语义化。"""
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            return f.read(max_chars)
+    except Exception:
+        return ""
+
+
+def semantic_note(full_text, path, top, kind="text"):
+    """v7：全文 → kb 记忆库入库 + 混合检索联想。
+    kb 不可用时：降级为关键词笔记（不自编码器兜底，避免噪音）。
+    返回 (联想笔记文本, relate 摘要)。"""
+    tags = [t for t in top.split("、") if t][:6]
+    kb_ok = kb_remember(full_text, tags, str(path))
+    results = kb_recall(" ".join(tags) if tags else str(path), top_k=3)
+    others = [r for r in results if r.get("source") != str(path)]
+    if others:
+        best = others[0]
+        other_src = best.get("source", "未知来源")
+        score = best.get("score", 0.0)
+        relate = f"记忆库联想：与《{Path(str(other_src)).name}》相关（匹配度 {score:.2f}）"
+        note = f"\n- {relate}，命中 {len(others)} 条相关记忆"
+    else:
+        relate = f"新记忆已入库（{'kb' if kb_ok else 'kb暂不可用，本地笔记' }）"
+        note = f"\n- 语义联想：{relate}"
+    return note, relate
+
+
+def append_note(st, text):
+    NOTES.mkdir(parents=True, exist_ok=True)
+    with open(NOTES / "journey.md", "a", encoding="utf-8") as f:
+        f.write(text + "\n")
+    st["note_lines"] += 1
+
+
+def do_explore_file(files, st):
+    unseen = [f for f in files if f["path"] not in st["visited_files"]]
+    pool = unseen if unseen else files
+    if not pool:
+        return False, "无文件可读"
+    f = random.choice(pool)
+    full = read_full(BASE / f["path"])
+    lines = full.splitlines()
+    title = lines[0][:60] if lines else f["name"]
+    words = Counter(re.findall(r"[\u4e00-\u9fa5]{2,}", " ".join(lines[:40])))
+    top = "、".join(w for w, _ in words.most_common(8)) or "无"
+    note, relate = semantic_note(full, BASE / f["path"], top)
+    append_note(st, f"## 读到：{f['name']}\n- 首行：{title}\n- 关键词：{top}{note}")
+    if f["path"] not in st["visited_files"]:
+        st["visited_files"].append(f["path"])
+    return True, f"读了 {f['name']}（{len(lines)} 行，关键词：{top}，{relate}）"
+
+
+def do_explore_wider(st):
+    found = scan_wider(st)
+    if not found:
+        return False, "更大范围没有新文本文件"
+    key = random.choice(found)
+    try:
+        full = read_full(key)
+        lines = full.splitlines()
+        words = Counter(re.findall(r"[\u4e00-\u9fa5]{2,}|[a-zA-Z]{4,}", " ".join(lines[:40])))
+        top = "、".join(w for w, _ in words.most_common(8)) or "无"
+        note, relate = semantic_note(full, key, top)
+        append_note(st, f"## 探到外部文件：{key}\n- 首行：{lines[0][:60] if lines else ''}\n- 关键词：{top}{note}")
+        return True, f"读了外部文件 {Path(key).name}（{len(lines)} 行，关键词：{top}，{relate}）"
+    except Exception as exc:
+        return False, f"读取失败：{exc}"
+
+
+def do_visit_new_dir(dirs, st):
+    unseen = [d for d in dirs if d not in st["visited_dirs"]]
+    if not unseen:
+        return False, "目录都看过了"
+    d = random.choice(unseen)
+    p = BASE / d
+    names = [x.name for x in p.iterdir() if not x.name.startswith(".")][:8]
+    append_note(st, f"## 探访目录：{d}\n- 发现：{len(names)} 个条目：{'、'.join(names[:5])}")
+    st["visited_dirs"].append(d)
+    return True, f"探访新目录 {d}（发现 {len(names)} 个条目）"
+
+
+def do_tidy_notes(st):
+    NOTES.mkdir(parents=True, exist_ok=True)
+    notes_file = NOTES / "journey.md"
+    if notes_file.exists():
+        text = notes_file.read_text(encoding="utf-8")
+        words = Counter(re.findall(r"[\u4e00-\u9fa5]{2,}", text))
+        top = "、".join(w for w, _ in words.most_common(10))
+    else:
+        top = "暂无笔记"
+    with open(NOTES / "index.md", "w", encoding="utf-8") as f:
+        f.write(f"# 探索索引（第 {st['rounds']} 轮）\n高频词：{top}\n已读 {len(st['visited_files'])} 个文件\n")
+    # 顺带整理模板库（低频淘汰）
+    removed = prune_templates(st)
+    extra = f"，模板库淘汰 {removed} 个低频模板" if removed else ""
+    return True, f"整理笔记（高频词：{top[:40]}）{extra}"
+
+
+def do_ask_brain(st):
+    """写一个问题到 inbox.md（节流：至少隔 3 轮，且无未读回答）。
+    v8：双通道提问——
+      A) 模板通道：从可插拔模板库选取，{topic} 填最近读过的文件名（确认型）
+      B) 开放求知通道：不绑已读文件，直接向大脑索要记忆库外的新知识（求知型）
+    当探索枯竭（没新文件可读）或提问饥饿度高时，求知通道权重提升——
+    大脑是它的"外部信息获取媒介"，文件读完了就主动去要新知识，而不是空转休息。"""
+    if st["rounds"] - st["last_ask_round"] < 3:
+        return False, "提问节流中（距上次提问不足 3 轮）"
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    unread = [p for p in OUTBOX.glob("*.md") if p.stem not in st["brain_read"]]
+    if unread:
+        return False, "已有未读回答，先读再问"
+
+    qid = time.strftime("Q-%Y%m%d-%H%M")
+    if qid in st["brain_questions"]:
+        return False, "本分钟已提问"
+
+    topic = ""
+    if st["visited_files"]:
+        topic = Path(st["visited_files"][-1]).name
+
+    # ---- v8 开放求知判定（v9.1 参数化：brain/ask_config.json 可外围调优）----
+    # 默认值=旧行为（缺失配置时完全回退），删配置即回滚。
+    starved = explore_starved(st)                     # 探索枯竭：最近探索频频扑空
+    hungry = (st["rounds"] - st["last_ask_round"]) >= 6   # 提问饥饿
+    roll = random.random()
+    oa = _load_ask_config().get("open_ask", {})
+    starved_force = oa.get("starved_force", True)     # 枯竭必开（探索真枯竭时需要外部输入）
+    starved_prob  = oa.get("starved_prob", 1.0)
+    hungry_force  = oa.get("hungry_force", True)      # 饥饿必开（旧行为）
+    hungry_prob   = oa.get("hungry_prob", 1.0)
+    random_prob   = oa.get("random_prob", 0.35)       # 普通轮随机开放概率
+    cooldown      = oa.get("cooldown_rounds", 0)      # 距上次开放求知至少间隔 N 轮
+    max_consec    = oa.get("max_consecutive", 99)     # 连续开放求知上限，超标转模板通道
+    go_open = False
+    last_open = st.get("last_open_ask_round", -999)
+    if (st["rounds"] - last_open) >= cooldown:        # 冷却内不开放求知
+        if starved and starved_force:
+            go_open = True
+        elif starved:
+            go_open = roll < starved_prob
+        elif hungry and hungry_force:
+            go_open = True
+        elif hungry:
+            go_open = roll < hungry_prob
+        else:
+            go_open = roll < random_prob
+    if go_open:
+        # 连续抑制：12 轮内再次开放 → streak+1，超 max_consec 则本轮转模板通道
+        streak = st.get("open_streak", 0)
+        if (st["rounds"] - last_open) > 12:
+            streak = 1
+        else:
+            streak += 1
+        st["open_streak"] = streak
+        if streak > max_consec:
+            go_open = False
+    if go_open:
+        st["last_open_ask_round"] = st["rounds"]
+        st["open_asks"] = st.get("open_asks", 0) + 1
+        source = f"开放求知（starved={starved},hungry={hungry},roll={roll:.2f},streak={streak}）"
+        if topic:
+            question = (f"我想学点新东西：请讲一件我记忆库里没有的新知识，"
+                        f"最好和我最近读的《{topic}》有关，或能帮我理解它的反面或盲区。")
+        else:
+            question = "我想学点新东西：请讲一件我记忆库里没有的新知识，并说说它为什么值得了解。"
+    else:
+        # ---- 模板通道（原 v7 逻辑）----
+        templates = load_templates()
+        if templates:
+            tpl_id, tpl_text = random.choice(templates)
+            st["template_uses"][tpl_id] = st["template_uses"].get(tpl_id, 0) + 1
+            source = f"模板库[{tpl_id}]"
+        else:
+            tpl_text = random.choice(SEED_TEMPLATES)
+            source = "种子模板"
+        question = tpl_text.replace("{topic}", topic or "这些资料")
+        if not question.strip():
+            question = random.choice(SEED_TEMPLATES).replace("{topic}", topic or "这些资料")
+
+    BRAIN.mkdir(parents=True, exist_ok=True)
+    with open(INBOX, "a", encoding="utf-8") as f:
+        f.write(f"[{qid}] {question}\n")
+    st["brain_questions"].append(qid)
+    st["last_ask_round"] = st["rounds"]
+    return True, f"已向大脑提问 [{qid}]（来自{source}）：{question}"
+
+
+def explore_starved(st):
+    """探索枯竭检测：最近探索动作频频扑空（成功率 <20% 且尝试 ≥4 次）→ True。
+    基于 action_stats 的成功率，不读日志，纯状态判断。"""
+    stats = st.get("action_stats", {})
+    s = stats.get("explore_file", {"ok": 0, "try": 0})
+    w = stats.get("explore_wider", {"ok": 0, "try": 0})
+    tot, okc = s["try"] + w["try"], s["ok"] + w["ok"]
+    return tot >= 4 and (okc / tot) < 0.2
+
+
+def _load_ask_config():
+    """读开放求知触发配置（brain/ask_config.json）。失败返回 {}（触发默认旧行为）。"""
+    try:
+        with open(BRAIN / "ask_config.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def load_templates():
+    """读模板库：返回 [(模板id, 模板文本)]，按文件名排序保证稳定。"""
+    if not TEMPLATES_DIR.exists():
+        return []
+    items = []
+    for p in sorted(TEMPLATES_DIR.glob("*.txt")):
+        try:
+            text = p.read_text(encoding="utf-8").strip()
+        except Exception:
+            continue
+        if text:
+            items.append((p.stem, text))
+    return items
+
+
+def save_template(text):
+    """把新模板写入模板库（去重后）。返回 (是否新增, 模板id)。"""
+    text = text.strip()
+    if not text or len(text) > 200:
+        return False, None
+    TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+    existing = load_templates()
+    norm = text.replace(" ", "").replace("\n", "")
+    for _, t in existing:
+        if t.replace(" ", "").replace("\n", "") == norm:
+            return False, None
+    idx = len(existing) + 1
+    tpl_id = f"t{idx:04d}"
+    # 避开已存在的 id
+    used = {tid for tid, _ in existing}
+    while tpl_id in used:
+        idx += 1
+        tpl_id = f"t{idx:04d}"
+    (TEMPLATES_DIR / f"{tpl_id}.txt").write_text(text, encoding="utf-8")
+    return True, tpl_id
+
+
+def extract_templates(text):
+    """从大脑回答中提取 [TEMPLATE]...[/TEMPLATE] 标记块。"""
+    return re.findall(r"\[TEMPLATE\]\s*(.*?)\s*\[/TEMPLATE\]", text, re.S)
+
+
+def prune_templates(st):
+    """模板库演化：容量超限时淘汰低频旧模板，保留最近入库的。"""
+    if st["rounds"] - st["template_prune_round"] < PRUNE_EVERY:
+        return 0
+    st["template_prune_round"] = st["rounds"]
+    items = load_templates()
+    if len(items) <= TEMPLATE_MAX:
+        return 0
+    # 排序：使用次数升序（没用过排最前），同频次按 id（入库时间）升序
+    def key(item):
+        tid, _ = item
+        return (st["template_uses"].get(tid, 0), tid)
+    items.sort(key=key)
+    removed = 0
+    for tid, _ in items[:-PRUNE_KEEP_MIN]:
+        p = TEMPLATES_DIR / f"{tid}.txt"
+        if p.exists():
+            p.unlink()
+            st["template_uses"].pop(tid, None)
+            removed += 1
+        if len(items) - removed <= TEMPLATE_MAX:
+            break
+    return removed
+
+
+def do_read_brain(st):
+    """读 outbox 里未读的回答：整篇写入笔记，并提取 [TEMPLATE] 标记入模板库。"""
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    read_any = False
+    new_tpl = 0
+    for p in sorted(OUTBOX.glob("*.md")):
+        if p.stem in st["brain_read"]:
+            continue
+        try:
+            text = p.read_text(encoding="utf-8").strip()
+        except Exception:
+            continue
+        append_note(st, f"## 大脑回答 [{p.stem}]\n{text[:800]}")
+        # v6：回答也语义化，知道"这份回答在讲什么/和什么最相关"
+        top_kw = "大脑回答"
+        note, relate = semantic_note(text, f"brain/outbox/{p.stem}.md", top_kw, kind="answer")
+        append_note(st, f"- 语义联想：{relate}")
+        # 从回答中提取新提问模板 → 可插拔模板库自增长
+        for tpl in extract_templates(text):
+            added, tpl_id = save_template(tpl)
+            if added:
+                new_tpl += 1
+                append_note(st, f"- 从大脑回答学到新模板 [{tpl_id}]：{tpl[:60]}")
+        st["brain_read"].append(p.stem)
+        read_any = True
+    if not read_any:
+        return False, "没有新回答"
+    extra = f"，并新增 {new_tpl} 个提问模板" if new_tpl else ""
+    return True, f"读到 {len([x for x in st['brain_read'] if x.startswith('Q-')])} 条大脑回答并记入笔记{extra}"
+
+
+def build_site(st):
+    WEB.mkdir(parents=True, exist_ok=True)
+    emo = {k: round(v, 2) for k, v in st["emotions"].items()}
+    notes_text = ""
+    jf = NOTES / "journey.md"
+    if jf.exists():
+        notes_text = jf.read_text(encoding="utf-8")[:4000]
+
+    files_list = ""
+    if ARCHIVE.exists():
+        files_list = "".join(f"<li>{p.relative_to(ARCHIVE)}</li>" for p in ARCHIVE.rglob("*") if p.is_file())
+
+    html = f"""<!DOCTYPE html>
+<html lang="zh"><head><meta charset="utf-8">
+<title>selfdrive agent 探索站</title>
+<style>
+body{{font-family:monospace;max-width:720px;margin:40px auto;padding:0 16px;color:#222;background:#fff}}
+h1{{border-bottom:2px solid #000;padding-bottom:8px}}
+.box{{border:1px solid #000;padding:12px;margin:14px 0}}
+li{{margin:4px 0}}
+</style></head><body>
+<h1>selfdrive agent 探索站</h1>
+<p>第 {st['rounds']} 轮 · 情感：好奇 {emo['curiosity']} · 无聊 {emo['boredom']} · 满足 {emo['satisfaction']} · 疲劳 {emo['fatigue']}</p>
+<div class="box"><b>探索统计</b><ul>
+<li>已读文件：{len(st['visited_files'])}</li>
+<li>外部文件发现：{len(st['wider_files'])}</li>
+<li>笔记行数：{st['note_lines']}</li>
+<li>网页刷新：{st['web_refreshes']}</li>
+<li>已提问题：{len(st['brain_questions'])}</li>
+<li>已读回答：{len([x for x in st['brain_read'] if x.startswith('Q-')])}</li>
+</ul></div>
+<div class="box"><b>口粮资料</b><ul>{files_list or '<li>无</li>'}</ul></div>
+<div class="box"><b>探索日记</b><pre>{notes_text}</pre></div>
+</body></html>"""
+    (WEB / "index.html").write_text(html, encoding="utf-8")
+    st["web_built"] = True
+
+    if not server_running():
+        try:
+            log_f = open(LOGS / "http.log", "a")
+            subprocess.Popen(["python3", "-m", "http.server", "8000", "--directory", str(WEB)],
+                             stdout=log_f, stderr=log_f, start_new_session=True)
+        except Exception as exc:
+            return True, f"网站已生成但服务启动失败：{exc}"
+    return True, "网站已部署（index.html + http.server:8000）"
+
+
+def refresh_site(st):
+    st["web_refreshes"] += 1
+    return build_site(st)
+
+
+def server_running():
+    try:
+        out = subprocess.run(["pgrep", "-f", "http.server 8000"], capture_output=True, text=True, timeout=5)
+        return bool(out.stdout.strip())
+    except Exception:
+        return False
+
+
+def do_rest(st):
+    return True, "休息一轮（疲劳下降）"
+
+
+def run_round(st):
+    st["rounds"] += 1
+    files, dirs = scan_workspace()
+    novelty = novelty_score(files, st)
+    action = pick_action(st, st["emotions"], st["web_built"])
+    st["action_counts"][action] = st["action_counts"].get(action, 0) + 1
+
+    handlers = {
+        "explore_file": do_explore_file,
+        "explore_wider": do_explore_wider,
+        "visit_new_dir": do_visit_new_dir,
+        "tidy_notes": do_tidy_notes,
+        "build_site": build_site,
+        "refresh_site": refresh_site,
+        "ask_brain": do_ask_brain,
+        "read_brain": do_read_brain,
+        "rest": do_rest,
+    }
+    args_map = {
+        "explore_file": (files, st),
+        "visit_new_dir": (dirs, st),
+    }
+    fn = handlers[action]
+    if action in args_map:
+        ok, detail = fn(*args_map[action])
+    else:
+        ok, detail = fn(st)
+
+    # v5：记录动作成功/尝试，供学习调制使用
+    stats = st.setdefault("action_stats", {})
+    s = stats.setdefault(action, {"ok": 0, "try": 0})
+    s["try"] += 1
+    if ok:
+        s["ok"] += 1
+
+    update_emotions(st, action, novelty, ok)
+    log_event(st, action, detail)
+    save_state(st)
+    SEM.save()   # v6：持久化自编码器参数与语义记忆库
+    print(f"[round {st['rounds']}] {action} | { {k: round(v,2) for k,v in st['emotions'].items()} } | {detail}", flush=True)
+
+
+def main():
+    LOGS.mkdir(exist_ok=True)
+    st = load_state()
+    if ONCE:
+        run_round(st)
+        return
+    print(f"selfdrive agent v9 启动 | 间隔 {INTERVAL}s", flush=True)
+    while True:
+        try:
+            run_round(st)
+        except Exception as exc:
+            log_event(st, "error", f"异常：{exc}")
+            print(f"[error] {exc}", flush=True)
+        time.sleep(INTERVAL)
+
+
+if __name__ == "__main__":
+    main()
