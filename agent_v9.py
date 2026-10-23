@@ -151,6 +151,9 @@ SKILLS = {
     # v9.8：辉月——记忆回望（回想自己的记忆 + 对记忆做多类型关系推理建边）
     "reflect_memory":  {"sense": ["自己的记忆"], "act": ["回想", "关系推理"],
                       "cost": 0.2, "weight": {"base": 0.12, "satisfaction": 0.3, "boredom": 0.3, "curiosity": 0.15}},
+    # v9.15：自言自语——不读外部，从记忆里抽两个概念，内部推理+预测下一步（大脑离线空转）
+    "self_talk":     {"sense": ["自己的记忆"], "act": ["自言自语", "内部推理"],
+                      "cost": 0.1, "weight": {"base": 0.08, "satisfaction": 0.2, "curiosity": 0.35}},
 }
 # build_site 需要"未建站"才能高权重；refresh_site 需要"已建站"
 
@@ -241,6 +244,13 @@ def default_state():
         "hierarchy": {},       # {上位概念: [下位概念...]}
         # v9.11 数字加法句式识别（owner 授权）：{表达式→结果: {operands, result, support, last}}
         "transforms": {},
+        # v9.14 学习进展 LP（Oudeyer）：{主题: {err_history, lp, last_round}}
+        "lp": {},
+        # v9.14 错误记忆：[{round, premises, pattern, result}] 判假前提组合，推理时避开
+        "mistakes": [],
+        # v9.15：分层预测 + 自言自语 + 多符号组合节点
+        "pred_layers": [],       # 分层预测历史 [{"round","file","coarse","fine_expect","hit","surprise"}]
+        "self_talk_log": [],     # 自言自语记录
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
 
@@ -445,6 +455,18 @@ def pick_action(st, e, web_built):
                 w[a] *= (urge_cfg.get("double_base", 1.5) ** u)          # 超阈值：指数翻倍
             else:
                 w[a] *= (1.0 + u * urge_cfg.get("linear_factor", 0.2))   # 未超阈值：线性累加
+    # ⑩ v9.14 学习进展 LP（Oudeyer 发展机器人学）：最近主题误差下降=学得动→继续深挖；
+    #    误差不降=学不动/已掌握→抬升求知/搜索，转向新区域（"何时停止学一件事"的判据）
+    if st.get("lp"):
+        _latest = sorted(st["lp"].values(), key=lambda x: -x.get("last_round", 0))[0]
+        if len(_latest.get("err_history", [])) >= 2:
+            _lp = _latest.get("lp", 0.0)
+            if _lp > 0.05:
+                w["explore_file"] *= 1.2
+                w["explore_wider"] *= 1.1
+            elif _lp < -0.05:
+                w["ask_brain"] *= 1.2
+                w["web_search"] *= 1.1
     names = list(w.keys())
     return random.choices(names, weights=[w[n] for n in names], k=1)[0]
 
@@ -499,7 +521,7 @@ def do_explore_file(files, st):
     note, relate = semantic_note(full, BASE / f["path"], top)
     st["last_kw"] = top   # v9.6：语义中心缓存（内容高频词），供提问/搜索主题
     # v9.8c 预测机制：读前按文件名×已有概念生成预期主题，读后核对，误差进记忆
-    _pc = json.load(open(BASE / "brain" / "ask_config.json", encoding="utf-8")).get("predict", {})
+    _pc = _load_ask_config().get("predict", {})
     _pk = int(_pc.get("topk", 3))
     _concepts = set(st.get("concepts", {}).keys())
     _expect = []
@@ -512,16 +534,56 @@ def do_explore_file(files, st):
     _hit = [c for c in _expect if c in _actual]
     _miss = [c for c in _expect if c not in _actual]
     _surprise = [w for w in _actual if w not in _expect and w in _concepts][:3]
+    # v9.15 分层预测：粗猜主题类别 → 再细猜具体符号
+    # 粗层：根据文件名/已有概念，猜这篇大概讲哪类
+    _fn = f["name"]
+    _coarse_guess = []
+    if any(n in _fn for n in ("数", "加", "算", "字", "后继", "概率")):
+        _coarse_guess.append("数字/加法")
+    if any(w in _fn for w in ("天", "温", "风", "天气")):
+        _coarse_guess.append("天气")
+    if any(l in _fn for l in ("信号", "语言", "符号", "人工")):
+        _coarse_guess.append("语言/信号")
+    if not _coarse_guess:
+        _coarse_guess.append("其他")
+    # 细层：实际关键词里有没有粗类别的影子
+    _coarse_hit = any(
+        (c == "数字/加法" and any(re.search(r"[一二三四五六七八九十加等于]", " ".join(_actual))) or
+         c == "天气" and any(w in " ".join(_actual) for w in ("温度", "天", "风")) or
+         c == "语言/信号" and any(w in " ".join(_actual) for w in ("信号", "语言", "符号")))
+        for c in _coarse_guess)
     _pl = st.setdefault("pred_log", [])
     _pl.append({"round": st["rounds"], "file": f["name"], "expect": _expect,
                 "hit": _hit, "miss": _miss, "surprise": _surprise})
     del _pl[:max(0, len(_pl) - int(_pc.get("log_size", 50)))]
     if _expect:
-        append_note(st, f"预测核对：预期{','.join(_expect) or '无'}｜命中{','.join(_hit) or '无'}｜未兑现{','.join(_miss) or '无'}｜意外{','.join(_surprise) or '无'}")
+        append_note(st, f"预测核对：预期{','.join(_expect) or '无'}｜命中{','.join(_hit) or '无'}｜未兑现{','.join(_miss) or '无'}｜意外{','.join(_surprise) or '无'}｜粗猜类别{','.join(_coarse_guess)}{'命中' if _coarse_hit else '未命中'}")
+    # v9.15 分层预测记录
+    st.setdefault("pred_layers", []).append({
+        "round": st["rounds"], "file": f["name"],
+        "coarse": _coarse_guess, "coarse_hit": _coarse_hit,
+        "fine_expect": _expect, "fine_surprise": _surprise})
+    del st["pred_layers"][-50:]
     # v9.9 注意过滤行为化：web 文件 surprise 全为格式词 → 低价值，跳过概念/规则学习（不污染概念库）
     _low_value = ("web-" in f["path"] and _surprise
                   and all(w in _FORMAT_NOISE for w in _surprise))
     _pl[-1]["low_value"] = _low_value
+    # v9.14 学习进展 LP（Oudeyer）：主题误差率（surprise 占比）历史；
+    # LP=前半均值−后半均值：误差下降=学得动（正进展），误差不降=学不动/已掌握
+    _lp_map = st.setdefault("lp", {})
+    _topic_lp = (st.get("last_kw") or "").split("、")[0] or f["name"]
+    _err = len(_surprise) / max(1, len(_actual))
+    _rec = _lp_map.setdefault(_topic_lp, {"err_history": [], "lp": 0.0, "last_round": 0})
+    _rec["err_history"].append(round(_err, 3))
+    del _rec["err_history"][:-4]
+    _h = _rec["err_history"]
+    if len(_h) >= 2:
+        _k = max(1, len(_h) // 2)
+        _rec["lp"] = round(sum(_h[:_k]) / _k - sum(_h[_k:]) / len(_h[_k:]), 3)
+    _rec["last_round"] = st["rounds"]
+    if len(_lp_map) > 20:
+        for _oldk in sorted(_lp_map, key=lambda k: _lp_map[k]["last_round"])[:-20]:
+            del _lp_map[_oldk]
     if _low_value:
         append_note(st, f"低价值跳过学习：{f['name']}（surprise全为格式噪声：{','.join(_surprise)}）")
     else:
@@ -606,6 +668,30 @@ def do_ask_brain(st):
     elif st["visited_files"]:
         topic = Path(st["visited_files"][-1]).name
 
+    # ---- v9.12 变换猜想通道（组合泛化，优先于图激活推理）----
+    # 用已知 transforms 做符号归约，推出未见过的加法表达式，再请大脑判定；
+    # 判真后由 read_brain 回写为新 transform（演绎→验证→习得闭环）。
+    if (st["rounds"] - st.get("last_infer_round", -999)) >= 20:
+        tc = transform_compose(st)
+        if tc:
+            expr_t, result_t, via_t = tc
+            st["last_infer_round"] = st["rounds"]
+            question = (f"我用记忆里的加法变换做了一次组合推导：{via_t}，"
+                        f"所以我推出『{expr_t}等于{result_t}』——这是我推理出的未知联系。"
+                        f"请判断这个推理对不对（请在回答开头写 [VERDICT:真] 或 [VERDICT:假] 或 [VERDICT:存疑]）。")
+            source = f"变换组合通道（{expr_t}→{result_t}）"
+            st.setdefault("infer_log", []).append(
+                {"qid": qid, "premises": [expr_t], "result": result_t,
+                 "round": st["rounds"], "type": "transform"})
+            _il = st["infer_log"]
+            del _il[:max(0, len(_il) - 50)]
+            BRAIN.mkdir(parents=True, exist_ok=True)
+            with open(INBOX, "a", encoding="utf-8") as f:
+                f.write(f"[{qid}] {question}\n")
+            st["brain_questions"].append(qid)
+            st["last_ask_round"] = st["rounds"]
+            return True, f"已向大脑提问 [{qid}]（来自{source}）：{question}"
+
     # ---- v9.7 推理通道：概念网激活扩散（A+C→未知D），冷却20轮，优先于求知 ----
     if (st["rounds"] - st.get("last_infer_round", -999)) >= 20 and topic:
         inf = infer_from_graph(st, topic)
@@ -618,6 +704,8 @@ def do_ask_brain(st):
             source = f"推理通道（{A}+{C}→{D}，强度{strength}）"
             st.setdefault("infer_log", []).append(
                 {"qid": qid, "premises": [A, C], "result": D, "round": st["rounds"]})
+            _il = st["infer_log"]
+            del _il[:max(0, len(_il) - 50)]
             BRAIN.mkdir(parents=True, exist_ok=True)
             with open(INBOX, "a", encoding="utf-8") as f:
                 f.write(f"[{qid}] {question}\n")
@@ -945,6 +1033,21 @@ def do_read_brain(st):
             for il in st.get("infer_log", []):
                 if il.get("qid") == p.stem and "verdict" not in il:
                     il["verdict"] = verdict
+                    if il.get("type") == "transform":
+                        # v9.12 变换组合猜想：判真→注册为新 transform（演绎→验证→习得闭环）
+                        expr_t = il["premises"][0]
+                        Dt = il.get("result")
+                        if verdict == "真" and Dt:
+                            tfs = st.setdefault("transforms", {})
+                            tkey = expr_t + "→" + Dt
+                            if tkey not in tfs:
+                                tfs[tkey] = {
+                                    "operands": re.findall(r"[一二三四五六七八九十]+", expr_t),
+                                    "result": Dt, "support": 1, "last": st["rounds"],
+                                    "source": "composed"}
+                                append_note(st, f"- 变换习得：组合推导 {expr_t}={Dt} 判真，已注册为新变换")
+                        append_note(st, f"- 推理验证：{expr_t}→{Dt} 被大脑判定为『{verdict}』")
+                        break
                     A, C = il["premises"]
                     D = il.get("result")
                     if verdict == "真" and D:
@@ -957,6 +1060,11 @@ def do_read_brain(st):
                         ak = "|".join(sorted([A, C]))
                         if ak in st.get("relations", {}):
                             st["relations"][ak]["w"] = max(0, st["relations"][ak]["w"] - 1)
+                        # v9.14 错误记忆：记录前提组合（裁剪 30 条），infer_from_graph 避开
+                        _mk = st.setdefault("mistakes", [])
+                        _mk.append({"round": st["rounds"], "premises": [A, C],
+                                    "pattern": sorted([A, C]), "result": D})
+                        del _mk[:-30]
                     append_note(st, f"- 推理验证：{A}+{C}→{D if D else '?'} 被大脑判定为『{verdict}』")
                     break
         # v9.7：只对大脑回答（Q-）做关系学习——FEED 投喂指示是提示性文本，不产生概念/规则
@@ -1073,6 +1181,7 @@ def learn_from_text(st, text, title, source):
     if len(top) < 2:
         return 0, 0, 0
     cons = st.setdefault("concepts", {})
+    rels = st.setdefault("relations", {})
     # v9.11 数字加法句式识别（owner 授权 2026-10-23）：
     # 识别 "X加Y加…等于Z"（操作数为中文数字），注册干净表达式概念 +
     # transforms 变换边（表达式→结果）+ 表达式与结果的结构边。
@@ -1098,11 +1207,21 @@ def learn_from_text(st, text, title, source):
         r["w"] += 2
         r["n"] += 1
         r["last_touch"] = st["rounds"]
+        # v9.15 多符号组合节点：表达式本身也是概念，连到每个操作数
+        # （"三加二"不再是孤岛规则——它是一个可被思考引用的组合符号）
+        cons.setdefault(expr, {"n": 0, "last": 0})
+        cons[expr]["n"] += 1
+        cons[expr]["last"] = st["rounds"]
+        for o in ops:
+            rk = "|".join(sorted([expr, o]))
+            ro = rels.setdefault(rk, {"w": 0, "n": 0})
+            ro["w"] += 1
+            ro["n"] += 1
+            ro["last_touch"] = st["rounds"]
     for c in top[:3]:
         cc = cons.setdefault(c, {"n": 0, "last": 0})
         cc["n"] += 1
         cc["last"] = st["rounds"]
-    rels = st.setdefault("relations", {})
     for i in range(min(3, len(top))):
         for j in range(i + 1, min(4, len(top))):
             key = "|".join(sorted([top[i], top[j]]))
@@ -1124,17 +1243,23 @@ def learn_from_text(st, text, title, source):
 
 def infer_from_graph(st, topic):
     """v9.7 推理：概念网激活扩散——A 激活，取邻接 C，共同/最强邻接 D → A+C 可能指向未知 D。
-    返回 (A, C, D, strength) 或 None。"""
-    if not topic:
+    返回 (A, C, D, strength) 或 None。
+    v9.12（owner 授权）：前提/候选含格式噪声词（摘要/来源/百度百科…）一律不触发，
+    根除"摘要∧来源→信息论"式假推理。"""
+    if not topic or topic in _FORMAT_NOISE:
         return None
     rels = st.get("relations", {})
     if len(rels) < 3:
         return None
+    # v9.14 错误记忆：曾被判假的前提组合不再触发同类推理
+    _bad_pairs = {tuple(m.get("pattern", [])) for m in st.get("mistakes", []) if m.get("pattern")}
 
     def nbrs(c):
         out = {}
         for k, v in rels.items():
             a, b = k.split("|")
+            if b in _FORMAT_NOISE or a in _FORMAT_NOISE:
+                continue
             if a == c:
                 out[b] = out.get(b, 0) + v["w"]
             elif b == c:
@@ -1148,7 +1273,14 @@ def infer_from_graph(st, topic):
     cand = sorted(nA.items(), key=lambda x: -x[1])
     if len(cand) < 2:
         return None
-    C = cand[0][0]
+    # v9.14 跳过曾被判假的前提组合 A∧C
+    C = None
+    for _cc, _ in cand:
+        if tuple(sorted([A, _cc])) not in _bad_pairs:
+            C = _cc
+            break
+    if C is None:
+        return None
     nC = nbrs(C)
     best, best_s = None, 0
     for d, wa in nA.items():
@@ -1166,6 +1298,51 @@ def infer_from_graph(st, topic):
     if best is None or best_s <= 0:
         return None
     return A, C, best, best_s
+
+
+def transform_compose(st):
+    """v9.12（owner 授权）组合泛化/规则链：把已知 transforms 当作改写规则，
+    对未见过的加法表达式做符号归约，推出新猜想。不内置算术——
+    结果必须由已知规则链归约得到，绝不直接计算。
+    例：已知 一加一→二、一加一加一加一→四；
+        二加二 → 二展开为(一,一) → 一加一加一加一 → 四。
+    返回 (expr, result, via) 或 None。"""
+    tfs = st.get("transforms", {})
+    if len(tfs) < 2:
+        return None
+    # 直接表：操作数多重集合（sorted 归一化，加法顺序无关）→ 结果
+    direct = {}
+    for v in tfs.values():
+        ops = tuple(v.get("operands", []))
+        if ops and v.get("result"):
+            direct[tuple(sorted(ops))] = v["result"]
+    # 展开表：结果 → 两操作数展开（最短优先）
+    expand = {}
+    for ops, res in direct.items():
+        if res and len(ops) == 2 and res not in expand:
+            expand[res] = ops
+
+    def atoms(x, depth=0):
+        """递归把符号展开为原子序列（原子=无展开规则的数字）。"""
+        if depth > 6 or x not in expand:
+            return (x,)
+        out = []
+        for sub in expand[x]:
+            out.extend(atoms(sub, depth + 1))
+        return tuple(out)
+
+    for a in sorted(expand.keys()):
+        for b in sorted(expand.keys()):
+            ops_key = tuple(sorted([a, b]))
+            if ops_key in direct:
+                continue  # 已知表达式，不是新猜想
+            flat = tuple(sorted(list(atoms(a)) + list(atoms(b))))
+            if flat in direct:
+                expr = a + "加" + b
+                via = (f"{a}={'加'.join(expand[a])}、{b}={'加'.join(expand[b])}，"
+                       f"合起来是{'加'.join(flat)}")
+                return expr, direct[flat], via
+    return None
 
 
 def do_consolidate_memory(st):
@@ -1270,11 +1447,13 @@ def do_reflect_memory(st):
         top_edge = max(rels.items(), key=lambda kv: kv[1].get("w", 0) if isinstance(kv[1], dict) else 0)
     conf_rules = [v for v in st.get("rules", {}).values() if v.get("status") == "confirmed_stat"]
     if replayed or top_edge or conf_rules:
-        st.setdefault("reflect_log", []).append({
+        _rl = st.setdefault("reflect_log", [])
+        _rl.append({
             "round": st["rounds"],
             "what": f"回想{len(replayed)}条；最强边：{top_edge[0] if top_edge else '无'}；确认规则{len(conf_rules)}条",
             "built": {},
         })
+        del _rl[:max(0, len(_rl) - 100)]
     built = {"causal": 0, "contrast": 0, "similar": 0, "temporal": 0}
     # ① causal：confirmed 规则 前提→结论——边不存在则补建（辉月推理出因果记忆，
     #    弱边 w=1 标 causal；300 轮不再同现会被记忆巩固弱边裁剪回收，保证可回滚）
@@ -1362,6 +1541,65 @@ def do_reflect_memory(st):
 
 
 
+# ================= v9.15：自言自语（内部推理 · 预测闭环 · 多符号组合节点）=================
+
+def do_self_talk(st):
+    """自言自语：不读外部文件，从记忆里抽两个相连概念，自己生成一段推理，
+    预测下一步会想到什么——这就是大脑离线空转（内部言语）。
+    - 命中：两个概念有共同邻居，预测命中 → 边共振加粗
+    - 意外：没有共同邻居 → 记 surprise，这就是"想到了没想到的事"
+    低能耗（不读外部），疲劳不涨。"""
+    rels = st.get("relations", {})
+    if len(rels) < 3:
+        return False, "记忆太少，还不够自言自语"
+
+    def _nbrs(c):
+        out = {}
+        for kk, vv in rels.items():
+            x, y = kk.split("|")
+            if x == c:
+                out[y] = out.get(y, 0) + vv.get("w", 0)
+            elif y == c:
+                out[x] = out.get(x, 0) + vv.get("w", 0)
+        return out
+
+    # 抽一条较强的边（权重 top 20 里随机），避免每次抽最冷门的
+    keys = sorted(rels.keys(), key=lambda k: -rels[k].get("w", 0))[:20]
+    k = random.choice(keys)
+    a, b = k.split("|")
+    na, nb = _nbrs(a), _nbrs(b)
+    common = set(na) & set(nb) - {a, b}
+
+    if common:
+        predicted = random.choice(list(common))
+        hit = True
+        surprise = ""
+        # 命中：共同邻居边加粗（思考时共振 → Hebb 式加粗）
+        for c in (predicted,):
+            for x in (a, b):
+                rk = "|".join(sorted([x, c]))
+                if rk in rels:
+                    rels[rk]["w"] += 1
+                    rels[rk]["last_touch"] = st["rounds"]
+    else:
+        predicted = ""
+        hit = False
+        all_n = set(na) | set(nb) - {a, b}
+        surprise = random.choice(list(all_n)) if all_n else "（无邻接）"
+
+    tl = st.setdefault("self_talk_log", [])
+    tl.append({"round": st["rounds"], "pair": [a, b], "predicted": predicted,
+               "hit": hit, "surprise": surprise})
+    del tl[:-30]
+
+    if hit:
+        append_note(st, f"- 自言自语：想到{a}和{b}，猜下一个是{predicted}——猜对了（它们确实共连）")
+        return True, f"自言自语：{a}↔{b} → 预测{predicted}（命中，边共振加粗）"
+    else:
+        append_note(st, f"- 自言自语：想到{a}和{b}，它俩没有共同指向——意外浮现{surprise}")
+        return True, f"自言自语：{a}↔{b} → 无共同指向，意外浮现{surprise}"
+
+
 def run_round(st):
     st["rounds"] += 1
     check_template_retirement(st)
@@ -1393,6 +1631,7 @@ def run_round(st):
         "web_search": do_web_search,
         "consolidate_memory": do_consolidate_memory,   # v9.7
         "reflect_memory": do_reflect_memory,           # v9.8 辉月
+        "self_talk": do_self_talk,                     # v9.15 自言自语
         "rest": do_rest,
     }
     args_map = {
