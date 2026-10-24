@@ -127,7 +127,7 @@ def main():
     if ONCE:
         run_round(st)
         return
-    print(f"selfdrive agent v9.16（模块化）启动 | 间隔 {config.INTERVAL}s", flush=True)
+    print(f"selfdrive agent v9.18（模块化·扩散激活/做梦/分层图）启动 | 间隔 {config.INTERVAL}s", flush=True)
     while True:
         try:
             run_round(st)

@@ -149,6 +149,28 @@ CONTRAST_PAIRS = [
     ("微观", "宏观"), ("随机", "规律"), ("吸引", "排斥"),
 ]
 
+# ---- v9.18 一层：并行扩散激活（spreading activation，Collins&Loftus 1975 / 全局工作空间赢家通吃） ----
+SA_PATHS = 4              # 每轮思考并行撒出的联想路径数
+SA_MAX_STEPS = 2          # 每条路径最多走几步
+SA_NOVELTY_EXP = 1.5      # 新鲜感指数（对抗强边垄断——v9.15 同义反复的教训）
+SA_WIN_REPEAT_CAP = 3     # 同一赢家连续浮上来的容忍次数，超过则临时降权
+SA_NOVELTY_NORM = 1000.0  # 新鲜感归一化：距上次走过的轮数 / 此值
+
+# ---- v9.18 三层：做梦 / 默认网络（DMN；Cai2009：梦游起点必须先被 prime） ----
+DREAM_PROB_REST = 0.6     # rest 轮触发梦游的概率
+DREAM_WALK_STEPS = 3      # 梦游步数（沿弱边）
+DREAM_WEAK_W = 2          # 弱边定义：w <= 此值
+DREAM_PRIME_WINDOW = 400  # "最近被激活过"的 priming 窗口（轮）
+DREAM_LOG_MAX = 50        # dream_log 容量
+
+# ---- v9.18 二层：分层图（CLS：底=海马式具体图，上=新皮层式抽象节点） ----
+ABSTRACT_MIN_MEMBERS = 3      # 抽象节点最少绑定底层概念数
+ABSTRACT_MAX_MEMBERS = 12     # 成员上限——巨型连通分量（摘要w=67式枢纽污染）不成类
+ABSTRACT_EDGE_W = 3           # 进入聚类的边权门槛
+ABSTRACT_PER_CONSOLIDATE = 2  # 每次巩固最多新生成的抽象节点数
+ABSTRACT_MAX = 40             # 抽象节点总量上限
+ABSTRACT_LINK_SCORE = 0.8     # 经抽象节点的跨层激活折扣
+
 
 def load_ask_config():
     """读 brain/ask_config.json。失败返回 {}（各处用默认值，行为回退）。"""

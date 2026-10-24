@@ -70,6 +70,11 @@ def default_state():
         "recent_replay": [],           # 最近重放过的笔记行（重放间隔，别对一行反复回味）
         "q_self_guess": {},            # 自问自答（青梧路径5）：qid → 提问前押的私人猜测
         "selfqa": {"hit": 0, "miss": 0},   # 自问自答战绩
+        # ---- v9.18 ----
+        "sa_winner_log": [],           # 一层：扩散激活赢家记录 [{"round","path","score"}]
+        "recent_active": [],           # 三层 priming：最近激活的概念（做梦起点必须先被点亮）
+        "dream_log": [],               # 三层：梦游记录 [{"round","path","bet":[a,b]}]
+        "abstract": {},                # 二层：抽象节点 {名: {"members":[...], "born": 轮, "support": n}}
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
 
@@ -136,3 +141,14 @@ def web_share(st):
     if not rr:
         return 0.0
     return sum(1 for k in rr if k == "web") / len(rr)
+
+
+def record_active(st, concept, cap=80):
+    """v9.18 三层 priming：记一个"最近被点亮"的概念（做梦起点必须先被激活——Cai2009）。
+    recent_active 存 [{"c": 概念, "round": 轮}]，去重保最新。"""
+    if not concept:
+        return
+    ra = st.setdefault("recent_active", [])
+    ra[:] = [x for x in ra if x.get("c") != concept]
+    ra.append({"c": concept, "round": st.get("rounds", 0)})
+    del ra[:-cap]

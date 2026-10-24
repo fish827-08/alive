@@ -16,7 +16,7 @@ from pathlib import Path
 
 from . import predictions
 from . import tokenizer
-from .state import append_note
+from .state import append_note, record_active
 
 _NUM = "一二三四五六七八九十"
 PROMOTE_MIN_N = 3        # 跨源晋升：总次数下限
@@ -216,6 +216,8 @@ def learn_from_text(st, text, title, source, rel_type=None):
     else:
         present = [w for w, _ in wc.most_common(12) if w in cons]
     top = present[:4]
+    for w in top:                          # v9.18 三层 priming：读到的概念先点亮，夜里可梦
+        record_active(st, w)
     pairs = set()
     for i in range(min(3, len(top))):
         for j in range(i + 1, min(4, len(top))):

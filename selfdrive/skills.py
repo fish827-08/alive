@@ -21,6 +21,7 @@ from collections import Counter
 from pathlib import Path
 
 from . import config, learning, predictions, rules_compiler, templates, tokenizer
+from . import abstraction, activation, dream
 
 try:                                    # 顶层模块（BASE/semantics.py，兜底联想层）
     import semantics as sem
@@ -378,6 +379,14 @@ def do_ask_brain(st):
                 q = "我想学点新东西：请讲一件我记忆库里没有的新知识，并说说它为什么值得了解。"
             candidates.append({"q": q, "source": f"开放求知（starved={starved},roll={roll:.2f}）",
                                "rel_tag": None, "kind": "open", "meta": None})
+    # 通道 C+：v9.18 二层——跨抽象层联想问题（两个抽象类之间找共同点）
+    abs_nodes = abstraction.abstract_nodes(st)
+    if len(abs_nodes) >= 2:
+        a1, a2 = random.sample(abs_nodes[:6], 2)
+        candidates.append({"q": f"我发现自己把『{a1}』和『{a2}』各看成了一类东西。"
+                                f"这两类之间有没有共同点？还是说它们其实是同一件事的不同侧面？",
+                           "source": f"跨抽象层联想（{a1}↔{a2}）", "rel_tag": None,
+                           "kind": "abstract", "meta": (a1, a2)})
     # 通道 D：模板（含内置相反/先后）——生成多个备选供查重轮换
     tpl_list = templates.load_templates()
     uses = st.get("template_uses", {})
@@ -753,7 +762,18 @@ def server_running():
 
 
 def do_rest(st):
-    return True, "休息一轮（疲劳下降）"
+    """休息（疲劳下降）。v9.18 三层：休息轮有 DREAM_PROB_REST 概率进入梦游——
+    默认网络不停机：从最近被点亮的概念出发沿弱边散步，梦里连出的弱关联
+    一律下注（60 轮同现转正），由世界裁决，不做统计固化。"""
+    detail = "休息一轮（疲劳下降）"
+    if random.random() < config.DREAM_PROB_REST:
+        try:
+            ok_d, d_detail = dream.do_dream(st)
+            if ok_d:
+                detail = f"休息中做梦：{d_detail}"
+        except Exception:
+            pass
+    return True, detail
 
 
 # ---------- 技能：记忆整理 ----------
@@ -822,9 +842,11 @@ def do_consolidate_memory(st):
             break
     pruned = learning.prune_concepts(st)
     swept = learning.sweep_legacy_fragments(st)
+    grown = abstraction.grow_abstract(st)          # v9.18 二层：巩固期长抽象节点
     expired = predictions.expire_edge_predictions(st)
     return True, (f"记忆巩固：重放 {replayed} 条、修剪关系 {len(rm)} 条、规则库 {len(st.get('rules', {}))} 条"
-                  f"（回收噪音规则 {rm_rules} 条，层级 {_added} 条，概念修剪 {pruned} 个，遗产碎片合并 {swept} 对，预测落空 {expired} 个）")
+                  f"（回收噪音规则 {rm_rules} 条，层级 {_added} 条，概念修剪 {pruned} 个，遗产碎片合并 {swept} 对，"
+                  f"抽象节点 +{grown}（共 {len(st.get('abstract', {}))}），预测落空 {expired} 个）")
 
 
 def do_reflect_memory(st):
@@ -991,12 +1013,15 @@ def _virtual_experiment(st):
 
 
 def do_self_talk(st):
-    """自言自语 v9.16.1 双模式：
-    ① 下注（可失败预测）：对无边概念对押"有关联"，同现兑现/超时落空；
-    ② 虚拟实验（50%）：屏蔽 A 看 B 的支撑，区分因果与相关。
+    """自言自语 v9.18 三模式：
+    ① 虚拟实验（~33%）：屏蔽 A 看 B 的支撑，区分因果/相关；
+    ② 并行扩散思考（一层）：撒 4 条联想路径，赢家通吃浮上来——"我想到了A、
+       又想到C，最有感觉的是X"；从赢家路径找一个无边对下注；
+    ③ 兜底：随机无边对下注（图太小撒不开网时）。
     旧版抽强边猜共同邻居 30/30 全命中（零信息）——已废弃。"""
     st.setdefault("self_talk_log", [])
-    if random.random() < 0.5:
+    roll = random.random()
+    if roll < 0.33:
         exp = _virtual_experiment(st)
         if exp:
             st["self_talk_log"].append({
@@ -1006,6 +1031,45 @@ def do_self_talk(st):
             append_note(st, f"- {exp['conclusion']}")
             return True, (f"自言自语（虚拟实验）：{exp['pair'][0]}—{exp['pair'][1]}，"
                           f"因果嫌疑={'是' if exp['causal_suspicion'] else '否'}")
+    # v9.18 一层：并行扩散激活 → 赢家通吃
+    thought = None
+    try:
+        thought = activation.pick_thought(
+            st, siblings_fn=abstraction.siblings_via_abstract,
+            abstract_of_fn=abstraction.abstract_of)
+    except Exception:
+        pass
+    if thought:
+        win = thought["winner"]
+        path_real = [c for c in win["path"] if not c.startswith("◆")]
+        ab_part = [c.lstrip("◆") for c in win["path"] if c.startswith("◆")]
+        pair = activation.hungry_pair(st, thought)
+        entry = {"round": st["rounds"], "path": path_real, "type": "thought",
+                 "kind": win["kind"], "score": win["score"]}
+        if pair:
+            pending = sum(1 for p in st.get("edge_preds", []) if p.get("status") == "pending")
+            if pending < config.PRED_MAX_PENDING:
+                a, b = pair
+                st.setdefault("edge_preds", []).append(
+                    {"a": a, "b": b, "round": st["rounds"],
+                     "deadline": st["rounds"] + config.PRED_HORIZON,
+                     "status": "pending", "origin": "thought"})
+                entry["bet"] = [a, b]
+                via = f"（经由抽象节点『{ab_part[0]}』）" if ab_part else ""
+                append_note(st, f"- 自言自语：我同时想到了 {('、'.join('《%s》' % c for c in path_real[:3]))}{via}"
+                                f"——最有感觉的是《{path_real[-1]}》。我下注《{a}》和《{b}》有关联"
+                                f"（{config.PRED_HORIZON} 轮内会一起出现），等世界判对错。")
+                st["self_talk_log"].append(entry)
+                del st["self_talk_log"][:-30]
+                return True, (f"自言自语（扩散思考{'·跨层' if ab_part else ''}）："
+                              f"{'→'.join(path_real)} 浮上来，下注 {a}↔{b}")
+        st["self_talk_log"].append(entry)
+        del st["self_talk_log"][:-30]
+        append_note(st, f"- 自言自语：这一轮脑子里并行转着 {len(thought['candidates'])} 条联想，"
+                        f"浮上来的是 {'→'.join('《%s》' % c for c in path_real)}"
+                        f"{('（经由抽象『%s』）' % ab_part[0]) if ab_part else ''}——暂时没有想下注的对。")
+        return True, f"自言自语（扩散思考）：{'→'.join(path_real)} 浮上来（无下注）"
+    # 兜底：旧随机无边对
     pair = predictions.make_edge_prediction(st)
     if not pair:
         return False, "没有可下注的无边概念对（概念不足或已在赌的太多）"
