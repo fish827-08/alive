@@ -152,19 +152,60 @@ def _bigrams(s):
 
 
 def is_duplicate(question, st):
-    """与最近 _ASKED_KEEP 问的字符二元组 Jaccard ≥ 阈值 → 判重。"""
+    """判重（v9.16.1 修正）：骨架相似【且】内容相同才算重复。
+    旧版只比全文二元组——"《信号》的反面"和"《cache》的反面"骨架 Jaccard 0.70，
+    新模板刚学会就被锁死（青梧诊断问题1：71% 误拦）。
+    内容怎么取：①优先比《》引用的主题词；②无引用时，剥掉所有模板骨架后比残差词。
+    骨架相同、主题不同 → 放行（它是在练新模板，不是复读）。"""
     ensure_asked_texts(st)
-    qg = _bigrams(question)
-    if not qg:
-        return False
+    q_spans = _topic_spans(question)
     for old in st.get("asked_texts", [])[-_ASKED_KEEP:]:
+        if question.strip() == old.strip():
+            return True                                 # 一字不差 → 必重
         og = _bigrams(old)
-        if not og:
+        qg = _bigrams(question)
+        if not og or not qg:
             continue
-        j = len(qg & og) / len(qg | og)
-        if j >= _DUP_THRESHOLD:
-            return True
+        if len(qg & og) / len(qg | og) < _DUP_THRESHOLD:
+            continue                                    # 句式骨架都不同 → 放行
+        o_spans = _topic_spans(old)
+        if q_spans or o_spans:
+            # 有引用主题：主题集合相似才算重复
+            if q_spans and o_spans and _jaccard(q_spans, o_spans) >= 0.5:
+                return True
+            continue                                    # 一方有主题一方没有 → 放行
+        qr, orr = _skeleton_residual(question), _skeleton_residual(old)
+        if qr and orr and _jaccard(qr, orr) >= 0.6:
+            return True                                 # 剥骨架后剩下的还是同一些词
+        if not qr and not orr:
+            return True                                 # 双方剥完骨架全空 → 纯骨架复读
     return False
+
+
+def _topic_spans(q):
+    """问题里《》引用的主题词集合。"""
+    return {s.strip() for s in re.findall(r"《([^》]+)》", q) if s.strip()}
+
+
+def _skeleton_residual(q):
+    """剥掉所有已知模板骨架（含种子）后剩下的内容词集合。"""
+    from .tokenizer import concept_words
+    residual = q
+    skeletons = [t for _, t in load_templates()] + list(SEED_TEMPLATES)
+    for t in skeletons:
+        for part in t.split("{topic}"):
+            part = part.strip()
+            if len(part) >= 2:
+                residual = residual.replace(part, " ")
+    return set(concept_words(residual))
+
+
+def _jaccard(a, b):
+    if not a and not b:
+        return 1.0
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
 
 
 def remember_ask(st, question):

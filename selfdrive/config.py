@@ -29,8 +29,9 @@ WEB_SHARE_CAP = 0.20        # 最近 RECENT_READS_MAX 次阅读中，web-* 占�
 RECENT_READS_MAX = 100      # 阅读来源滑窗长度
 
 # ---- v9.16 ②：可失败预测 ----
-PRED_HORIZON = 400          # 非边预测的有效轮数：期内同现=命中，超时=失误
+PRED_HORIZON = 60           # v9.16.1: 400→60（青梧诊断：12注从未结算；60轮=30分钟内必见分晓）
 PRED_MAX_PENDING = 20       # 最多同时在赌的预测数
+PRED_SETTLE_PER_ROUND = 3   # v9.16.1: 单轮最多结算笔数（防一次性痛感洪水）
 
 # ---- v9.16 ③：[RULE] 编译器安全边界 ----
 RULE_MAX = 30               # 编译规则条数上限（LRU 淘汰）
@@ -131,9 +132,12 @@ PRUNE_KEEP_MIN = 5
 # ---- 外部扫描（explore_wider / visit_new_dir） ----
 WIDER_ROOTS = ["/home/qingwu", "/usr/share/doc"]
 WIDER_EXTS = {".txt", ".md", ".py", ".json", ".html", ".rst", ".log"}
+# v9.16.1: 补 site-packages/dist-packages（kbvenv 的库文件曾被整目录扫进清单）、
+# selfdrive_data（服务器数据副本目录）、runs（冒烟沙箱）
 BLACKLIST_DIRS = {".ssh", ".cache", ".git", "venv", ".venv", "__pycache__", "node_modules",
                   ".config", ".local", ".npm", ".java", ".julia", ".rustup", ".cargo",
-                  "kbvenv", "kb_data", "selfdrive", "agent-audit"}
+                  "kbvenv", "kb_data", "selfdrive", "agent-audit",
+                  "site-packages", "dist-packages", "selfdrive_data", "runs"}
 
 # ---- 搜索主题词黑名单（沿用 v9.9） ----
 SEARCH_BLACK_WORDS = {"密码", "爆破", "入侵", "漏洞", "赌博", "色情", "毒品", "武器", "黑客"}

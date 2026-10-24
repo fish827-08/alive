@@ -275,7 +275,22 @@ def _ask_topic(st):
     return ""
 
 
-def _write_question(st, qid, question, source, rel_tag=None):
+def _self_guess(st, topic):
+    """自问自答（青梧路径5）：提问前从自己的概念网押一个"答案会提到的概念"。"""
+    if not topic:
+        return None
+    rels = st.get("relations", {})
+    best, bw = None, 0
+    for k, v in rels.items():
+        a, b = k.split("|")
+        if a == topic and v.get("w", 0) > bw:
+            best, bw = b, v.get("w", 0)
+        elif b == topic and v.get("w", 0) > bw:
+            best, bw = a, v.get("w", 0)
+    return best
+
+
+def _write_question(st, qid, question, source, rel_tag=None, topic=""):
     BRAIN.mkdir(parents=True, exist_ok=True)
     with open(INBOX, "a", encoding="utf-8") as f:
         f.write(f"[{qid}] {question}\n")
@@ -284,7 +299,12 @@ def _write_question(st, qid, question, source, rel_tag=None):
     templates.remember_ask(st, question)
     mark(st, config.EVT_ASK)
     if rel_tag:
-        st.setdefault("q_rel_tags", {})[qid] = rel_tag
+        # 相反/先后问题附带主题词（v9.16.1 全量：读回答时按句式收割 typed 边）
+        st.setdefault("q_rel_tags", {})[qid] = ({"type": rel_tag, "topic": topic}
+                                                if topic else rel_tag)
+    guess = _self_guess(st, topic)
+    if guess:
+        st.setdefault("q_self_guess", {})[qid] = {"guess": guess, "round": st["rounds"]}
     return True, f"已向大脑提问 [{qid}]（来自{source}）：{question}"
 
 
@@ -399,13 +419,17 @@ def do_ask_brain(st):
             tid = cand["meta"]
             st["template_uses"][tid] = st["template_uses"].get(tid, 0) + 1
             st.setdefault("tpl_pending", {})[qid] = {"tpl": tid, "round": st["rounds"]}
-        return _write_question(st, qid, question, cand["source"], cand["rel_tag"])
-    # 全部候选都重复 → 痛感 + 拒绝提问
+        return _write_question(st, qid, question, cand["source"], cand["rel_tag"], topic)
+    # 全部候选都重复 → 拒绝提问。v9.16.1: 拦截同样计入提问节流（3 轮内不再重试，
+    # 旧版拦截不推进节流，连拦 35 轮把 agent 锁死）；痛感 3 轮最多一次，不叠加
     st["dup_asks"] = st.get("dup_asks", 0) + 1
     st["asks_total"] = st.get("asks_total", 0) + 1
+    st["last_ask_round"] = st["rounds"]
     mark(st, config.EVT_DUP_ASK)
-    feel(st, "satisfaction", config.PAIN_DUP_ASK)
-    return False, f"想问的都与近 {templates._ASKED_KEEP} 问重复（查重拦截）——换个动作，提问欲下降"
+    if st["rounds"] - st.get("last_dup_pain_round", -999) >= 3:
+        feel(st, "satisfaction", config.PAIN_DUP_ASK)
+        st["last_dup_pain_round"] = st["rounds"]
+    return False, f"想问的都与近 {templates._ASKED_KEEP} 问重复（查重拦截，3 轮后再试）——本轮换个动作"
 
 
 def do_read_brain(st):
@@ -499,7 +523,28 @@ def do_read_brain(st):
                         append_note(st, f"- 推理验证：{A}+{C}→{D if D else '?'} 被大脑判定为『{verdict}』")
                         break
         # 关系学习：Q-/FEED- 都学；相反/先后问题的回答给边打类型（⑤ 表征入口）
-        rel_type = st.get("q_rel_tags", {}).pop(p.stem, None)
+        # v9.16.1 路径5：自问自答对拍——提问前押的猜测，现在对着答案结算
+        gs = st.get("q_self_guess", {}).pop(p.stem, None)
+        if gs and gs.get("guess"):
+            ans_words = set(tokenizer.concept_words(text))
+            sq = st.setdefault("selfqa", {"hit": 0, "miss": 0})
+            if gs["guess"] in ans_words:
+                sq["hit"] += 1
+                feel(st, "satisfaction", 0.05)
+                append_note(st, f"- 自问自答：提问前我押《{gs['guess']}》会出现在答案里——猜中了（战绩 {sq['hit']}/{sq['hit'] + sq['miss']}）")
+            else:
+                sq["miss"] += 1
+                feel(st, "satisfaction", -0.03)
+                append_note(st, f"- 自问自答：我押《{gs['guess']}》会出现在答案里——没中（战绩 {sq['hit']}/{sq['hit'] + sq['miss']}）")
+        # v9.16.1 问题4全量：相反/先后回答按句式收割 typed 边（提问→建图的断链接上）
+        rel_tag = st.get("q_rel_tags", {}).pop(p.stem, None)
+        rel_type, rel_topic = None, None
+        if isinstance(rel_tag, dict):
+            rel_type, rel_topic = rel_tag.get("type"), rel_tag.get("topic")
+        elif isinstance(rel_tag, str):
+            rel_type = rel_tag
+        if rel_type and rel_topic:
+            _harvest_typed_edges(st, text, rel_type, rel_topic)
         learn_from_text(st, text[:800], p.stem, p.stem, rel_type=rel_type)
         st["brain_read"].append(p.stem)
         read_any = True
@@ -512,17 +557,71 @@ def do_read_brain(st):
 
 # ---------- 技能：搜索 / 网站 ----------
 
+_CONTRAST_ANS_RE = re.compile(r"(?:反面|对立面|相反|对立)(?:的?(?:概念|东西|词|面))?(?:是|：|:)?\s*[『「《]?([^，。；、『」》]{2,10})")
+_PRE_RE = re.compile(r"(?:之前|前提|先要|需要先|先有)(?:是|有)?\s*[『「《]?([^，。；、『」》]{2,10})")
+_POST_RE = re.compile(r"(?:之后|接着|然后|会导致|引出|带来)(?:是|有)?\s*[『「《]?([^，。；、『」》]{2,10})")
+
+
+def _harvest_typed_edges(st, text, rel_type, topic):
+    """从相反/先后类回答里收割句式化关系边（v9.16.1 问题4全量）：
+    "X 的反面是 Y" / "X 之前需要 Y" / "X 之后会导致 Z" → 直接建 typed 边，
+    收割到的词由老师背书，直接晋升（这是策划入口，不是分词碰运气）。"""
+    raw = []
+    if rel_type == "contrast":
+        raw += [m.group(1) for m in _CONTRAST_ANS_RE.finditer(text)]
+    else:
+        raw += [m.group(1) for m in _PRE_RE.finditer(text)]
+        raw += [m.group(1) for m in _POST_RE.finditer(text)]
+    made = 0
+    rels = st.setdefault("relations", {})
+    for w in dict.fromkeys(raw):
+        clean = tokenizer.concept_words(w)
+        if not clean:
+            continue
+        w2 = learning.promote_direct(st, clean.most_common(1)[0][0], max_len=10)
+        if w2 and w2 != topic and w2 not in topic and topic not in w2:
+            k = "|".join(sorted([topic, w2]))
+            r = rels.setdefault(k, {"w": 0, "n": 0})
+            r["w"] += 2
+            r["n"] += 1
+            r["last_touch"] = st["rounds"]
+            r["type"] = rel_type
+            made += 1
+    if made:
+        label = "相反" if rel_type == "contrast" else "先后"
+        append_note(st, f"- 句式收割：从{label}回答里直接建出 {made} 条 {rel_type} 边（主题《{topic}》）")
+    return made
+
 def _pick_search_topic(st):
-    """搜索主题：语义中心首词（≤24字）→ 文件名 → journey 尾部词。"""
+    """搜索主题（v9.16.1 知识缺口驱动，青梧路径4）：优先"被下注/被读到却没有边"
+    的饥饿概念（度数最低），避开最近搜过的词——旧版拿 last_kw 首词，cache 连搜两次。"""
+    rels = st.get("relations", {})
+    cons = st.get("concepts", {})
+
+    def degree(c):
+        return sum(1 for k in rels if c in k.split("|"))
+
+    recent = set(st.get("last_search_topics", [])[-5:])
+    cands = []
+    for p in st.get("edge_preds", []):
+        if p.get("status") == "pending":
+            cands += [p["a"], p["b"]]
     kw = st.get("last_kw", "")
     if kw and kw != "无":
+        cands += [w for w in kw.split("、") if w in cons]
+    hungry = [c for c in cands if c and c not in recent]
+    if hungry:
+        hungry.sort(key=lambda c: (degree(c), len(c)))
+        return hungry[0][:24]
+    # 回退链：last_kw 首词 → 文件名 → journey 尾词（旧行为）
+    if kw and kw != "无" and recent:
         t = kw.split("、")[0][:24]
-        if t:
+        if t and t not in recent:
             return t
     if st["visited_files"]:
         t = Path(st["visited_files"][-1]).name
         t = re.sub(r"\.[A-Za-z0-9]+$", "", t)
-        if t and len(t) <= 24:
+        if t and len(t) <= 24 and t not in recent:
             return t
     jf = NOTES / "journey.md"
     if jf.exists():
@@ -532,7 +631,9 @@ def _pick_search_topic(st):
                 continue
             words = tokenizer.concept_words(line)
             if words:
-                return words.most_common(1)[0][0][:24]
+                t = words.most_common(1)[0][0][:24]
+                if t not in recent:
+                    return t
     return "涌现"
 
 
@@ -542,6 +643,8 @@ def do_web_search(st):
     if not ws.get("enabled", True):
         return False, "web_search 已禁用"
     topic = _pick_search_topic(st)
+    st.setdefault("last_search_topics", []).append(topic)
+    del st["last_search_topics"][:-5]      # 失败也记录，避免同词重试循环
     if any(bw in topic for bw in SEARCH_BLACK_WORDS):
         return False, "搜索词含黑名单词，已跳过"
     top_k = int(ws.get("top_k", 5))
@@ -655,6 +758,19 @@ def do_rest(st):
 
 # ---------- 技能：记忆整理 ----------
 
+def _replay_line(st, lines):
+    """间隔重放（青梧路径2）：优先挑最近没重放过的行，别对同一行反复回味。"""
+    recent = st.setdefault("recent_replay", [])
+    ln = random.choice(lines)
+    for _ in range(6):
+        if ln not in recent:
+            break
+        ln = random.choice(lines)
+    recent.append(ln)
+    del recent[:-10]
+    return ln
+
+
 def do_consolidate_memory(st):
     """记忆巩固：重放 + 修剪弱边/规则 + ⑤ 概念候选修剪 + ② 预测超时结算。"""
     replayed = 0
@@ -664,7 +780,7 @@ def do_consolidate_memory(st):
             lines = [l.strip() for l in jf.read_text(encoding="utf-8", errors="ignore").splitlines() if l.strip()]
             if lines:
                 for _ in range(2):
-                    ln = random.choice(lines)
+                    ln = _replay_line(st, lines)
                     append_note(st, f"- 记忆重放：{ln[:120]}")
                     replayed += 1
         except Exception:
@@ -721,7 +837,7 @@ def do_reflect_memory(st):
             lines = [l.strip() for l in jf.read_text(encoding="utf-8", errors="ignore").splitlines() if l.strip()]
             if lines:
                 for _ in range(2):
-                    ln = random.choice(lines)
+                    ln = _replay_line(st, lines)
                     replayed.append(ln[:80])
                     append_note(st, f"- 辉月回想：{ln[:120]}")
         except Exception:
@@ -840,18 +956,63 @@ def do_reflect_memory(st):
                   f"（因果 {built['causal']} / 相反 {built['contrast']} / 相似 {built['similar']} / 时序 {built['temporal']}）｜关系分布：{dist_s}")
 
 
+def _virtual_experiment(st):
+    """虚拟实验（青梧路径1 仿生）：挑一条因果边（没有则挑强边）A—B，
+    "屏蔽 A"看 B 还剩几条独立连接——像婴儿拨开吊饰看还动不动：
+    B 几乎只剩 A → 因果嫌疑；B 有别的支撑 → 可能只是相关。
+    这是它第一次靠"操作"而不只是"共现统计"来区分因果与相关。"""
+    rels = st.get("relations", {})
+    if len(rels) < 6:
+        return None
+    causal = [k for k, v in rels.items() if v.get("type") == "causal"]
+    pool = causal if causal else sorted(rels, key=lambda k: -rels[k].get("w", 0))[:10]
+    k = random.choice(pool)
+    a, b = k.split("|")
+
+    def others_of(x, exclude):
+        out = []
+        for kk in rels:
+            p, q = kk.split("|")
+            if p == x and q != exclude:
+                out.append(q)
+            elif q == x and p != exclude:
+                out.append(p)
+        return out
+
+    b_others = others_of(b, a)
+    suspicion = len(b_others) <= 1
+    if suspicion:
+        conclusion = (f"虚拟实验：把《{a}》从记忆里暂时屏蔽，《{b}》只剩 {len(b_others)} 条别的连接——"
+                      f"它几乎全靠《{a}》支撑，因果关系嫌疑大。值得拿着去问老师验证。")
+    else:
+        conclusion = (f"虚拟实验：把《{a}》屏蔽后，《{b}》仍有 {len(b_others)} 条独立连接"
+                      f"（{('、'.join(b_others[:3]))}…）——两者可能只是相关，不是因果。")
+    return {"pair": [a, b], "conclusion": conclusion, "causal_suspicion": suspicion}
+
+
 def do_self_talk(st):
-    """自言自语 v9.16 ②：对一对【当前没有边】的概念下注"它们有关联"。
-    旧版抽强边猜共同邻居 30/30 全命中（图里必然成立，零信息）——已废弃。
-    新版预测可能错：同现兑现=命中，超时=落空付痛感。预测错的地方才有东西可学。"""
+    """自言自语 v9.16.1 双模式：
+    ① 下注（可失败预测）：对无边概念对押"有关联"，同现兑现/超时落空；
+    ② 虚拟实验（50%）：屏蔽 A 看 B 的支撑，区分因果与相关。
+    旧版抽强边猜共同邻居 30/30 全命中（零信息）——已废弃。"""
+    st.setdefault("self_talk_log", [])
+    if random.random() < 0.5:
+        exp = _virtual_experiment(st)
+        if exp:
+            st["self_talk_log"].append({
+                "round": st["rounds"], "pair": exp["pair"], "type": "experiment",
+                "causal_suspicion": exp["causal_suspicion"]})
+            del st["self_talk_log"][:-30]
+            append_note(st, f"- {exp['conclusion']}")
+            return True, (f"自言自语（虚拟实验）：{exp['pair'][0]}—{exp['pair'][1]}，"
+                          f"因果嫌疑={'是' if exp['causal_suspicion'] else '否'}")
     pair = predictions.make_edge_prediction(st)
     if not pair:
         return False, "没有可下注的无边概念对（概念不足或已在赌的太多）"
     a, b = pair
-    tl = st.setdefault("self_talk_log", [])
-    tl.append({"round": st["rounds"], "pair": [a, b], "bet": "link",
-               "horizon": config.PRED_HORIZON})
-    del tl[:-30]
+    st["self_talk_log"].append({"round": st["rounds"], "pair": [a, b], "bet": "link",
+                                "horizon": config.PRED_HORIZON})
+    del st["self_talk_log"][:-30]
     append_note(st, f"- 自言自语：想到《{a}》和《{b}》——它们在我的概念网里还没有边。"
                     f"我赌它们其实有关联（{config.PRED_HORIZON} 轮内会一起出现）。下注完成，等世界判对错。")
     return True, f"自言自语：下注《{a}》↔《{b}》有关联（无边对，可失败预测）"

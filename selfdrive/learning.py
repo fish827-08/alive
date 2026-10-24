@@ -205,15 +205,21 @@ def learn_from_text(st, text, title, source, rel_type=None):
 
     cons = st.setdefault("concepts", {})
     rels = st.setdefault("relations", {})
-    # 建边只在"正式概念 ∩ 本文高频词"之间（碎片不再生边）
-    present = [w for w, _ in wc.most_common(12) if w in cons and w != title_concept]
+    cands = st.get("word_cands", {})
+    # 建边只在"正式概念 ∩ 本文高频词"之间（碎片不再生边）；
+    # v9.16.1: 相反/先后类回答（rel_type）放宽到 n≥2 候选词——提问和建图不再断链
+    # （title_concept 参与建边，只在规则前提里被排除——旧排除把《信息论》类标题词
+    #   挡在边外，正是 contrast/temporal 长不出来的原因之一）
+    if rel_type:
+        present = [w for w, _ in wc.most_common(12)
+                   if w in cons or cands.get(w, {}).get("n", 0) >= 2]
+    else:
+        present = [w for w, _ in wc.most_common(12) if w in cons]
     top = present[:4]
     pairs = set()
     for i in range(min(3, len(top))):
         for j in range(i + 1, min(4, len(top))):
             pairs.add(frozenset((top[i], top[j])))
-    # ② 预测核对：本对集合先拿去兑现下注，再建边（预测兑现的依据是"新文本的同现"）
-    predictions.verify_edge_predictions(st, pairs)
     for pair in pairs:
         a, b = sorted(pair)
         key = "|".join([a, b])
@@ -223,6 +229,8 @@ def learn_from_text(st, text, title, source, rel_type=None):
         r["last_touch"] = st["rounds"]
         if rel_type and not r.get("type"):
             r["type"] = rel_type
+    # ② 预测核对：下注两端都出现在这段新文本的在场词集里 = 兑现（顺带边加粗）
+    predictions.verify_edge_predictions(st, present)
     # 规则归纳 A∧B→标题（标题已是正式概念）
     if len(top) >= 2 and title_concept and title_concept not in top[:2]:
         pre = sorted([top[0], top[1]])

@@ -64,6 +64,12 @@ def default_state():
         "dup_asks": 0,
         "recent_reads": [],
         "q_rel_tags": {},
+        # ---- v9.16.1 ----
+        "last_dup_pain_round": -999,   # 查重痛感限频（3轮最多痛一次）
+        "last_search_topics": [],      # 最近搜索词（避免同词复读）
+        "recent_replay": [],           # 最近重放过的笔记行（重放间隔，别对一行反复回味）
+        "q_self_guess": {},            # 自问自答（青梧路径5）：qid → 提问前押的私人猜测
+        "selfqa": {"hit": 0, "miss": 0},   # 自问自答战绩
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
 
