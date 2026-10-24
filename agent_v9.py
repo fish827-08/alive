@@ -49,13 +49,18 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent
 
 # v9.9 注意过滤：web 搜索结果文件的格式噪声词（非知识内容）
-_FORMAT_NOISE = {"摘要", "来源", "百度百科", "知乎", "网络搜索", "主题",
-                 "汉语词语", "又称", "外文名称为", "首行", "关键词", "内容简介"}
+import json as _json
 WORKSPACE = BASE / "workspace"
 ARCHIVE = WORKSPACE / "archive"
 NOTES = WORKSPACE / "notes"
 WEB = WORKSPACE / "web"
 BRAIN = BASE / "brain"
+_NOISY_PATH = BRAIN / "noisy_words.json"
+_FORMAT_NOISE = set(_json.load(open(_NOISY_PATH))) if _NOISY_PATH.exists() else set()
+def _add_noise(w):
+    _FORMAT_NOISE.add(w)
+    try: _json.dump(sorted(_FORMAT_NOISE), open(_NOISY_PATH,"w"), ensure_ascii=False, indent=1)
+    except: pass
 INBOX = BRAIN / "inbox.md"
 OUTBOX = BRAIN / "outbox"
 TEMPLATES_DIR = BRAIN / "templates"          # 可插拔提问模板库（每个 .txt = 一个模板）
@@ -127,9 +132,9 @@ SKILLS = {
     "explore_file":  {"sense": ["workspace/archive 文件"], "act": ["读全文", "全文入库kb"],
                       "cost": 0.4, "weight": {"base": 0.2, "curiosity": 1.0, "curiosity_x_boredom": -1.0}},
     "explore_wider": {"sense": ["外部目录文件"], "act": ["扫描", "读取"],
-                      "cost": 0.5, "weight": {"base": 0.1, "curiosity": 0.9}},
+                      "cost": 0.5, "weight": {"base": 0.01, "curiosity": 0.9}},
     "visit_new_dir": {"sense": ["目录列表"], "act": ["遍历目录"],
-                      "cost": 0.2, "weight": {"base": 0.1, "curiosity": 0.7}},
+                      "cost": 0.2, "weight": {"base": 0.01, "curiosity": 0.7}},
     "tidy_notes":    {"sense": [], "act": ["整理笔记"],
                       "cost": 0.1, "weight": {"base": 0.1, "satisfaction": 0.4, "boredom": 0.5}},
     "build_site":    {"sense": [], "act": ["部署网站"],
@@ -516,7 +521,7 @@ def do_explore_file(files, st):
     full = read_full(BASE / f["path"])
     lines = full.splitlines()
     title = lines[0][:60] if lines else f["name"]
-    words = Counter(re.findall(r"[\u4e00-\u9fa5]{2,}", " ".join(lines[:40])))
+    words = Counter({w:1 for w in re.findall(r"[\u4e00-\u9fa5]{2,6}", " ".join(lines[:40])) if w not in _FORMAT_NOISE})
     top = "、".join(w for w, _ in words.most_common(8)) or "无"
     note, relate = semantic_note(full, BASE / f["path"], top)
     st["last_kw"] = top   # v9.6：语义中心缓存（内容高频词），供提问/搜索主题
@@ -548,7 +553,7 @@ def do_explore_file(files, st):
         _coarse_guess.append("其他")
     # 细层：实际关键词里有没有粗类别的影子
     _coarse_hit = any(
-        (c == "数字/加法" and any(re.search(r"[一二三四五六七八九十加等于]", " ".join(_actual))) or
+        (c == "数字/加法" and re.search(r"[一二三四五六七八九十加等于]", " ".join(_actual)) is not None or
          c == "天气" and any(w in " ".join(_actual) for w in ("温度", "天", "风")) or
          c == "语言/信号" and any(w in " ".join(_actual) for w in ("信号", "语言", "符号")))
         for c in _coarse_guess)
@@ -602,7 +607,7 @@ def do_explore_wider(st):
     try:
         full = read_full(key)
         lines = full.splitlines()
-        words = Counter(re.findall(r"[\u4e00-\u9fa5]{2,}|[a-zA-Z]{4,}", " ".join(lines[:40])))
+        words = Counter({w:1 for w in re.findall(r"[\u4e00-\u9fa5]{2,6}|[a-zA-Z]{4,}", " ".join(lines[:40])) if w not in _FORMAT_NOISE})
         top = "、".join(w for w, _ in words.most_common(8)) or "无"
         note, relate = semantic_note(full, key, top)
         st["last_kw"] = top   # v9.6：语义中心缓存
@@ -630,7 +635,7 @@ def do_tidy_notes(st):
     notes_file = NOTES / "journey.md"
     if notes_file.exists():
         text = notes_file.read_text(encoding="utf-8")
-        words = Counter(re.findall(r"[\u4e00-\u9fa5]{2,}", text))
+        words = Counter({w:1 for w in re.findall(r"[\u4e00-\u9fa5]{2,6}", text) if w not in _FORMAT_NOISE})
         top = "、".join(w for w, _ in words.most_common(10))
     else:
         top = "暂无笔记"
@@ -1003,12 +1008,23 @@ def do_read_brain(st):
         append_note(st, f"- 语义联想：{relate}")
         # v9.10 消化升级：相关性由自身概念库判定（不再用 kb embedding 训练数据）
         try:
-            _ans_words = set(re.findall(r"[\u4e00-\u9fa5]{2,4}", text[:300]))
+            _ans_words = set(re.findall(r"[\u4e00-\u9fa5]{2,6}", text[:300])) - _FORMAT_NOISE
             _hit_self = _ans_words & set(st.get("concepts", {}).keys())
             if len(_hit_self) >= 2:
                 append_note(st, f"- 消化标注：内容命中自身概念库 {len(_hit_self)} 个（{'、'.join(list(_hit_self)[:4])}），与已有知识网络相关（自组织判定）")
             else:
                 append_note(st, f"- 消化标注：自身概念库命中 {len(_hit_self)} 个（<2），视为新知识边界")
+            # v9.16 自动学噪音：读到"XX是格式不是知识"/"别对XX提问"自动加黑名单
+            for m in re.finditer(r"([\u4e00-\u9fa5]{2,6})[，,]?(?:是|不是)?(?:格式|噪音|网页格式|不是知识|不是真主题)", text):
+                w = m.group(1)
+                if w not in _FORMAT_NOISE and len(w) >= 2:
+                    _add_noise(w)
+                    append_note(st, f"- 自学噪音：{w} 已加入格式词表")
+            for m in re.finditer(r"别对([\u4e00-\u9fa5]{2,6})提问", text):
+                w = m.group(1)
+                if w not in _FORMAT_NOISE and len(w) >= 2:
+                    _add_noise(w)
+                    append_note(st, f"- 自学噪音：{w} 已加入格式词表")
         except Exception:
             append_note(st, "- 消化标注：已消化")
         # 从回答中提取新提问模板 → 可插拔模板库自增长
@@ -1068,7 +1084,7 @@ def do_read_brain(st):
                     append_note(st, f"- 推理验证：{A}+{C}→{D if D else '?'} 被大脑判定为『{verdict}』")
                     break
         # v9.7：只对大脑回答（Q-）做关系学习——FEED 投喂指示是提示性文本，不产生概念/规则
-        if p.stem.startswith("Q-"):
+        if p.stem.startswith("Q-") or p.stem.startswith("FEED-"):
             learn_from_text(st, text[:800], p.stem, p.stem)
         st["brain_read"].append(p.stem)
         read_any = True
@@ -1176,8 +1192,8 @@ def learn_from_text(st, text, title, source):
     只取资料前 600 字的中文 2-4 字词，避免概念爆炸。"""
     if not text or len(text) < 20:
         return 0, 0, 0
-    words = Counter(re.findall(r"[\u4e00-\u9fa5]{2,4}", text[:600]))
-    top = [w for w, _ in words.most_common(8) if w != title][:4]
+    words = Counter(re.findall(r"[\u4e00-\u9fa5]{2,6}", text[:600]))
+    top = [w for w, _ in words.most_common(10) if w != title and w not in _FORMAT_NOISE][:4]
     if len(top) < 2:
         return 0, 0, 0
     cons = st.setdefault("concepts", {})
