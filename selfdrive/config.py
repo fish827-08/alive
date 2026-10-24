@@ -171,6 +171,14 @@ ABSTRACT_PER_CONSOLIDATE = 2  # 每次巩固最多新生成的抽象节点数
 ABSTRACT_MAX = 40             # 抽象节点总量上限
 ABSTRACT_LINK_SCORE = 0.8     # 经抽象节点的跨层激活折扣
 
+# ---- v9.19 错误闭环 / 类比接地 / 元认知 ----
+REPLAY_QUEUE_MAX = 6          # 错误重放队列容量（猜错的对儿等巩固期对拍）
+PAIN_PRED_MISS_V2 = -0.08     # 预测落空痛感（v9.19 加倍——活物猜错要愣一下）
+FUEL_PRED_MISS_V2 = 0.08      # 预测落空的好奇心燃料（困惑）
+ABSTRACT_GROUND_MIN = 2       # 类比接地门槛：抽象节点须有 ≥N 次验证经历才准参与跨层类比
+META_EVERY = 60               # 元认知自省间隔（轮）
+TRANSFORM_RECHECK_SUPPORT = 1  # 老变换复检：support ≤ 此值且从未复检过的，择机重问大脑
+
 
 def load_ask_config():
     """读 brain/ask_config.json。失败返回 {}（各处用默认值，行为回退）。"""

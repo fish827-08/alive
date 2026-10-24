@@ -38,33 +38,38 @@ def _primed_start(st):
     return random.choices(cons, weights=weights, k=1)[0]
 
 
-def _weak_neighbors(rels, c):
-    """概念 c 经弱边（w ≤ DREAM_WEAK_W）相连的邻居列表。"""
+def _neighbors(rels, c, weak_only):
+    """概念 c 的邻居列表；weak_only=True 只取弱边（w ≤ DREAM_WEAK_W）。"""
     out = []
     for k, v in rels.items():
         a, b = k.split("|")
         if a != c and b != c:
             continue
         other = b if a == c else a
-        if other != c and v.get("w", 0) <= DREAM_WEAK_W:
+        if other != c and (not weak_only or v.get("w", 0) <= DREAM_WEAK_W):
             out.append(other)
     return out
 
 
 def do_dream(st):
-    """做一次梦：primed 起点 → 沿弱边随机走 → 起终点对下可失败预测。返回 (ok, detail)。
-    全程不改情绪、不涨疲劳、不碰其他 state 键（只写 dream_log / edge_preds，
-    笔记与 events 日志走公共工具；未成注只进 log，不写笔记）。"""
+    """做一次梦：primed 起点 → 走 2-3 步 → 起终点对下可失败预测。返回 (ok, detail)。
+    v9.19 步进规则：第一步走任意边（逃出无弱边的枢纽），之后弱边优先——
+    梦的价值在弱连接，但要先能迈出去。全程不改情绪、不涨疲劳。"""
     start = _primed_start(st)
     if start is None:
         return False, "没有可梦的起点（最近没有激活的概念）"
     rels = st.get("relations", {})
     path = [start]
-    for _ in range(DREAM_WALK_STEPS):
+    for step in range(DREAM_WALK_STEPS):
         cur, prev = path[-1], (path[-2] if len(path) >= 2 else None)
-        nbrs = [n for n in _weak_neighbors(rels, cur) if n != prev]   # 不含刚来的概念
+        nbrs = [n for n in _neighbors(rels, cur, weak_only=(step > 0)) if n != prev]
+        if not nbrs and step > 0:
+            nbrs = [n for n in _neighbors(rels, cur, weak_only=True) if n != prev]
+        if not nbrs and step > 0:
+            # 当前位置无弱边：最后允许迈一条任意边再醒，凑出真路径
+            nbrs = [n for n in _neighbors(rels, cur, weak_only=False) if n != prev][:1]
         if not nbrs:
-            break                                   # 走不动（无弱边）就提前醒
+            break
         path.append(random.choice(nbrs))
     a, b = path[0], path[-1]
     preds = st.setdefault("edge_preds", [])

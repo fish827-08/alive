@@ -14,8 +14,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
-from . import predictions
-from . import tokenizer
+from . import config, predictions, tokenizer
 from .state import append_note, record_active
 
 _NUM = "一二三四五六七八九十"
@@ -358,6 +357,18 @@ def infer_from_graph(st, topic):
     if best is None or best_s <= 0:
         return None
     return A, C, best, best_s
+
+
+def recheck_transform(st):
+    """v9.19 老变换复检：挑一条 support ≤ TRANSFORM_RECHECK_SUPPORT 且从未复检过的
+    旧变换重新问大脑——判假即删（"一加一加一→四"式错误不能永远挂在表里）。"""
+    tfs = st.get("transforms", {})
+    for tkey, tf in sorted(tfs.items()):
+        if tf.get("support", 0) <= config.TRANSFORM_RECHECK_SUPPORT and not tf.get("rechecked"):
+            tf["rechecked"] = True
+            expr, _, res = tkey.partition("→")
+            return expr, res
+    return None
 
 
 def transform_compose(st):

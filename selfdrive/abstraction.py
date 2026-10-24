@@ -101,10 +101,60 @@ def grow_abstract(st):
         if name is None or name in existing:
             continue
         existing[name] = {"members": sorted(members), "born": st["rounds"],
-                          "support": len(members)}
+                          "support": len(members), "ground": 0}
         append_note(st, f"- 抽象节点生长：『{name}』把 {'、'.join(sorted(members)[:5])} 打包成了一类（第 {st['rounds']} 轮）")
         made += 1
     return made
+
+
+def bump_ground(st, concept, by=1):
+    """v9.19 类比接地：concept 所属抽象节点的"验证经历"+1——
+    只有踩过/预测过/对过的类，才准参与跨层类比（标签到标签的空桥不许搭）。"""
+    name = abstract_of(st, concept)
+    if name and name in st.get("abstract", {}):
+        st["abstract"][name]["ground"] = st["abstract"][name].get("ground", 0) + by
+    return name
+
+
+def audit_abstract(st):
+    """v9.19 聚类清理：踢掉与类内其他成员一条边都没有的残词；
+    踢完成员 <ABSTRACT_MIN_MEMBERS 的类整队解散。类不是越大越好，也不能只进不出。"""
+    rels = st.get("relations", {})
+    removed_members = 0
+    dead_nodes = []
+    for name, node in st.get("abstract", {}).items():
+        members = [m for m in node.get("members", []) if m in st.get("concepts", {})]
+        kept = []
+        for m in members:
+            linked = False
+            for other in members:
+                if other == m:
+                    continue
+                k = "|".join(sorted([m, other]))
+                if rels.get(k, {}).get("w", 0) >= 1:
+                    linked = True
+                    break
+            if linked:
+                kept.append(m)
+            else:
+                removed_members += 1
+        if len(kept) < config.ABSTRACT_MIN_MEMBERS:
+            dead_nodes.append(name)
+        elif len(kept) != len(members):
+            node["members"] = kept
+            node["support"] = len(kept)
+    for name in dead_nodes:
+        node = st["abstract"].pop(name)
+        append_note(st, f"- 抽象节点解散：『{name}』清走残词后有边的成员不足 {config.ABSTRACT_MIN_MEMBERS} 个，不成类，解散（原成员 {len(node.get('members', []))} 个）")
+    return removed_members, len(dead_nodes)
+
+
+def grounded_nodes(st, min_ground=None):
+    """通过接地门槛（验证经历 ≥ 阈值）的抽象节点名。"""
+    min_ground = config.ABSTRACT_GROUND_MIN if min_ground is None else min_ground
+    return [n for n, node in st.get("abstract", {}).items()
+            if node.get("ground", 0) >= min_ground
+            and len(node.get("members", [])) >= config.ABSTRACT_MIN_MEMBERS]
 
 
 def abstract_of(st, concept):

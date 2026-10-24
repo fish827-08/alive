@@ -33,7 +33,7 @@ from .config import (ARCHIVE, BASE, BLACKLIST_DIRS, BRAIN, INBOX, LOGS, NOTES,
                      WEB, WIDER_EXTS, WIDER_ROOTS, load_ask_config)
 from .decision import explore_starved
 from .kb import kb_remember
-from .state import (append_note, feel, mark, push_read, web_share)
+from .state import (append_note, feel, log_event, mark, push_read, web_share)
 from .tokenizer import FORMAT_NOISE
 from .learning import infer_from_graph, learn_from_text, transform_compose
 
@@ -305,7 +305,7 @@ def _write_question(st, qid, question, source, rel_tag=None, topic=""):
                                                 if topic else rel_tag)
     guess = _self_guess(st, topic)
     if guess:
-        st.setdefault("q_self_guess", {})[qid] = {"guess": guess, "round": st["rounds"]}
+        st.setdefault("q_self_guess", {})[qid] = {"guess": guess, "round": st["rounds"], "topic": topic}
     return True, f"已向大脑提问 [{qid}]（来自{source}）：{question}"
 
 
@@ -324,7 +324,8 @@ def do_ask_brain(st):
     topic = _ask_topic(st)
     candidates = []   # {"q","source","rel_tag","kind","meta"}
 
-    # 通道 A：变换组合猜想（演绎→验证→习得）
+    # 通道 A：变换组合猜想（演绎→验证→习得）；没有新组合时复检老变换（v9.19：
+    # support=1 的旧变换重问一遍，判假即删——错误闭环的回头路）
     if (st["rounds"] - st.get("last_infer_round", -999)) >= 20:
         tc = transform_compose(st)
         if tc:
@@ -335,6 +336,16 @@ def do_ask_brain(st):
                       f"请判断这个推理对不对（请在回答开头写 [VERDICT:真] 或 [VERDICT:假] 或 [VERDICT:存疑]）。"),
                 "source": f"变换组合通道（{expr_t}→{result_t}）", "rel_tag": None,
                 "kind": "transform", "meta": (expr_t, result_t)})
+        else:
+            rc = learning.recheck_transform(st)
+            if rc:
+                expr_t, result_t = rc
+                candidates.append({
+                    "q": (f"我在复检一条很久以前记住的变换：『{expr_t}等于{result_t}』——"
+                          f"我当时不是很有把握。请判断它对不对"
+                          f"（请在回答开头写 [VERDICT:真] 或 [VERDICT:假] 或 [VERDICT:存疑]）。"),
+                    "source": f"老变换复检（{expr_t}→{result_t}）", "rel_tag": None,
+                    "kind": "transform", "meta": (expr_t, result_t)})
     # 通道 B：概念网激活扩散 A+C→未知 D
     if (st["rounds"] - st.get("last_infer_round", -999)) >= 20 and topic:
         inf = infer_from_graph(st, topic)
@@ -379,14 +390,30 @@ def do_ask_brain(st):
                 q = "我想学点新东西：请讲一件我记忆库里没有的新知识，并说说它为什么值得了解。"
             candidates.append({"q": q, "source": f"开放求知（starved={starved},roll={roll:.2f}）",
                                "rel_tag": None, "kind": "open", "meta": None})
-    # 通道 C+：v9.18 二层——跨抽象层联想问题（两个抽象类之间找共同点）
-    abs_nodes = abstraction.abstract_nodes(st)
-    if len(abs_nodes) >= 2:
-        a1, a2 = random.sample(abs_nodes[:6], 2)
-        candidates.append({"q": f"我发现自己把『{a1}』和『{a2}』各看成了一类东西。"
-                                f"这两类之间有没有共同点？还是说它们其实是同一件事的不同侧面？",
-                           "source": f"跨抽象层联想（{a1}↔{a2}）", "rel_tag": None,
-                           "kind": "abstract", "meta": (a1, a2)})
+    # 通道 C+：v9.18 二层 + v9.19 接地——跨抽象层类比问题。
+    # 接地门槛：两类都须有 ≥ABSTRACT_GROUND_MIN 次验证经历，且底下能举出一条
+    # 实际连着的跨类例子（同现 ≥2 次）——标签到标签的空桥不许搭。
+    grounded = abstraction.grounded_nodes(st)
+    if len(grounded) >= 2:
+        a1, a2 = random.sample(grounded[:6], 2)
+        m1s = st["abstract"].get(a1, {}).get("members", [])
+        m2s = st["abstract"].get(a2, {}).get("members", [])
+        example = None
+        for x in m1s:
+            for y in m2s:
+                k = "|".join(sorted([x, y]))
+                if st.get("relations", {}).get(k, {}).get("n", 0) >= 2:
+                    example = (x, y, st["relations"][k]["n"])
+                    break
+            if example:
+                break
+        if example:
+            x, y, n = example
+            candidates.append({"q": f"我发现自己把『{a1}』和『{a2}』各看成了一类东西。"
+                                    f"这两类之间有没有共同点？我手里有一条自己观察到的连接："
+                                    f"『{x}』和『{y}』同现过 {n} 次——这条连接是线索还是巧合？",
+                               "source": f"跨抽象层联想（{a1}↔{a2}，接地）", "rel_tag": None,
+                               "kind": "abstract", "meta": (a1, a2)})
     # 通道 D：模板（含内置相反/先后）——生成多个备选供查重轮换
     tpl_list = templates.load_templates()
     uses = st.get("template_uses", {})
@@ -499,6 +526,14 @@ def do_read_brain(st):
                     if il.get("type") == "transform":
                         expr_t = il["premises"][0] if il.get("premises") else ""
                         Dt = il.get("result")
+                        if verdict == "假" and expr_t:
+                            # v9.19 错误闭环：判假的变换直接从表里删掉——
+                            # "一加一加一→四"式错误不能永远挂着，删了才会被对的重推出来
+                            tfs = st.setdefault("transforms", {})
+                            tkey = expr_t + "→" + (Dt or "")
+                            if tkey in tfs:
+                                del tfs[tkey]
+                                append_note(st, f"- 错误清除：变换『{expr_t}={Dt}』被大脑判假，已从我的变换表删除——这条路我走错了，不再走")
                         if verdict == "真" and Dt:
                             tfs = st.setdefault("transforms", {})
                             tkey = expr_t + "→" + Dt
@@ -523,7 +558,7 @@ def do_read_brain(st):
                         elif verdict == "假":
                             ak = "|".join(sorted([A, C]))
                             if ak in st.get("relations", {}):
-                                st["relations"][ak]["w"] = max(0, st["relations"][ak]["w"] - 1)
+                                st["relations"][ak]["w"] = max(0, st["relations"][ak]["w"] - 2)   # v9.19: 判假降权加倍
                             _mk = st.setdefault("mistakes", [])
                             _mk.append({"round": st["rounds"], "premises": [A, C],
                                         "pattern": sorted([A, C]), "result": D})
@@ -532,19 +567,34 @@ def do_read_brain(st):
                         append_note(st, f"- 推理验证：{A}+{C}→{D if D else '?'} 被大脑判定为『{verdict}』")
                         break
         # 关系学习：Q-/FEED- 都学；相反/先后问题的回答给边打类型（⑤ 表征入口）
-        # v9.16.1 路径5：自问自答对拍——提问前押的猜测，现在对着答案结算
+        # v9.16.1 路径5 + v9.19 错误闭环：自问自答对拍——猜对加粗对的路，猜错降权错的路并排队重放
         gs = st.get("q_self_guess", {}).pop(p.stem, None)
         if gs and gs.get("guess"):
-            ans_words = set(tokenizer.concept_words(text))
+            ans_words = tokenizer.concept_words(text)
             sq = st.setdefault("selfqa", {"hit": 0, "miss": 0})
+            topic_c = gs.get("topic") or ""
+            gk = "|".join(sorted([c for c in (topic_c, gs["guess"]) if c]))
+            rels_ = st.get("relations", {})
             if gs["guess"] in ans_words:
                 sq["hit"] += 1
                 feel(st, "satisfaction", 0.05)
+                if gk in rels_:
+                    rels_[gk]["w"] += 2          # 对的路加粗
+                from .abstraction import bump_ground
+                bump_ground(st, gs["guess"])
                 append_note(st, f"- 自问自答：提问前我押《{gs['guess']}》会出现在答案里——猜中了（战绩 {sq['hit']}/{sq['hit'] + sq['miss']}）")
             else:
                 sq["miss"] += 1
-                feel(st, "satisfaction", -0.03)
-                append_note(st, f"- 自问自答：我押《{gs['guess']}》会出现在答案里——没中（战绩 {sq['hit']}/{sq['hit'] + sq['miss']}）")
+                feel(st, "satisfaction", -0.05)
+                if gk in rels_:
+                    rels_[gk]["w"] = max(0, rels_[gk].get("w", 0) - 1)   # 错的路降权
+                right = next((w for w, _ in ans_words.most_common(5)
+                              if w != gs["guess"] and w in st.get("concepts", {})), "")
+                rq = st.setdefault("replay_queue", [])
+                rq.append({"kind": "selfqa", "topic": topic_c, "wrong": gs["guess"],
+                           "right": right, "round": st["rounds"]})
+                del rq[:max(0, len(rq) - config.REPLAY_QUEUE_MAX)]
+                append_note(st, f"- 自问自答：我押《{gs['guess']}》会出现在答案里——没中，答案里是别的（战绩 {sq['hit']}/{sq['hit'] + sq['miss']}）。这对错了的路已降权，巩固期我会重放对拍。")
         # v9.16.1 问题4全量：相反/先后回答按句式收割 typed 边（提问→建图的断链接上）
         rel_tag = st.get("q_rel_tags", {}).pop(p.stem, None)
         rel_type, rel_topic = None, None
@@ -791,6 +841,58 @@ def _replay_line(st, lines):
     return ln
 
 
+def _replay_mistake(st):
+    """v9.19 错误重放：巩固期从队列取一对错例对拍——错的降权、对的加粗。"""
+    rq = st.get("replay_queue", [])
+    if not rq:
+        return ""
+    item = rq.pop(0)
+    rels = st.get("relations", {})
+    if item.get("kind") == "selfqa":
+        t_, w_, r_ = item.get("topic", ""), item.get("wrong", ""), item.get("right", "")
+        if r_ and t_:
+            rk = "|".join(sorted([t_, r_]))
+            if rk in rels:
+                rels[rk]["w"] += 1          # 重放给对的路再 +1
+            wk = "|".join(sorted([t_, w_]))
+            if wk in rels:
+                rels[wk]["w"] = max(0, rels[wk].get("w", 0) - 1)
+            append_note(st, f"- 错误重放：上次想到《{t_}》我押《{w_}》，其实该连《{r_}》。对拍记牢：想到《{t_}》先想起《{r_}》。")
+            return "错对拍 1 组"
+        return ""
+    a, b = item.get("a", ""), item.get("b", "")
+    if a and b:
+        append_note(st, f"- 错误重放：我赌过《{a}》↔《{b}》有关联，落空了。提醒自己：这两个别再随手连在一起，除非出现新证据。")
+        return "落空复盘 1 条"
+    return ""
+
+
+def _metacognition(st):
+    """v9.19 轻元认知：每隔 META_EVERY 轮看一眼自己的预测/自答战绩，
+    点出落空最多的概念——"会发现自己错"的分水岭。"""
+    if st["rounds"] - st.get("last_meta_round", -999) < config.META_EVERY:
+        return ""
+    st["last_meta_round"] = st["rounds"]
+    settled = [p for p in st.get("edge_preds", []) if p.get("status") in ("hit", "miss")]
+    sq = st.get("selfqa", {})
+    parts = [f"自问自答 {sq.get('hit', 0)} 中 {sq.get('miss', 0)} 错"]
+    if settled:
+        h = sum(1 for p in settled if p["status"] == "hit")
+        parts.insert(0, f"预测命中率 {h / len(settled):.0%}（{h}/{len(settled)}）")
+        miss_c = {}
+        for p in settled:
+            if p["status"] == "miss":
+                miss_c[p["a"]] = miss_c.get(p["a"], 0) + 1
+                miss_c[p["b"]] = miss_c.get(p["b"], 0) + 1
+        top = sorted(miss_c.items(), key=lambda kv: -kv[1])[:2]
+        if top:
+            parts.append("落空最多的是 " + "、".join(f"《{c}》×{n}" for c, n in top) + "——我在这些概念上可能连接得太随意")
+    note = f"- 自省（第 {st['rounds']} 轮）：" + "；".join(parts) + "。"
+    append_note(st, note)
+    log_event(st, "metacognition", note[:120])
+    return "自省 1 次"
+
+
 def do_consolidate_memory(st):
     """记忆巩固：重放 + 修剪弱边/规则 + ⑤ 概念候选修剪 + ② 预测超时结算。"""
     replayed = 0
@@ -843,10 +945,16 @@ def do_consolidate_memory(st):
     pruned = learning.prune_concepts(st)
     swept = learning.sweep_legacy_fragments(st)
     grown = abstraction.grow_abstract(st)          # v9.18 二层：巩固期长抽象节点
+    kicked, died = abstraction.audit_abstract(st)  # v9.19 问题三：踢孤立残词、解散空类
+    replay_sfx = _replay_mistake(st)               # v9.19 问题二：错误对拍重放
+    meta_sfx = _metacognition(st)                  # v9.19 问题五：轻元认知自省
     expired = predictions.expire_edge_predictions(st)
+    extra = f"，踢残词 {kicked} 个/解散 {died} 类" if (kicked or died) else ""
+    extra += f"，{replay_sfx}" if replay_sfx else ""
+    extra += f"，{meta_sfx}" if meta_sfx else ""
     return True, (f"记忆巩固：重放 {replayed} 条、修剪关系 {len(rm)} 条、规则库 {len(st.get('rules', {}))} 条"
                   f"（回收噪音规则 {rm_rules} 条，层级 {_added} 条，概念修剪 {pruned} 个，遗产碎片合并 {swept} 对，"
-                  f"抽象节点 +{grown}（共 {len(st.get('abstract', {}))}），预测落空 {expired} 个）")
+                  f"抽象节点 +{grown}（共 {len(st.get('abstract', {}))}）{extra}，预测落空 {expired} 个）")
 
 
 def do_reflect_memory(st):

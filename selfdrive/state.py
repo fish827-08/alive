@@ -74,7 +74,10 @@ def default_state():
         "sa_winner_log": [],           # 一层：扩散激活赢家记录 [{"round","path","score"}]
         "recent_active": [],           # 三层 priming：最近激活的概念（做梦起点必须先被点亮）
         "dream_log": [],               # 三层：梦游记录 [{"round","path","bet":[a,b]}]
-        "abstract": {},                # 二层：抽象节点 {名: {"members":[...], "born": 轮, "support": n}}
+        "abstract": {},                # 二层：抽象节点 {名: {"members","born","support","ground"}}
+        # ---- v9.19 ----
+        "replay_queue": [],            # 错误重放队列（猜错/落空的对儿，巩固期对拍）
+        "last_meta_round": -999,       # 元认知自省：上次自省轮
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
 

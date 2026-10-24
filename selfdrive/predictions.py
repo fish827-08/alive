@@ -11,9 +11,9 @@
 import random
 
 from . import config
-from .config import (EVT_PRED_HIT, EVT_PRED_MISS, FUEL_PRED_MISS, JOY_PRED_HIT,
-                     PAIN_PRED_MISS, PRED_HORIZON, PRED_MAX_PENDING,
-                     PRED_SETTLE_PER_ROUND)
+from .config import (EVT_PRED_HIT, EVT_PRED_MISS, FUEL_PRED_MISS, FUEL_PRED_MISS_V2,
+                     JOY_PRED_HIT, PAIN_PRED_MISS, PAIN_PRED_MISS_V2, PRED_HORIZON,
+                     PRED_MAX_PENDING, PRED_SETTLE_PER_ROUND, REPLAY_QUEUE_MAX)
 from .state import append_note, feel, log_event, mark
 
 
@@ -73,6 +73,15 @@ def verify_edge_predictions(st, present_words):
             rk = "|".join(sorted([p["a"], p["b"]]))
             r = rels.setdefault(rk, {"w": 0, "n": 0, "last_touch": st["rounds"]})
             r["w"] += 1          # 猜对的关联加粗：情绪真的改写知识图
+            if p.get("origin") == "dream":
+                r["type"] = "dream"   # 梦里连的边兑现了——标记出处
+            # v9.19 类比接地：兑现经历给两端概念所属的抽象节点记一次"验证过"
+            try:
+                from .abstraction import bump_ground
+                bump_ground(st, p["a"])
+                bump_ground(st, p["b"])
+            except Exception:
+                pass
             append_note(st, f"- 预测兑现：我赌过《{p['a']}》和《{p['b']}》有关联，今天它们真的一起出现了（第 {p['round']} 轮下注，边已加粗）")
             log_event(st, "pred_settle", f"预测兑现：{p['a']}↔{p['b']}（第 {p['round']} 轮下注 → 第 {st['rounds']} 轮兑现，边+1）")
     return hits
@@ -94,8 +103,13 @@ def expire_edge_predictions(st):
             p["settled_round"] = st["rounds"]
             misses += 1
             mark(st, EVT_PRED_MISS)
-            feel(st, "satisfaction", PAIN_PRED_MISS)
-            feel(st, "curiosity", FUEL_PRED_MISS)
+            # v9.19 错误闭环：落空要真的疼一下、困惑一下（旧版只记数字），
+            # 并进错误重放队列，巩固期拿"对拍"复习——错的路会降权，对的路会加粗
+            feel(st, "satisfaction", PAIN_PRED_MISS_V2)
+            feel(st, "curiosity", FUEL_PRED_MISS_V2)
+            rq = st.setdefault("replay_queue", [])
+            rq.append({"kind": "pred_miss", "a": p["a"], "b": p["b"], "round": st["rounds"]})
+            del rq[:max(0, len(rq) - REPLAY_QUEUE_MAX)]
             append_note(st, f"- 预测落空：我赌《{p['a']}》和《{p['b']}》有关联，{st['rounds'] - p['round']} 轮过去它们从未同现——这两个概念之间可能真的没关系，或者我还缺一座桥")
             log_event(st, "pred_settle", f"预测落空：{p['a']}↔{p['b']}（第 {p['round']} 轮下注 → 第 {st['rounds']} 轮落空）")
     return misses
