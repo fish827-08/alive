@@ -78,6 +78,9 @@ def default_state():
         # ---- v9.19 ----
         "replay_queue": [],            # 错误重放队列（猜错/落空的对儿，巩固期对拍）
         "last_meta_round": -999,       # 元认知自省：上次自省轮
+        # ---- v9.20 概念卡 ----
+        "concept_cards": {},           # 七面概念卡 {名: {ground/affordances/frame/links/laws/history/stats}}
+        "laws": {},                    # 定律表（独立于概念卡，卡只引用）
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
 

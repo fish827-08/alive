@@ -124,6 +124,10 @@ def pick_action(st, e, web_built):
     for a, f in st.get("skill_multipliers", {}).items():
         if a in w:
             w[a] *= max(0.0, f)
+    # ⑬ v9.20 概念卡乘子（处境匹配点亮概念、概念影响决策——使用即学习）
+    for a, f in st.pop("card_boost", {}).items():
+        if a in w:
+            w[a] *= max(0.0, f)
     # ⑫ v9.16 web 配额：自食缓存占比超限 → 压制读文件（去外部找吃的）
     if web_share(st) >= WEB_SHARE_CAP:
         w["explore_file"] *= 0.25

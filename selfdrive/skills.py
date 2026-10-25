@@ -21,7 +21,7 @@ from collections import Counter
 from pathlib import Path
 
 from . import config, learning, predictions, rules_compiler, templates, tokenizer
-from . import abstraction, activation, dream
+from . import abstraction, activation, conceptcard, dream
 
 try:                                    # 顶层模块（BASE/semantics.py，兜底联想层）
     import semantics as sem
@@ -523,6 +523,12 @@ def do_read_brain(st):
             for il in st.get("infer_log", []):
                 if il.get("qid") == p.stem and "verdict" not in il:
                     il["verdict"] = verdict
+                    # v9.20 概念卡：变换验证结果喂定律 L001（命中涨信/反驳记黑）
+                    if il.get("type") == "transform":
+                        try:
+                            conceptcard.on_transform_verdict(st, verdict == "真")
+                        except Exception:
+                            pass
                     if il.get("type") == "transform":
                         expr_t = il["premises"][0] if il.get("premises") else ""
                         Dt = il.get("result")
@@ -971,6 +977,10 @@ def do_consolidate_memory(st):
     swept = learning.sweep_legacy_fragments(st)
     grown = abstraction.grow_abstract(st)          # v9.18 二层：巩固期长抽象节点
     kicked, died = abstraction.audit_abstract(st)  # v9.19 问题三：踢孤立残词、解散空类
+    try:
+        conceptcard.consolidate_cards(st)          # v9.20：情景履历淡出+典型度压缩
+    except Exception:
+        pass
     replay_sfx = _replay_mistake(st)               # v9.19 问题二：错误对拍重放
     meta_sfx = _metacognition(st)                  # v9.19 问题五：轻元认知自省
     expired = predictions.expire_edge_predictions(st)

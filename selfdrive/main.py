@@ -27,7 +27,14 @@ SEM = sem.Semantics(config.BASE)
 def run_round(st):
     st["rounds"] += 1
     st["round_events"] = []          # ③④：本轮事件标签（每轮清空）
+    st.pop("card_boost", None)       # v9.20：清上轮概念卡乘子（每轮重新处境匹配）
     templates.check_template_retirement(st)
+    # v9.20 处境匹配：affordance 点亮概念卡 → 卡乘子进 pick_action（使用即学习）
+    try:
+        from . import conceptcard
+        conceptcard.situation_match(st)
+    except Exception:
+        pass
     files, dirs = skills.scan_workspace()
     novelty = skills.novelty_score(files, st)
     action = pick_action(st, st["emotions"], st["web_built"])
