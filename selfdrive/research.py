@@ -53,6 +53,7 @@ PURPOSE_LABELS = {
     "broadened": "失败后放宽角度",
 }
 CLOSED = {"exhausted", "blocked", "abandoned"}
+HISTORY_KEEP = 5   # attempt_history / kind_history 有界保留；迁移截断会写日志
 
 
 def _now():
@@ -223,11 +224,19 @@ def _merge_relation_task(primary, other):
     """迁移时合并同一关系的两条旧任务，历史尝试与关联不丢。
 
     primary 是生命周期载体（活跃/新建任务优先），其 attempts 保持为当前进度；
-    其余任务的尝试归档进 attempt_history。
+    其余任务的当前尝试与既有 attempt_history 一并迁入。attempt_history 按
+    轮次排序后只保留最近 HISTORY_KEEP 条，截断由调用方写日志。
+    返回 (迁入的历史条数, 被截断的条数)。
     """
+    other_history = other.get("attempt_history")
+    other_history = other_history if isinstance(other_history, list) else []
+    imported = sum(1 for x in other_history if isinstance(x, dict))
+    history = []
+    for source in (primary.get("attempt_history"), other_history):
+        if isinstance(source, list):
+            history.extend(dict(x) for x in source if isinstance(x, dict))
     attempts = list(other.get("attempts") or [])
     if attempts:
-        history = primary.setdefault("attempt_history", [])
         history.append({
             "kind": other.get("kind"),
             "round": other.get("updated_round", 0),
@@ -235,11 +244,16 @@ def _merge_relation_task(primary, other):
             "rewrites": other.get("rewrites", 0),
             "result_count": other.get("result_count", 0),
         })
-        del history[:-5]
+    history.sort(key=lambda x: _int(x.get("round"), 0))
+    dropped = max(0, len(history) - HISTORY_KEEP)
+    if dropped:
+        history = history[-HISTORY_KEEP:]
+    if history:
+        primary["attempt_history"] = history
     kind_history = (list(primary.get("kind_history") or [])
                     + list(other.get("kind_history") or []))
     if kind_history:
-        primary["kind_history"] = kind_history[-5:]
+        primary["kind_history"] = kind_history[-HISTORY_KEEP:]
     primary["query_ids"] = list(dict.fromkeys(
         list(primary.get("query_ids") or []) + list(other.get("query_ids") or [])))
     primary["source_ids"] = list(dict.fromkeys(
@@ -259,6 +273,7 @@ def _merge_relation_task(primary, other):
         primary["created_round"] = min(created)
     if other.get("verification") == "pending_verification":
         primary["verification"] = "pending_verification"
+    return imported, dropped
 
 
 def _migrate_legacy_state(st, r):
@@ -297,9 +312,13 @@ def _migrate_legacy_state(st, r):
             t.get("status") == "active", _int(t.get("updated_round"), 0),
             float(t.get("priority") or 0.0))) if live else None
         primary = carrier or kind_source
+        history_imported = 0
+        history_dropped = 0
         for task in tasks:
             if task is not primary:
-                _merge_relation_task(primary, task)
+                imported, dropped = _merge_relation_task(primary, task)
+                history_imported += imported
+                history_dropped += dropped
         if primary is not kind_source:
             previous_kind = primary.get("kind")
             if previous_kind != kind_source.get("kind"):
@@ -318,7 +337,7 @@ def _migrate_legacy_state(st, r):
                     "previous_reason": primary.get("reason"),
                     "previous_target": primary.get("target"),
                 })
-                del history[:-5]
+                del history[:-HISTORY_KEEP]
             primary["kind"] = kind_source.get("kind")
             primary["kind_label"] = (kind_source.get("kind_label")
                                      or KIND_LABELS.get(kind_source.get("kind"),
@@ -352,7 +371,12 @@ def _migrate_legacy_state(st, r):
              relation=(primary.get("target") or {}).get("relation"),
              kind=primary.get("kind"), merged=len(ids) > 1,
              query_ids=len(primary.get("query_ids") or []),
-             source_ids=len(primary.get("source_ids") or []))
+             source_ids=len(primary.get("source_ids") or []),
+             attempt_history_imported=history_imported,
+             attempt_history_dropped=history_dropped)
+        if history_dropped:
+            _log(st, "attempt_history_truncated", task_id=new_id,
+                 dropped=history_dropped, keep=HISTORY_KEEP)
 
 
 def _prediction_candidates(st):
@@ -595,7 +619,7 @@ def _upgrade_task(st, r, task, candidate):
             "rewrites": old["rewrites"],
             "result_count": task.get("result_count", 0),
         })
-        del history[:-5]
+        del history[:-HISTORY_KEEP]
     cancelled = []
     for qid in task.get("query_ids") or []:
         q = r["queries"].get(qid)
@@ -630,7 +654,7 @@ def _upgrade_task(st, r, task, candidate):
         "previous_reason": old["reason"],
         "previous_target": old["target"],
     })
-    del history[:-5]
+    del history[:-HISTORY_KEEP]
     _log(st, "task_upgraded", task_id=task["id"],
          from_kind=old["kind"], to_kind=candidate["kind"],
          from_priority=old["priority"], to_priority=candidate["priority"],

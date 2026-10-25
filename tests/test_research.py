@@ -503,6 +503,77 @@ class LegacyStateMigrationTests(ResearchSandbox):
         self.assertEqual(focused[new_id]["verification"],
                          "pending_verification")
 
+    def test_merge_preserves_secondary_attempt_history(self):
+        st, r, miss_id, weak_id, new_id = self.collision_state()
+        miss_old = {
+            "kind": "relation_unverified", "round": 70,
+            "attempts": [{"round": 69, "query_id": "RQ:miss-old",
+                          "outcome": "failed", "result_count": 0}],
+            "rewrites": 1, "result_count": 0,
+        }
+        weak_old = {
+            "kind": "relation_unverified", "round": 92,
+            "attempts": [{"round": 91, "query_id": "RQ:weak-old",
+                          "outcome": "failed", "result_count": 0}],
+            "rewrites": 0, "result_count": 0,
+        }
+        r["tasks"][miss_id]["attempt_history"] = [miss_old]
+        r["tasks"][weak_id]["attempt_history"] = [weak_old]
+        research.ensure_state(st)
+        task = r["tasks"][new_id]
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertEqual(task["status"], "active")
+        self.assertEqual(task["attempts"],
+                         [{"round": 94, "query_id": "RQ:weak",
+                           "outcome": "used", "result_count": 1}])
+        self.assertEqual([x["round"] for x in task["attempt_history"]],
+                         [70, 90, 92])
+        self.assertEqual(task["attempt_history"][0]["attempts"],
+                         [{"round": 69, "query_id": "RQ:miss-old",
+                           "outcome": "failed", "result_count": 0}])
+        self.assertEqual(task["attempt_history"][1]["kind"],
+                         "prediction_miss")
+        self.assertEqual(task["attempt_history"][2]["attempts"],
+                         [{"round": 91, "query_id": "RQ:weak-old",
+                           "outcome": "failed", "result_count": 0}])
+        self.assertIn("RQ:weak", task["query_ids"])
+        self.assertIn("RQ:miss1", task["query_ids"])
+        self.assertEqual(task["source_ids"], ["RS:weak"])
+        self.assertIn(task, research._viable_tasks(st))
+
+    def test_merge_history_is_bounded_and_logged(self):
+        st, r, miss_id, weak_id, new_id = self.collision_state()
+        r["tasks"][weak_id]["attempt_history"] = [
+            {"kind": "relation_unverified", "round": 80 + i,
+             "attempts": [{"round": 80 + i, "query_id": f"RQ:weak-old-{i}",
+                           "outcome": "failed", "result_count": 0}],
+             "rewrites": 0, "result_count": 0}
+            for i in range(research.HISTORY_KEEP)
+        ]
+        r["tasks"][miss_id]["attempt_history"] = [
+            {"kind": "relation_unverified", "round": 70 + i,
+             "attempts": [{"round": 70 + i, "query_id": f"RQ:miss-old-{i}",
+                           "outcome": "failed", "result_count": 0}],
+             "rewrites": 0, "result_count": 0}
+            for i in range(2)
+        ]
+        research.ensure_state(st)
+        task = r["tasks"][new_id]
+        self.assertEqual(len(task["attempt_history"]), research.HISTORY_KEEP)
+        self.assertEqual([x["round"] for x in task["attempt_history"]],
+                         [81, 82, 83, 84, 90])
+        rows = [json.loads(line) for line in
+                (self.logs / "research.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line]
+        migrated = [x for x in rows if x.get("event") == "task_id_migrated"][-1]
+        self.assertEqual(migrated["attempt_history_imported"], 2)
+        self.assertEqual(migrated["attempt_history_dropped"], 3)
+        truncated = [x for x in rows
+                     if x.get("event") == "attempt_history_truncated"][-1]
+        self.assertEqual(truncated["task_id"], new_id)
+        self.assertEqual(truncated["dropped"], 3)
+        self.assertEqual(truncated["keep"], research.HISTORY_KEEP)
+
 
 class QueryPlanningTests(ResearchSandbox):
     def test_same_goal_gets_distinct_purposes_and_specific_text(self):

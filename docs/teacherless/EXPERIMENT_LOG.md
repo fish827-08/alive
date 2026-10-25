@@ -335,9 +335,46 @@ SELFDRIVE_MODE=standard py -u agent_v9.py --once
 - 边界：仍不做正文提取、证据门禁、来源可信度、定律晋升与留出评估；
   不能据此宣称学习发生。
 
+## 2026-10-26 / Phase 2.1 历史保留补丁（`attempt_history` 合并）
+
+- 阶段：2.1（不扩展研究功能，不进入阶段 3）
+- 触发：owner 短复审 `1f71102` 指出 `_merge_relation_task()` 只归档其他任务的
+  当前 `attempts`，没有迁入其他任务已有的 `attempt_history`。旧版升级逻辑
+  已经会产生该字段，因此碰撞迁移可能丢失部分历史尝试记录。
+- 修正：
+  1. 合并时同时收集主任务与对方任务的 `attempt_history`，再把对方当前
+     `attempts` 归档为一条新历史；按 `round` 排序后只保留最近
+     `HISTORY_KEEP=5` 条。
+  2. 将散落的硬编码历史上限统一为 `HISTORY_KEEP`，明确这是有界保留，
+     不是无界保存。
+  3. `task_id_migrated` 记录 `attempt_history_imported` 与
+     `attempt_history_dropped`；发生截断时另写
+     `attempt_history_truncated`（含 `task_id`/`dropped`/`keep`），
+     不静默丢弃。
+- 自动化测试：
+  - `py -m compileall -q selfdrive agent_v9.py tests`：通过。
+  - `py -m unittest discover -s tests`：**142 项全部通过**
+    （阶段 1.1 为 99 项，阶段 2/2.1 为 43 项）。
+  - 新增 2 项回归：被合并任务已有 `attempt_history` 时，迁移后主任务保留
+    该历史，同时保留当前尝试、`query_ids`、`source_ids` 与 `active` 生命周期；
+    历史超过上限时按轮次保留最近 5 条，并写入可核验的截断日志。
+- 隔离冒烟 v8：`runs/teacherless_smoke_20261026_v8/`（本地临时目录，不提交）。
+  - `from_zero`，代码版本 `9.24.4`，指纹
+    `b252df486490d245a07bbbda11ca5a7705865096d7ce61214436d8555cefab9c`，3 轮。
+  - `status`：`clean=true`、`code_drift=false`、`seed_problems=[]`、
+    `code_migrations=[]`、`violations={}`；8 项教师/LLM 痕迹全 0。
+  - `state.research.schema_version=2`，任务/查询/来源均为 0，`stats` 全 0；
+    `research.jsonl` 仅 `config_recorded`（`research-config-v2`）；
+    3 轮后 0 概念/命题/关系/预测。
+  - 第 2 轮辅助动作 `build_site` 在本机启动服务失败（`[WinError 2]`，
+    缺少启动器），属环境限制，不影响隔离与研究账本。
+  - 该冒烟为全新状态，不验证旧状态迁移与历史合并；两者由合成状态单测覆盖。
+- 边界：仍不做正文提取、证据门禁、来源可信度、定律晋升与留出评估；
+  不能据此宣称学习发生。
+
 ## 下一门槛
 
-1. owner 复查 Phase 2.1 第三次复审修正提交，确认是否进入阶段 3。
+1. owner 复查 Phase 2.1 历史保留补丁，确认是否进入阶段 3。
 2. 阶段 3 前必须先确定：
    - 候选材料如何进入证据门禁（正文提取、来源可信度、同源去重、支持/反驳计数）；
    - 命题/关系边更新的可撤销记录与回滚方式；
