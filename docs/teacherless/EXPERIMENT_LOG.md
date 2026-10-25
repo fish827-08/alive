@@ -372,9 +372,66 @@ SELFDRIVE_MODE=standard py -u agent_v9.py --once
 - 边界：仍不做正文提取、证据门禁、来源可信度、定律晋升与留出评估；
   不能据此宣称学习发生。
 
+## 2026-10-26 / Phase 2.1 研究链路全链路审计补丁（v9.24.5）
+
+- 阶段：2.1（不扩展研究功能，不进入阶段 3）
+- 触发：owner 将审查范围扩大到整个阶段 2.1 研究链路（`99cc83b`），指出七个
+  此前测试未覆盖的问题：候选按种类限额导致饥饿、schema 未升级、迁移合并
+  语义与正常升级不一致、历史保留计数不可对账、来源成功判定可被无效 URL
+  欺骗、容量修剪静默删除待验证材料、Bing 单主机“无结果”阻断另一台主机。
+- 修正（一次性合并补丁）：
+  1. 取消 `prediction_miss`/`claim_evidence_gap`/`relation_unverified`/
+     `isolated_concept` 的每轮种类限额；候选统一按优先级与每轮新建预算竞争，
+     既有任务无论预算是否耗尽都继续刷新/升级。新增 `miss_backlog`（扫描
+     `edge_preds[-300:]`、上限 120），承接滑出 `edge_preds[-60:]` 的落空信号。
+  2. `RESEARCH_SCHEMA_VERSION` 升到 3，新增显式 v2→v3 迁移路径；只依据
+     `kind_history` 迁移轮次、查询 `created_round`/状态与当前尝试做可审计修复，
+     无法重建的写 `task_migration_unrecoverable`；迁移幂等。
+  3. 合并前先定最终种类；载体换种类时归档当前尝试、重置 `attempts`/`rewrites`，
+     取消所有不同种类的 `planned` 查询（`cancelled` + `superseded`，ID 写入
+     `kind_history`）；同种类与已执行查询、来源、材料、生命周期保留。
+  4. `attempt_history` 与 `kind_history` 都按轮次排序、有界保留 5 条；
+     `task_id_migrated` 分开记录双方历史、归档行、保留/丢弃，截断另写日志且
+     计数可对账。
+  5. 来源 URL 在解析与入账两处校验（绝对 HTTP(S)、非空、去重）；成功、
+     `result_count`、`source_ids`、`pending_verification` 只由实际写入账本的
+     有效来源决定；仅有无效链接记 `invalid_results`，不进入 `materials_found`。
+  6. 容量修剪时，有材料的任务写入 `archived_tasks` 快照（目标/种类/查询/来源/
+     验证状态/历史/归档原因，上限 40），`archived_pending()` 与 `focus()` 可发现；
+     超限写 `task_archive_evicted`。
+  7. `do_web_search()` 依次尝试 `cn.bing.com` 与 `www.bing.com`；单台明确
+     “无结果”不再阻断另一台，成功记录使用真正返回结果的主机 URL。
+- 自动化测试（临时目录副本，不触碰实时状态）：
+  - `compileall selfdrive agent_v9.py tests runs/migration_check_20261026_v3/check.py`：通过。
+  - `py -m unittest discover -s tests`：**163 项全部通过**
+    （阶段 1.1 为 99 项，阶段 2/2.1 为 64 项）。
+  - 新增/强化覆盖：四类候选多轮公平创建、预算耗尽后升级、落空补录与淘汰、
+    真正 v2 状态迁移与幂等、载体换种类与多任务历史对账、单个任务超长
+    `kind_history` 的截断与日志、来源 URL 五类案例、双主机回退、待验证材料
+    归档与归档容量。
+- 合成迁移验证：`runs/migration_check_20261026_v3/check.py` 使用临时目录构造
+  v1/v2 状态，`v1`、`v2_repair`、`v2_carrier` 三案例均 `ok: true`；最终代码
+  指纹 `b6c924b5a808f532fd1a33baeae1b12076b15ce6ff60227d58c3d6c298f5ad76`。
+  该验证与 from_zero 冒烟相互独立，专门证明旧状态迁移。
+- 隔离冒烟 v9：`runs/teacherless_smoke_20261026_v9/`（本地临时目录，不提交）。
+  - `from_zero`，代码版本 `9.24.5`，指纹同前，3 轮；主动作
+    `self_talk` → `tidy_notes` → `tidy_notes`，辅助动作包含
+    `reflect_memory`/`rest`/`self_talk`/`metacognition`/
+    `consolidate_memory`/`build_site`。
+  - `status`：`clean=true`、`code_drift=false`、`seed_problems=[]`、
+    `code_migrations=[]`、`violations={}`；8 项教师/LLM 痕迹全 0。
+  - `state.research.schema_version=3`，任务/查询/来源/归档/落空补录均为 0，
+    `stats` 全 0；`research.jsonl` 仅 `config_recorded`
+    （`research-config-v3`）；3 轮后 0 概念/命题/关系/预测。
+  - 第 3 轮辅助动作 `build_site` 在本机启动服务失败（`[WinError 2]`，
+    缺少启动器），属环境限制，不影响隔离与研究账本。
+  - 该冒烟为全新状态，不验证旧状态迁移；迁移由上面的合成验证单独覆盖。
+- 边界：仍不做正文提取、证据门禁、来源可信度、定律晋升与留出评估；
+  搜索材料仍全部 `unverified`；不能据此宣称学习发生。
+
 ## 下一门槛
 
-1. owner 复查 Phase 2.1 历史保留补丁，确认是否进入阶段 3。
+1. owner 复查 Phase 2.1 全链路审计补丁，确认是否进入阶段 3。
 2. 阶段 3 前必须先确定：
    - 候选材料如何进入证据门禁（正文提取、来源可信度、同源去重、支持/反驳计数）；
    - 命题/关系边更新的可撤销记录与回滚方式；

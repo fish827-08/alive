@@ -163,9 +163,9 @@ SEARCH_BLACK_WORDS = {"密码", "爆破", "入侵", "漏洞", "赌博", "色情"
 
 # ---- 阶段 2：研究任务队列 + 定向搜索规划（2026-10-25） ----
 # 任务只决定"缺什么、为什么值得查、下一查什么"；搜索结果一律是 unverified 候选材料。
-RESEARCH_CONFIG_VERSION = "research-config-v2"
+RESEARCH_CONFIG_VERSION = "research-config-v3"
 RESEARCH_MAX_TASKS = 24          # 同时保留的 open/active 任务上限（materials_found 另计）
-RESEARCH_TASK_KEEP = 80          # 任务总数硬上限；超出先清 closed，再清最老 materials_found
+RESEARCH_TASK_KEEP = 80          # 任务总数硬上限；超出先清 closed，再归档最老 materials_found
 RESEARCH_NEW_PER_ROUND = 3       # 每轮最多新增任务数（防任务洪水）
 RESEARCH_QUERIES_PER_TASK = 3    # 每个任务的可执行查询数
 RESEARCH_ATTEMPTS_PER_TASK = 3   # 每个任务最多执行次数（含失败）
@@ -176,6 +176,8 @@ RESEARCH_DUP_JACCARD = 0.8       # 字符二元组 Jaccard ≥ 此值视为重�
 RESEARCH_SOURCE_KEEP = 200       # 状态内来源索引上限（完整记录在 logs/research_sources.jsonl）
 RESEARCH_CONFIG_KEEP = 20        # 研究/搜索配置变更历史条数
 RESEARCH_SCAN_LIMIT = 300        # 每轮扫描 claims/relations/concepts 的上限
+RESEARCH_MISS_BACKLOG = 120      # 预测落空补录上限（覆盖 edge_preds 最近 60 条窗口淘汰）
+RESEARCH_ARCHIVE_KEEP = 40       # 待验证任务归档上限（容量有界，查询/来源可追溯）
 RESEARCH_PRIORITY_MIN, RESEARCH_PRIORITY_MAX = 0.05, 0.99
 
 # ---- 辉月回望：相反词对种子（v9.8） ----

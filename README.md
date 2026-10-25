@@ -27,7 +27,7 @@
 | **moon** | 云端 `/home/qingwu/moon` | 1400+ | 无（路线 A） | 教师制·幼儿式（日常问答与纠错） |
 | **火星** | 本机 `D:\火星` | 从零 | qwen3:1.7b（路线 B） | 教师制·幼儿式 + LLM 提案 |
 
-## 架构（v9.24.4，模块化）
+## 架构（v9.24.5，模块化）
 
 ```
 selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是启动器）
@@ -160,16 +160,24 @@ SELFDRIVE_MODE=teacherless python3 -m selfdrive.teacherless accept-code \
 `task_id`/`query_id`/`selection_reason`，可回答“为什么搜这句”。同一关系先有弱关系
 任务、后出现预测落空时，任务原地升级为 `prediction_miss`，旧尝试归档、查询/来源保留，
 不会因旧任务占位而丢掉更强信号；探索回退与常规创建共用三组任务硬上限。
-新建额度用尽只阻止继续新建，不会跳过后续既有任务的刷新/升级；阶段 2.0 的旧任务 ID
-与来源字段在首次加载时显式迁移，查询/来源关联保留。迁移合并同一关系的新旧任务时，
-任务种类取最强信号，生命周期取仍可执行的那条：有 `active`/`open` 任务就保持可执行，
-只有待验证材料时落为 `materials_found` + `pending_verification`，不会用旧终止态
-把可继续任务或候选材料埋掉。被合并任务已有的 `attempt_history` 一并迁入，按轮次
-排序后有界保留最近 5 条；发生截断时写 `attempt_history_truncated`，不静默丢弃。
+新建额度用尽只阻止继续新建，不会跳过后续既有任务的刷新/升级；候选生成不再按种类
+设限额，滑出 `edge_preds` 窗口的落空由有界 `miss_backlog` 补录。阶段 2.0 的旧任务 ID
+与来源字段在首次加载时显式迁移到 schema 3，查询/来源关联保留；修复只依据
+`kind_history` 轮次、查询创建轮次与当前尝试，无法重建的写 `task_migration_unrecoverable`，
+重复迁移幂等。迁移合并同一关系的新旧任务时，任务种类取最强信号，生命周期取仍可执行
+的那条：有 `active`/`open` 任务就保持可执行，只有待验证材料时落为 `materials_found` +
+`pending_verification`，不会用旧终止态把可继续任务或候选材料埋掉。载体换种类时旧尝试
+归档、`attempts`/`rewrites` 重置，不同种类的计划查询标记 `cancelled` + `superseded`，
+同种类与已执行查询、来源保留。`attempt_history`/`kind_history` 按轮次排序后有界保留
+最近 5 条，迁入/归档/保留/丢弃计数可对账；容量修剪时待验证任务会进入可发现的
+`archived_tasks`，不静默删除。
 
 搜索结果只保存为**候选材料**：登记真实 URL、标题/摘要、SERP URL/哈希、获取时间、
 任务/查询 ID 与当时的配置哈希，硬编码 `source_type=web_runtime`、
-`verification=unverified`。`title_excerpt_sha256` 只覆盖标题+摘要，**不是网页正文哈希**；
+`verification=unverified`。解析与入账都会拒绝空/相对/非 HTTP(S)/重复链接；
+成功、`result_count` 与 `pending_verification` 只由实际写入账本的有效来源决定，
+只有无效链接时按 `invalid_results` 失败，不进入 `materials_found`。搜索会依次尝试
+`cn.bing.com` 与 `www.bing.com`，单台“无结果”不会阻断另一台。`title_excerpt_sha256` 只覆盖标题+摘要，**不是网页正文哈希**；
 正文提取属于阶段 3。不写 `claims` 证据、不晋升定律、不改变概念置信度。影响研究调度与
 搜索策略的配置（含 `ask_config.json` 的 `web_search`/`research` 段）会写入
 `state.research.config_history`，只在哈希变化时记录。
@@ -178,7 +186,7 @@ Teacherless 模式下 `kb_remember()` 直接返回 `False`，候选材料不会�
 普通模式仍可能写入本地共享记忆库，阶段 3 不能把共享库召回自动视为已验证证据。
 
 ```bash
-py -m unittest discover -s tests        # 142 项（阶段 2/2.1 新增 43 项）
+py -m unittest discover -s tests        # 163 项（阶段 2/2.1 新增 64 项）
 ```
 
 详见 [docs/teacherless/PHASE2_RESEARCH.md](docs/teacherless/PHASE2_RESEARCH.md)。
@@ -212,7 +220,7 @@ py -m unittest discover -s tests        # 142 项（阶段 2/2.1 新增 43 项�
    验证闭环与留出评估
 
 实验 4 的判据是"无教师、无 LLM 条件下在未参与训练的任务上是否变强"，
-不是轮次、概念数或日志体积。阶段 1.1/2 的冒烟与测试（142 项通过、隔离运行零违规、
+不是轮次、概念数或日志体积。阶段 1.1/2 的冒烟与测试（163 项通过、隔离运行零违规、
 来源账本可回溯）只能证明通道关闭、状态未污染、种子与代码版本一致、搜索材料有出处，
 不能证明学习发生；阶段 2 的 `materials_found` 明确不等于“已验证”。
 

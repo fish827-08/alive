@@ -18,6 +18,7 @@ import hashlib
 import json
 import re
 import time
+import urllib.parse
 from collections import Counter
 
 from . import config, tokenizer
@@ -25,7 +26,7 @@ from .state import append_jsonl
 
 FORMAT = "alive-research-state/1"
 SOURCE_FORMAT = "alive-research-source/2"
-RESEARCH_SCHEMA_VERSION = 2   # 2.1：关系任务 ID 按关系键唯一 + title_excerpt_sha256
+RESEARCH_SCHEMA_VERSION = 3   # 3：迁移升级语义 + 计划查询作废 + 来源校验 + 待验证归档
 
 KIND_BASE = {
     "prediction_miss": 0.80,
@@ -42,6 +43,13 @@ KIND_LABELS = {
     "isolated_concept": "孤立概念",
     "exploration": "探索性检索",
 }
+KIND_PURPOSES = {
+    "prediction_miss": {"bridge", "mechanism", "relation"},
+    "claim_evidence_gap": {"evidence", "counterexample", "definition"},
+    "relation_unverified": {"relation", "evidence", "counterexample"},
+    "isolated_concept": {"definition", "context", "mechanism"},
+    "exploration": {"definition", "context", "mechanism"},
+}
 PURPOSE_LABELS = {
     "evidence": "找支持/反驳证据",
     "counterexample": "找反例与不成立条件",
@@ -54,6 +62,7 @@ PURPOSE_LABELS = {
 }
 CLOSED = {"exhausted", "blocked", "abandoned"}
 HISTORY_KEEP = 5   # attempt_history / kind_history 有界保留；迁移截断会写日志
+EXECUTED_QUERY_STATUSES = {"used", "success", "failed"}
 
 
 def _now():
@@ -82,6 +91,34 @@ def _int(value, default):
         return default
 
 
+def _has_materials(task):
+    if not isinstance(task, dict):
+        return False
+    return (_int(task.get("result_count"), 0) > 0
+            or bool(task.get("source_ids"))
+            or task.get("verification") == "pending_verification")
+
+
+def _bounded_history(entries):
+    """按轮次排序后只保留最近 HISTORY_KEEP 条；返回 (保留, 截断数)。"""
+    rows = [dict(x) for x in (entries or []) if isinstance(x, dict)]
+    rows.sort(key=lambda x: _int(x.get("round"), 0))
+    dropped = max(0, len(rows) - HISTORY_KEEP)
+    return (rows[-HISTORY_KEEP:] if rows else []), dropped
+
+
+def is_valid_source_url(url):
+    """来源必须是绝对 HTTP(S) URL；空串、相对链接与其它协议一律拒绝。"""
+    text = str(url or "").strip()
+    if not text or any(ch.isspace() for ch in text):
+        return False
+    try:
+        parsed = urllib.parse.urlsplit(text)
+    except ValueError:
+        return False
+    return parsed.scheme.lower() in ("http", "https") and bool(parsed.netloc)
+
+
 def ensure_state(st):
     r = st.setdefault("research", {})
     if not isinstance(r, dict):
@@ -90,9 +127,11 @@ def ensure_state(st):
     for key in ("tasks", "queries"):
         if not isinstance(r.get(key), dict):
             r[key] = {}
-    for key in ("recent_queries", "sources", "config_history"):
+    for key in ("recent_queries", "sources", "config_history", "archived_tasks"):
         if not isinstance(r.get(key), list):
             r[key] = []
+    if not isinstance(r.get("miss_backlog"), dict):
+        r["miss_backlog"] = {}
     if r.get("config_sha256") is not None and not isinstance(r.get("config_sha256"), str):
         r["config_sha256"] = None
     stats = r.setdefault("stats", {})
@@ -101,7 +140,7 @@ def ensure_state(st):
         r["stats"] = stats
     for key in ("tasks_created", "queries_planned", "queries_executed",
                 "query_failures", "duplicates_blocked", "sources_recorded",
-                "rewrites_planned"):
+                "rewrites_planned", "tasks_archived", "source_candidates_rejected"):
         stats.setdefault(key, 0)
     if _int(r.get("schema_version"), 1) < RESEARCH_SCHEMA_VERSION:
         _migrate_legacy_state(st, r)
@@ -132,6 +171,9 @@ def effective_config():
         "max_rewrites": config.RESEARCH_MAX_REWRITES,
         "query_history": config.RESEARCH_QUERY_HISTORY,
         "dup_jaccard": config.RESEARCH_DUP_JACCARD,
+        "scan_limit": config.RESEARCH_SCAN_LIMIT,
+        "miss_backlog": config.RESEARCH_MISS_BACKLOG,
+        "archive_keep": config.RESEARCH_ARCHIVE_KEEP,
         "web_search": {
             "enabled": bool(ws.get("enabled", True)),
             "top_k": _int(ws.get("top_k", 5), 5),
@@ -220,21 +262,82 @@ def _merged_terminal_status(tasks, has_materials, fallback):
     return fallback
 
 
+def _planned_query_ids(r, task):
+    out = []
+    for qid in task.get("query_ids") or []:
+        query = r["queries"].get(qid)
+        if query and query.get("status") == "planned":
+            out.append(qid)
+    return out
+
+
+def _cancel_planned_queries(r, qids):
+    cancelled = []
+    for qid in dict.fromkeys(qids or []):
+        query = r["queries"].get(qid)
+        if query and query.get("status") == "planned":
+            query["status"] = "cancelled"
+            query["failure"] = "superseded"
+            cancelled.append(qid)
+    return cancelled
+
+
+def _record_kind_history(task, entry):
+    history = [dict(x) for x in (task.get("kind_history") or [])
+               if isinstance(x, dict)]
+    history.append(dict(entry))
+    kept, dropped = _bounded_history(history)
+    task["kind_history"] = kept
+    return dropped
+
+
+def _record_merged_query_cancellation(task, qids, st):
+    """种类没变但来源任务种类不同：把作废查询记到最近的同种类迁移记录上。
+
+    返回是否新追加了一条 kind_history（False 表示复用已有迁移记录）。
+    """
+    history = [dict(x) for x in (task.get("kind_history") or [])
+               if isinstance(x, dict)]
+    appended = False
+    for entry in reversed(history):
+        if entry.get("to") == task.get("kind"):
+            entry["cancelled_queries"] = list(dict.fromkeys(
+                list(entry.get("cancelled_queries") or []) + list(qids)))
+            break
+    else:
+        history.append({
+            "round": st.get("rounds", 0),
+            "from": task.get("kind"),
+            "to": task.get("kind"),
+            "reason": "迁移合并：作废不同种类来源任务的计划查询",
+            "archived_attempts": 0,
+            "archived_rewrites": 0,
+            "cancelled_queries": list(qids),
+        })
+        appended = True
+    kept, _ = _bounded_history(history)
+    task["kind_history"] = kept
+    return appended
+
+
 def _merge_relation_task(primary, other):
     """迁移时合并同一关系的两条旧任务，历史尝试与关联不丢。
 
     primary 是生命周期载体（活跃/新建任务优先），其 attempts 保持为当前进度；
-    其余任务的当前尝试与既有 attempt_history 一并迁入。attempt_history 按
-    轮次排序后只保留最近 HISTORY_KEEP 条，截断由调用方写日志。
-    返回 (迁入的历史条数, 被截断的条数)。
+    其余任务的当前尝试与既有 attempt_history 一并迁入。attempt_history 与
+    kind_history 都按轮次排序后只保留最近 HISTORY_KEEP 条。
+    返回 (迁入的历史条数, 归档的当前尝试条数, 被截断的条数)。
     """
     other_history = other.get("attempt_history")
     other_history = other_history if isinstance(other_history, list) else []
-    imported = sum(1 for x in other_history if isinstance(x, dict))
-    history = []
-    for source in (primary.get("attempt_history"), other_history):
-        if isinstance(source, list):
-            history.extend(dict(x) for x in source if isinstance(x, dict))
+    imported = 0
+    history = [dict(x) for x in (primary.get("attempt_history") or [])
+               if isinstance(x, dict)]
+    for item in other_history:
+        if isinstance(item, dict):
+            history.append(dict(item))
+            imported += 1
+    archived = 0
     attempts = list(other.get("attempts") or [])
     if attempts:
         history.append({
@@ -244,16 +347,17 @@ def _merge_relation_task(primary, other):
             "rewrites": other.get("rewrites", 0),
             "result_count": other.get("result_count", 0),
         })
-    history.sort(key=lambda x: _int(x.get("round"), 0))
-    dropped = max(0, len(history) - HISTORY_KEEP)
-    if dropped:
-        history = history[-HISTORY_KEEP:]
-    if history:
-        primary["attempt_history"] = history
-    kind_history = (list(primary.get("kind_history") or [])
-                    + list(other.get("kind_history") or []))
-    if kind_history:
-        primary["kind_history"] = kind_history[-HISTORY_KEEP:]
+        archived += 1
+    kept, dropped = _bounded_history(history)
+    if kept:
+        primary["attempt_history"] = kept
+    kind_history = [dict(x) for x in (primary.get("kind_history") or [])
+                    if isinstance(x, dict)]
+    kind_history += [dict(x) for x in (other.get("kind_history") or [])
+                     if isinstance(x, dict)]
+    kept_kind, _ = _bounded_history(kind_history)
+    if kept_kind:
+        primary["kind_history"] = kept_kind
     primary["query_ids"] = list(dict.fromkeys(
         list(primary.get("query_ids") or []) + list(other.get("query_ids") or [])))
     primary["source_ids"] = list(dict.fromkeys(
@@ -273,26 +377,90 @@ def _merge_relation_task(primary, other):
         primary["created_round"] = min(created)
     if other.get("verification") == "pending_verification":
         primary["verification"] = "pending_verification"
-    return imported, dropped
+    return imported, archived, dropped
 
 
-def _migrate_legacy_state(st, r):
-    """2.0 状态兼容：关系任务 ID 归一到关系键，旧来源字段更名。
+def _repair_prior_kind_transitions(st, r):
+    """v2→v3：修复旧迁移只换 kind 却没归档尝试/作废计划查询的遗留。
 
-    查询与来源索引中的 task_id 同步改写；历史 JSONL 不重写（append-only）。
+    只能依据 kind_history 的迁移轮次、查询创建轮次和当前 attempts 做可审计修复；
+    kind_history 缺失的历史无法重建，不做猜测，只记录不可恢复项。
+    返回 (修复任务数, 不可恢复任务数)。
     """
-    renamed = 0
-    for entry in r.get("sources") or []:
-        if not isinstance(entry, dict):
+    repaired = 0
+    unrecoverable = 0
+    for task in r["tasks"].values():
+        if not isinstance(task, dict):
             continue
-        legacy = entry.pop("content_sha256", None)
-        if legacy is not None:
-            renamed += 1
-            if not entry.get("title_excerpt_sha256"):
-                entry["title_excerpt_sha256"] = legacy
-    if renamed:
-        _log(st, "source_fields_migrated", count=renamed,
-             field="title_excerpt_sha256")
+        history = task.get("kind_history")
+        if not isinstance(history, list):
+            continue
+        attempts = [a for a in (task.get("attempts") or []) if isinstance(a, dict)]
+        last = None
+        for entry in history:
+            if (isinstance(entry, dict) and entry.get("to") == task.get("kind")
+                    and entry.get("from") != entry.get("to")):
+                last = entry
+        if last is None:
+            if history and attempts:
+                unrecoverable += 1
+                _log(st, "task_migration_unrecoverable", task_id=task.get("id"),
+                     kind=task.get("kind"), reason="no_current_transition",
+                     attempts=len(attempts),
+                     planned_queries=len(_planned_query_ids(r, task)))
+            continue
+        since = _int(last.get("round"), 0)
+        if since <= 0:
+            if attempts:
+                unrecoverable += 1
+                _log(st, "task_migration_unrecoverable", task_id=task.get("id"),
+                     kind=task.get("kind"), reason="invalid_transition_round",
+                     attempts=len(attempts),
+                     planned_queries=len(_planned_query_ids(r, task)))
+            continue
+        old_attempts = [a for a in attempts if _int(a.get("round"), 0) < since]
+        current_attempts = [a for a in attempts
+                            if _int(a.get("round"), 0) >= since]
+        archived = 0
+        dropped = 0
+        if old_attempts:
+            history_rows = [dict(x) for x in (task.get("attempt_history") or [])
+                            if isinstance(x, dict)]
+            history_rows.append({
+                "kind": last.get("from"),
+                "round": max((_int(a.get("round"), 0) for a in old_attempts),
+                             default=since),
+                "attempts": old_attempts,
+                "rewrites": _int(task.get("rewrites"), 0),
+                "result_count": _int(task.get("result_count"), 0),
+                "repaired_by": f"schema-{RESEARCH_SCHEMA_VERSION}",
+            })
+            kept, dropped = _bounded_history(history_rows)
+            task["attempt_history"] = kept
+            task["attempts"] = current_attempts
+            task["rewrites"] = 0
+            archived = len(old_attempts)
+        old_planned = []
+        for qid in task.get("query_ids") or []:
+            query = r["queries"].get(qid)
+            if (query and query.get("status") == "planned"
+                    and _int(query.get("created_round"), 0) < since):
+                old_planned.append(qid)
+        cancelled = _cancel_planned_queries(r, old_planned)
+        if cancelled:
+            last["cancelled_queries"] = list(dict.fromkeys(
+                list(last.get("cancelled_queries") or []) + cancelled))
+        if archived or cancelled:
+            repaired += 1
+            _log(st, "task_migration_repaired", task_id=task.get("id"),
+                 kind=task.get("kind"), transition_round=since,
+                 archived_attempts=archived, cancelled_queries=cancelled,
+                 attempt_history_dropped=dropped)
+    return repaired, unrecoverable
+
+
+def _normalize_relation_tasks(st, r):
+    """关系任务 ID 归一到关系键；同时按升级语义合并种类与查询/尝试预算。"""
     groups = {}
     for task_id, task in list(r["tasks"].items()):
         target = task.get("target") if isinstance(task, dict) else None
@@ -300,54 +468,105 @@ def _migrate_legacy_state(st, r):
             continue
         new_id = _stable_id("RT", _task_key(task.get("kind"), target))
         groups.setdefault(new_id, []).append(task_id)
+    processed = 0
     for new_id, ids in groups.items():
-        if ids == [new_id]:
+        tasks = [r["tasks"][task_id] for task_id in ids
+                 if isinstance(r["tasks"].get(task_id), dict)]
+        if not tasks:
             continue
-        tasks = [r["tasks"][task_id] for task_id in ids]
         kind_source = max(tasks, key=lambda t: (
             KIND_BASE.get(t.get("kind"), 0.0), _int(t.get("updated_round"), 0)))
         live = [t for t in tasks if t.get("status") in ("open", "active")]
-        # 生命周期与种类分开选：种类取最强信号，进度取仍可执行/待验证的那条
+        # 生命周期与种类分开选：种类取最强信号，进度取仍可执行的那条
         carrier = max(live, key=lambda t: (
             t.get("status") == "active", _int(t.get("updated_round"), 0),
             float(t.get("priority") or 0.0))) if live else None
         primary = carrier or kind_source
-        history_imported = 0
-        history_dropped = 0
+        final_kind = kind_source.get("kind")
+        carrier_changes = (carrier is not None
+                           and primary.get("kind") != final_kind)
+        old_kind = primary.get("kind")
+        old_rewrites = _int(primary.get("rewrites"), 0)
+        status_before = primary.get("status")
+        own_history = sum(1 for x in (primary.get("attempt_history") or [])
+                          if isinstance(x, dict))
+        own_kind_history = sum(1 for x in (primary.get("kind_history") or [])
+                               if isinstance(x, dict))
+        # 先确定最终种类，再按来源任务种类收集必须作废的计划查询：
+        # 载体换种类时它自己的计划查询都属于旧种类；其它任务只有种类不同才作废。
+        old_planned = []
         for task in tasks:
-            if task is not primary:
-                imported, dropped = _merge_relation_task(primary, task)
-                history_imported += imported
-                history_dropped += dropped
-        if primary is not kind_source:
-            previous_kind = primary.get("kind")
-            if previous_kind != kind_source.get("kind"):
-                history = primary.setdefault("kind_history", [])
-                history.append({
-                    "round": st.get("rounds", 0),
-                    "from": previous_kind,
-                    "to": kind_source.get("kind"),
-                    "from_priority": primary.get("priority"),
-                    "to_priority": kind_source.get("priority"),
-                    "reason": "迁移合并：同一关系采用更强信号的任务种类",
-                    "archived_attempts": len(kind_source.get("attempts") or []),
-                    "archived_rewrites": kind_source.get("rewrites", 0),
-                    "cancelled_queries": [],
-                    "previous_question": primary.get("question"),
-                    "previous_reason": primary.get("reason"),
-                    "previous_target": primary.get("target"),
+            if task is primary:
+                if carrier_changes:
+                    old_planned.extend(_planned_query_ids(r, task))
+                continue
+            if task.get("kind") != final_kind:
+                old_planned.extend(_planned_query_ids(r, task))
+        old_planned = list(dict.fromkeys(old_planned))
+        archived = 0
+        archived_attempts = 0
+        archived_rows = 0
+        dropped = 0
+        if carrier_changes:
+            archived_attempts = len(primary.get("attempts") or [])
+            archived_rows = archived_attempts
+            if archived_attempts:
+                history_rows = [dict(x) for x in
+                                (primary.get("attempt_history") or [])
+                                if isinstance(x, dict)]
+                history_rows.append({
+                    "kind": old_kind,
+                    "round": _int(primary.get("updated_round"), 0),
+                    "attempts": list(primary.get("attempts") or []),
+                    "rewrites": old_rewrites,
+                    "result_count": _int(primary.get("result_count"), 0),
                 })
-                del history[:-HISTORY_KEEP]
-            primary["kind"] = kind_source.get("kind")
+                kept, dropped = _bounded_history(history_rows)
+                primary["attempt_history"] = kept
+                archived = 1
+            primary["attempts"] = []
+            primary["rewrites"] = 0
+        imported = 0
+        kind_imported = 0
+        for task in tasks:
+            if task is primary:
+                continue
+            kind_imported += sum(1 for x in (task.get("kind_history") or [])
+                                 if isinstance(x, dict))
+            archived_rows += len(task.get("attempts") or [])
+            imp, arc, drop = _merge_relation_task(primary, task)
+            imported += imp
+            archived += arc
+            dropped += drop
+        cancelled = _cancel_planned_queries(r, old_planned)
+        kind_changed = primary.get("kind") != final_kind
+        kind_added = 0
+        if kind_changed:
+            _record_kind_history(primary, {
+                "round": st.get("rounds", 0),
+                "from": old_kind,
+                "to": final_kind,
+                "from_priority": primary.get("priority"),
+                "to_priority": kind_source.get("priority"),
+                "reason": "迁移合并：同一关系采用更强信号的任务种类",
+                "archived_attempts": archived_attempts,
+                "archived_rewrites": old_rewrites,
+                "cancelled_queries": cancelled,
+                "previous_question": primary.get("question"),
+                "previous_reason": primary.get("reason"),
+                "previous_target": primary.get("target"),
+            })
+            kind_added += 1
+            primary["kind"] = final_kind
             primary["kind_label"] = (kind_source.get("kind_label")
-                                     or KIND_LABELS.get(kind_source.get("kind"),
-                                                        kind_source.get("kind")))
+                                     or KIND_LABELS.get(final_kind, final_kind))
             primary["question"] = kind_source.get("question")
             primary["reason"] = kind_source.get("reason")
             primary["target"] = kind_source.get("target")
-        has_materials = (primary.get("result_count", 0) > 0
-                         or bool(primary.get("source_ids"))
-                         or primary.get("verification") == "pending_verification")
+        elif cancelled:
+            if _record_merged_query_cancellation(primary, cancelled, st):
+                kind_added += 1
+        has_materials = _has_materials(primary)
         if carrier is not None:
             primary["status"] = carrier.get("status")
         else:
@@ -367,41 +586,165 @@ def _migrate_legacy_state(st, r):
             for entry in r.get("sources") or []:
                 if isinstance(entry, dict) and entry.get("task_id") == old_id:
                     entry["task_id"] = new_id
-        _log(st, "task_id_migrated", old_ids=old_ids, new_id=new_id,
-             relation=(primary.get("target") or {}).get("relation"),
-             kind=primary.get("kind"), merged=len(ids) > 1,
-             query_ids=len(primary.get("query_ids") or []),
-             source_ids=len(primary.get("source_ids") or []),
-             attempt_history_imported=history_imported,
-             attempt_history_dropped=history_dropped)
-        if history_dropped:
-            _log(st, "attempt_history_truncated", task_id=new_id,
-                 dropped=history_dropped, keep=HISTORY_KEEP)
+        final_history, extra_dropped = _bounded_history(
+            primary.get("attempt_history") or [])
+        if final_history or "attempt_history" in primary:
+            primary["attempt_history"] = final_history
+        dropped += extra_dropped
+        kept = len(final_history)
+        # kind_history 也按轮次有界保留；旧状态可能带着未截断的长历史进入迁移
+        final_kinds, extra_kind_dropped = _bounded_history(
+            primary.get("kind_history") or [])
+        if final_kinds or "kind_history" in primary:
+            primary["kind_history"] = final_kinds
+        kind_kept = len(final_kinds)
+        kind_dropped = max(0, own_kind_history + kind_imported
+                           + kind_added - kind_kept)
+        status_changed = primary.get("status") != status_before
+        if (old_ids or kind_changed or cancelled or imported or archived
+                or dropped or kind_dropped or status_changed):
+            _log(st, "task_id_migrated", old_ids=old_ids, new_id=new_id,
+                 relation=(primary.get("target") or {}).get("relation"),
+                 kind=primary.get("kind"), merged=len(ids) > 1,
+                 kind_changed=kind_changed, cancelled_queries=cancelled,
+                 query_ids=len(primary.get("query_ids") or []),
+                 source_ids=len(primary.get("source_ids") or []),
+                 attempt_history_own=own_history,
+                 attempt_history_imported=imported,
+                 attempts_archived=archived,
+                 attempt_rows_archived=archived_rows,
+                 attempt_history_kept=kept,
+                 attempt_history_dropped=dropped,
+                 kind_history_own=own_kind_history,
+                 kind_history_imported=kind_imported,
+                 kind_history_added=kind_added,
+                 kind_history_kept=kind_kept,
+                 kind_history_dropped=kind_dropped)
+            if dropped:
+                _log(st, "attempt_history_truncated", task_id=new_id,
+                     dropped=dropped, keep=HISTORY_KEEP)
+            if kind_dropped:
+                _log(st, "kind_history_truncated", task_id=new_id,
+                     dropped=kind_dropped, keep=HISTORY_KEEP)
+            processed += 1
+    return processed
 
 
-def _prediction_candidates(st):
-    out = []
-    preds = st.get("edge_preds") or []
-    for p in reversed(preds[-60:]):
+def _migrate_legacy_state(st, r):
+    """1/2 状态 → 3：ID 归一、来源字段更名、迁移升级语义与 v2 审计修复。
+
+    查询与来源索引中的 task_id 同步改写；历史 JSONL 不重写（append-only）。
+    """
+    from_version = _int(r.get("schema_version"), 1)
+    renamed = 0
+    for entry in r.get("sources") or []:
+        if not isinstance(entry, dict):
+            continue
+        legacy = entry.pop("content_sha256", None)
+        if legacy is not None:
+            renamed += 1
+            if not entry.get("title_excerpt_sha256"):
+                entry["title_excerpt_sha256"] = legacy
+    if renamed:
+        _log(st, "source_fields_migrated", count=renamed,
+             field="title_excerpt_sha256")
+    repaired, unrecoverable = _repair_prior_kind_transitions(st, r)
+    processed = _normalize_relation_tasks(st, r)
+    _log(st, "research_schema_migrated", from_version=from_version,
+         to_version=RESEARCH_SCHEMA_VERSION, tasks_repaired=repaired,
+         tasks_unrecoverable=unrecoverable,
+         relation_groups_updated=processed, source_fields_renamed=renamed)
+
+
+def _update_miss_backlog(st, r):
+    """把扫描窗口内的落空预测补录到状态里；窗口淘汰后仍能进入候选。"""
+    backlog = r.setdefault("miss_backlog", {})
+    added = 0
+    preds = (st.get("edge_preds") or [])[-config.RESEARCH_SCAN_LIMIT:]
+    for p in preds:
         if not isinstance(p, dict) or p.get("status") != "miss":
             continue
         a, b = p.get("a"), p.get("b")
         if not a or not b:
             continue
-        rel = "|".join(sorted([a, b]))
-        target = {"type": "relation", "relation": rel, "concepts": [a, b],
-                  "origin": "prediction_miss", "prediction_round": p.get("round"),
-                  "settled_round": p.get("settled_round")}
+        key = "|".join(sorted([str(a), str(b)]))
+        if key in backlog:
+            continue
+        backlog[key] = {
+            "relation": key,
+            "concepts": [a, b],
+            "round": p.get("round"),
+            "settled_round": p.get("settled_round"),
+            "recorded_round": st.get("rounds", 0),
+        }
+        added += 1
+    if added:
+        _log(st, "miss_backlog_recorded", count=added)
+    excess = len(backlog) - config.RESEARCH_MISS_BACKLOG
+    if excess > 0:
+        ordered = sorted(
+            backlog.items(),
+            key=lambda kv: (_int(kv[1].get("settled_round"), 0),
+                            _int(kv[1].get("round"), 0)))
+        removed = [key for key, _ in ordered[:excess]]
+        for key in removed:
+            backlog.pop(key, None)
+        _log(st, "miss_backlog_evicted", count=len(removed),
+             relations=removed[:20])
+
+
+def _consume_miss_backlog(r):
+    """落空信号已被 prediction_miss 任务吸收后移出补录，避免永久占位。"""
+    backlog = r.get("miss_backlog")
+    if not isinstance(backlog, dict):
+        return
+    for key in list(backlog):
+        task_id = _stable_id("RT", _task_key(
+            "prediction_miss", {"type": "relation", "relation": key}))
+        task = r["tasks"].get(task_id)
+        if task and task.get("kind") == "prediction_miss":
+            backlog.pop(key, None)
+
+
+def _prediction_candidates(st):
+    out = []
+    r = st.get("research") if isinstance(st.get("research"), dict) else {}
+    entries = {}
+    backlog = r.get("miss_backlog")
+    if isinstance(backlog, dict):
+        for key, item in backlog.items():
+            if (isinstance(item, dict)
+                    and isinstance(item.get("concepts"), list)
+                    and len(item["concepts"]) >= 2):
+                entries[key] = item
+    # 最近窗口内的落空优先用于候选；更早的由 miss_backlog 补齐
+    for p in (st.get("edge_preds") or [])[-60:]:
+        if not isinstance(p, dict) or p.get("status") != "miss":
+            continue
+        a, b = p.get("a"), p.get("b")
+        if not a or not b:
+            continue
+        key = "|".join(sorted([str(a), str(b)]))
+        entries[key] = {
+            "relation": key, "concepts": [a, b], "round": p.get("round"),
+            "settled_round": p.get("settled_round"),
+        }
+    for key, item in sorted(
+            entries.items(),
+            key=lambda kv: -_int(kv[1].get("settled_round"), 0)):
+        a, b = item["concepts"][:2]
+        target = {"type": "relation", "relation": key, "concepts": [a, b],
+                  "origin": "prediction_miss",
+                  "prediction_round": item.get("round"),
+                  "settled_round": item.get("settled_round")}
         out.append({
             "kind": "prediction_miss",
             "target": target,
             "question": f"《{a}》和《{b}》之间缺少什么中间概念或条件？为什么它们从未同现？",
-            "reason": (f"预测落空：第 {p.get('round')} 轮下注《{a}》↔《{b}》，"
-                       f"第 {p.get('settled_round')} 轮结算时从未同现。"),
+            "reason": (f"预测落空：第 {item.get('round')} 轮下注《{a}》↔《{b}》，"
+                       f"第 {item.get('settled_round')} 轮结算时从未同现。"),
             "priority": _priority(st, "prediction_miss", [a, b]),
         })
-        if len(out) >= 8:
-            break
     return out
 
 
@@ -432,8 +775,6 @@ def _claim_candidates(st):
                        f"（当前状态：{claim.get('status') or 'hypothesis'}）。"),
             "priority": _priority(st, "claim_evidence_gap", terms),
         })
-        if len(out) >= 12:
-            break
     return out
 
 
@@ -465,8 +806,6 @@ def _relation_candidates(st):
             "priority": _priority(st, "relation_unverified", [a, b],
                                   0.03 if rel_type else 0.0),
         })
-        if len(out) >= 10:
-            break
     return out
 
 
@@ -495,20 +834,81 @@ def _isolated_candidates(st):
             "reason": f"概念孤立：已晋升（出现 {n} 次）但没有任何关系边，无法参与推理。",
             "priority": _priority(st, "isolated_concept", [name]),
         })
-        if len(out) >= 8:
-            break
     return out
 
 
 def _task_candidates(st):
+    # 不在生成阶段按种类截断：旧任务不能永久占用“新候选”额度；
+    # 新建由优先级 + 每轮预算约束，扫描范围仍受 RESEARCH_SCAN_LIMIT 限制。
     return (_prediction_candidates(st) + _claim_candidates(st)
             + _relation_candidates(st) + _isolated_candidates(st))
 
 
+def _archive_task(st, r, task, reason):
+    """容量归档：保留待验证材料所需的任务快照，查询/来源关联可恢复。"""
+    source_ids = set(task.get("source_ids") or [])
+    entry = {
+        "id": task.get("id"),
+        "kind": task.get("kind"),
+        "kind_label": task.get("kind_label"),
+        "question": task.get("question"),
+        "reason": task.get("reason"),
+        "target": task.get("target"),
+        "priority": task.get("priority"),
+        "status": task.get("status"),
+        "verification": task.get("verification"),
+        "created_round": task.get("created_round"),
+        "updated_round": task.get("updated_round"),
+        "last_seen_round": task.get("last_seen_round"),
+        "attempts": list(task.get("attempts") or []),
+        "attempt_history": list(task.get("attempt_history") or []),
+        "kind_history": list(task.get("kind_history") or []),
+        "query_ids": list(task.get("query_ids") or []),
+        "source_ids": list(task.get("source_ids") or []),
+        "result_count": task.get("result_count", 0),
+        "rewrites": task.get("rewrites", 0),
+        "config_sha256": task.get("config_sha256"),
+        "archived_at": _now(),
+        "archived_round": st.get("rounds", 0),
+        "archive_reason": reason,
+        # 即使查询/来源索引日后被容量淘汰，归档仍能还原关联
+        "queries": [
+            {"id": q.get("id"), "purpose": q.get("purpose"),
+             "text": q.get("text"), "status": q.get("status"),
+             "result_count": q.get("result_count", 0)}
+            for qid in task.get("query_ids") or []
+            for q in [r["queries"].get(qid)] if isinstance(q, dict)
+        ],
+        "sources": [
+            {"id": s.get("id"), "url": s.get("url"), "title": s.get("title"),
+             "task_id": s.get("task_id"), "query_id": s.get("query_id"),
+             "verification": s.get("verification")}
+            for s in (r.get("sources") or [])
+            if isinstance(s, dict) and s.get("id") in source_ids
+        ],
+    }
+    archive = r.setdefault("archived_tasks", [])
+    archive.append(entry)
+    excess = len(archive) - config.RESEARCH_ARCHIVE_KEEP
+    if excess > 0:
+        del archive[:-config.RESEARCH_ARCHIVE_KEEP]
+        _log(st, "task_archive_evicted", count=excess,
+             keep=config.RESEARCH_ARCHIVE_KEEP)
+    r["stats"]["tasks_archived"] = r["stats"].get("tasks_archived", 0) + 1
+    _log(st, "task_archived", task_id=task.get("id"),
+         status=task.get("status"), reason=reason, archived=True,
+         kind=task.get("kind"), verification=task.get("verification"),
+         query_ids=entry["query_ids"], source_ids=entry["source_ids"])
+
+
 def _drop_task(st, r, task, reason):
+    if _has_materials(task):
+        _archive_task(st, r, task, reason)
+    else:
+        _log(st, "task_archived", task_id=task.get("id"),
+             status=task.get("status"), reason=reason, archived=False,
+             source_ids=list(task.get("source_ids") or [])[:20])
     r["tasks"].pop(task.get("id"), None)
-    _log(st, "task_archived", task_id=task.get("id"), status=task.get("status"),
-         reason=reason, source_ids=list(task.get("source_ids") or [])[:20])
 
 
 def _prune_tasks(st, r):
@@ -530,6 +930,7 @@ def _prune_tasks(st, r):
             break
         _drop_task(st, r, task, "closed_cap")
     if len(tasks) > config.RESEARCH_TASK_KEEP:
+        # 待验证材料不直接丢弃：_drop_task 会写入 archived_tasks（含查询/来源快照）
         old_material = sorted(
             [t for t in tasks.values() if t.get("status") == "materials_found"],
             key=lambda t: t.get("updated_round", 0))
@@ -610,8 +1011,10 @@ def _upgrade_task(st, r, task, candidate):
         "rewrites": task.get("rewrites", 0),
     }
     archived = list(task.get("attempts") or [])
+    history_dropped = 0
     if archived:
-        history = task.setdefault("attempt_history", [])
+        history = [dict(x) for x in (task.get("attempt_history") or [])
+                   if isinstance(x, dict)]
         history.append({
             "kind": old["kind"],
             "round": task.get("updated_round", 0),
@@ -619,14 +1022,9 @@ def _upgrade_task(st, r, task, candidate):
             "rewrites": old["rewrites"],
             "result_count": task.get("result_count", 0),
         })
-        del history[:-HISTORY_KEEP]
-    cancelled = []
-    for qid in task.get("query_ids") or []:
-        q = r["queries"].get(qid)
-        if q and q.get("status") == "planned":
-            q["status"] = "cancelled"
-            q["failure"] = "superseded"
-            cancelled.append(qid)
+        kept, history_dropped = _bounded_history(history)
+        task["attempt_history"] = kept
+    cancelled = _cancel_planned_queries(r, task.get("query_ids") or [])
     task["kind"] = candidate["kind"]
     task["kind_label"] = KIND_LABELS.get(candidate["kind"], candidate["kind"])
     task["question"] = candidate["question"]
@@ -637,10 +1035,9 @@ def _upgrade_task(st, r, task, candidate):
     task["attempts"] = []
     task["rewrites"] = 0
     task["verification"] = ("pending_verification"
-                            if task.get("result_count", 0) > 0 else "unverified")
+                            if _has_materials(task) else "unverified")
     task["updated_round"] = st.get("rounds", 0)
-    history = task.setdefault("kind_history", [])
-    history.append({
+    kind_dropped = _record_kind_history(task, {
         "round": st.get("rounds", 0),
         "from": old["kind"],
         "to": candidate["kind"],
@@ -654,7 +1051,12 @@ def _upgrade_task(st, r, task, candidate):
         "previous_reason": old["reason"],
         "previous_target": old["target"],
     })
-    del history[:-HISTORY_KEEP]
+    if history_dropped:
+        _log(st, "attempt_history_truncated", task_id=task["id"],
+             dropped=history_dropped, keep=HISTORY_KEEP)
+    if kind_dropped:
+        _log(st, "kind_history_truncated", task_id=task["id"],
+             dropped=kind_dropped, keep=HISTORY_KEEP)
     _log(st, "task_upgraded", task_id=task["id"],
          from_kind=old["kind"], to_kind=candidate["kind"],
          from_priority=old["priority"], to_priority=candidate["priority"],
@@ -687,6 +1089,7 @@ def ensure_tasks(st):
     """从本地状态刷新研究任务；不产生网络/教师/LLM 调用。"""
     r = ensure_state(st)
     record_config(st)
+    _update_miss_backlog(st, r)
     _prune_tasks(st, r)
     tasks = r["tasks"]
 
@@ -703,6 +1106,7 @@ def ensure_tasks(st):
                         log_blocked=not creation_blocked) is None:
             creation_blocked = True
     _prune_tasks(st, r)
+    _consume_miss_backlog(r)
     return tasks
 
 
@@ -853,11 +1257,18 @@ def _create_query(st, r, task, purpose, text, selection_reason,
 
 
 def _task_query_normalized(task, r):
+    """只把真正执行过的查询计入“已用文本”。
+
+    已作废/仍待执行的查询不占用文本额度，否则升级后的新种类无法复用同一问题。
+    """
     out = set()
     for qid in task.get("query_ids") or []:
-        q = r["queries"].get(qid)
-        if q and q.get("normalized"):
-            out.add(q["normalized"])
+        query = r["queries"].get(qid)
+        if not query or not query.get("normalized"):
+            continue
+        if query.get("status") not in EXECUTED_QUERY_STATUSES:
+            continue
+        out.add(query["normalized"])
     return out
 
 
@@ -951,7 +1362,7 @@ def _plan_rewrite(st, r, task, original, failure_kind):
 def _finalize(st, task):
     if task.get("status") in CLOSED or task.get("status") == "materials_found":
         return task.get("status")
-    status = "materials_found" if task.get("result_count", 0) > 0 else "exhausted"
+    status = "materials_found" if _has_materials(task) else "exhausted"
     task["status"] = status
     task["updated_round"] = st.get("rounds", 0)
     if status == "materials_found":
@@ -1004,13 +1415,18 @@ def next_query(st, fallback_topic=None):
 def _record_sources(st, r, task, query, results, serp_url, serp_sha256, fetched_at):
     ids = []
     seen_urls = set()
+    rejected = 0
     index = r.setdefault("sources", [])
     by_id = {s.get("id"): s for s in index if isinstance(s, dict)}
     for item in results:
         if not isinstance(item, dict):
+            rejected += 1
             continue
         url = str(item.get("url") or "").strip()
-        if not url or url in seen_urls:
+        if not is_valid_source_url(url):
+            rejected += 1
+            continue
+        if url in seen_urls:
             continue
         seen_urls.add(url)
         title = str(item.get("title") or "")[:160]
@@ -1058,6 +1474,12 @@ def _record_sources(st, r, task, query, results, serp_url, serp_sha256, fetched_
             }
             index.append(entry)
             by_id[sid] = entry
+    if rejected:
+        r["stats"]["source_candidates_rejected"] = (
+            r["stats"].get("source_candidates_rejected", 0) + rejected)
+        _log(st, "source_candidates_rejected", task_id=task["id"],
+             query_id=query["id"], count=rejected,
+             reason="url_missing_relative_or_non_http")
     del index[:-config.RESEARCH_SOURCE_KEEP]
     query["sources"] = list(dict.fromkeys((query.get("sources") or []) + ids))
     task["source_ids"] = list(dict.fromkeys((task.get("source_ids") or []) + ids))[-50:]
@@ -1071,7 +1493,11 @@ def _record_sources(st, r, task, query, results, serp_url, serp_sha256, fetched_
 
 def record_execution(st, query, ok, results=None, failure_kind=None, detail="",
                      serp_url=None, serp_sha256=None, fetched_at=None):
-    """执行结果入账：成功只登记候选材料，不写 claims/证据，不晋升任何知识。"""
+    """执行结果入账：成功只登记候选材料，不写 claims/证据，不晋升任何知识。
+
+    成功与否以“实际写入来源账本的有效来源数”为准：空 URL、相对链接、非
+    HTTP(S) 协议都不算材料，不能把任务推进到 pending_verification。
+    """
     r = ensure_state(st)
     qid = (query or {}).get("id")
     q = r["queries"].get(qid)
@@ -1081,14 +1507,16 @@ def record_execution(st, query, ok, results=None, failure_kind=None, detail="",
     if task is None:
         return None
     results = list(results or [])
-    ok = bool(ok and results)
+    fetched_at = fetched_at or _now()
+    ids = _record_sources(st, r, task, q, results, serp_url, serp_sha256,
+                          fetched_at) if ok else []
+    ok = bool(ids)
     if ok:
         failure_kind = None
     elif not failure_kind:
-        failure_kind = "no_results" if not results else "unknown"
-    fetched_at = fetched_at or _now()
+        failure_kind = "no_results" if not results else "invalid_results"
     q["used_round"] = st.get("rounds", 0)
-    q["result_count"] = len(results)
+    q["result_count"] = len(ids)
     q["serp_url"] = serp_url
     q["serp_sha256"] = serp_sha256
     q["fetched_at"] = fetched_at
@@ -1096,8 +1524,7 @@ def record_execution(st, query, ok, results=None, failure_kind=None, detail="",
     if ok:
         q["status"] = "used"
         q["failure"] = None
-        _record_sources(st, r, task, q, results, serp_url, serp_sha256, fetched_at)
-        task["result_count"] = int(task.get("result_count", 0)) + len(results)
+        task["result_count"] = int(task.get("result_count", 0)) + len(ids)
         task["verification"] = "pending_verification"
     else:
         q["status"] = "failed"
@@ -1112,7 +1539,7 @@ def record_execution(st, query, ok, results=None, failure_kind=None, detail="",
         "normalized": q.get("normalized") or normalize_query(q.get("text")),
         "round": st.get("rounds", 0),
         "outcome": q["status"],
-        "result_count": len(results),
+        "result_count": len(ids),
         "failure": q.get("failure"),
     })
     del recent[:-config.RESEARCH_QUERY_HISTORY]
@@ -1121,7 +1548,7 @@ def record_execution(st, query, ok, results=None, failure_kind=None, detail="",
         "query_id": qid,
         "purpose": q.get("purpose"),
         "outcome": q["status"],
-        "result_count": len(results),
+        "result_count": len(ids),
         "failure": q.get("failure"),
     })
     task["updated_round"] = st.get("rounds", 0)
@@ -1139,10 +1566,21 @@ def record_execution(st, query, ok, results=None, failure_kind=None, detail="",
                      strategy="下一次改用不同目的查询，不重复同一文本")
     _log(st, "query_result", query_id=qid, task_id=task["id"],
          purpose=q.get("purpose"), text=q.get("text"), ok=ok,
-         result_count=len(results), failure=q.get("failure"),
+         result_count=len(ids), failure=q.get("failure"),
          task_status=status or task.get("status"),
          serp_url=serp_url, serp_sha256=serp_sha256)
     return q
+
+
+def archived_pending(st, limit=20):
+    """只读：被容量归档的待验证任务；含查询/来源快照，Phase 3 可继续消费。"""
+    r = st.get("research")
+    if not isinstance(r, dict) or not isinstance(r.get("archived_tasks"), list):
+        return []
+    items = [t for t in r["archived_tasks"]
+             if isinstance(t, dict) and _has_materials(t)]
+    items.sort(key=lambda t: -_int(t.get("updated_round"), 0))
+    return items[:limit]
 
 
 def focus(st, limit=3):
@@ -1167,6 +1605,21 @@ def focus(st, limit=3):
             "status": task.get("status"),
             "verification": task.get("verification"),
             "result_count": task.get("result_count", 0),
+            "archived": False,
+        })
+    for task in archived_pending(st, limit=limit):
+        if len(out) >= limit:
+            break
+        out.append({
+            "id": task.get("id"),
+            "kind": task.get("kind"),
+            "question": task.get("question"),
+            "reason": task.get("archive_reason") or "容量归档（待验证材料保留）",
+            "priority": task.get("priority"),
+            "status": task.get("status"),
+            "verification": task.get("verification"),
+            "result_count": task.get("result_count", 0),
+            "archived": True,
         })
     return out
 
@@ -1179,6 +1632,9 @@ def summary(st):
         "status_counts": dict(counts),
         "queries": len(r["queries"]),
         "sources": len(r["sources"]),
+        "archived_tasks": len(r.get("archived_tasks") or []),
+        "miss_backlog": len(r.get("miss_backlog") or {}),
+        "schema_version": r.get("schema_version"),
         "config_sha256": r.get("config_sha256"),
         "stats": dict(r.get("stats") or {}),
         "focus": focus(st),

@@ -1,7 +1,7 @@
 # Phase 2：研究任务队列与定向搜索规划
 
-状态：**已实现第一小步并完成三轮审查修正及历史保留补丁，等待 owner 最后短复审。** 阶段 3
-（自主验证闭环）、统一验证器、留出评估与策略优化均未启动。
+状态：**已实现第一小步，完成三轮审查修正、历史保留补丁与全链路审计补丁，等待 owner
+最后短复审。** 阶段 3（自主验证闭环）、统一验证器、留出评估与策略优化均未启动。
 
 ## 1. 这一阶段解决什么
 
@@ -33,7 +33,7 @@
 | `selfdrive/skills.py` | `do_web_search` 消费研究查询；SERP 解析、主机回退、Bing 跳转链还原 |
 | `selfdrive/decision.py` | 有开放研究任务时轻微抬升 `web_search` 权重；搜索禁用/冷却仍优先 |
 | `selfdrive/working_memory.py` | 工作记忆暴露只读 `research_focus`（最多 3 条） |
-| `selfdrive/__init__.py` | 版本 `9.24.4` |
+| `selfdrive/__init__.py` | 版本 `9.24.5` |
 
 ## 3. 任务结构
 
@@ -72,26 +72,42 @@
 - 上限：开放/活跃任务 24，总任务 80，每轮最多新建 3 个；所有创建入口
   （含探索回退）共用 `_create_task` 的同一组硬上限，拒绝时写
   `task_creation_blocked`。超出按优先级与时间修剪。
-- **预算只约束新建**：新建被拒后候选扫描继续，后面的既有任务仍可执行
-  `_refresh_task()` / 原地升级；不会因为本轮额度用尽而跳过更高价值信号。
-- **旧状态迁移**：`state.research.schema_version` 低于 2 时，`ensure_state()`
-  执行一次显式迁移——把阶段 2.0 含 `kind` 的关系任务 ID 归一到关系键
-  （`relation|A|B`），同步改写查询与来源索引里的 `task_id`，并把旧来源索引的
-  `content_sha256` 更名为 `title_excerpt_sha256`。若同一关系同时存在新旧任务，
-  合并为一条：任务种类取**最强信号**，生命周期取**仍可执行的那条**——
-  有 `open`/`active` 任务时以它为准（`active` 优先，其次更新时间与优先级）；
-  没有活跃任务但有候选材料时落为 `materials_found` 并标
-  `pending_verification`；只有全部任务都已闭合时才保留
-  `blocked`/`exhausted`/`abandoned` 的终止态。其他任务的当前尝试与已有
-  `attempt_history` 一并迁入，按轮次排序后只保留最近 `HISTORY_KEEP=5` 条；
-  超出时写 `attempt_history_truncated`（含 `dropped` 与 `keep`），
-  `task_id_migrated` 同时记录 `attempt_history_imported`/`_dropped`。
-  `kind_history` 记录种类切换，`query_ids`/`source_ids` 合并保留。迁移写
-  `task_id_migrated` / `source_fields_migrated`；历史 JSONL 不重写。
-  因此阶段 2.0 的实验状态可以继续使用，不需要伪装成“从零”状态；
-  合并后的可执行任务仍在 `_viable_tasks()` 中，待验证材料仍能被
-  `focus()`/阶段 3 验证入口发现。选择迁移而非强制重建：旧候选材料可继续被
-  阶段 3 消费；若要做全新基线，仍应新建 `from_zero` 目录，二者不得混用。
+- **候选不再按种类限额**：`prediction_miss`/`claim_evidence_gap`/
+  `relation_unverified`/`isolated_concept` 全部参与候选扫描，由优先级与
+  `RESEARCH_NEW_PER_ROUND=3` 的新建预算控制；既有任务无论本轮新建额度是否
+  耗尽，都继续执行 `_refresh_task()` / 原地升级，不会永久占死“新候选”配额。
+- **预测落空补录**：任务扫描覆盖 `edge_preds[-300:]`，落空信号另存
+  `miss_backlog`（上限 120），按概念对去重；即使原信号已滑出候选使用的
+  `edge_preds[-60:]` 窗口，仍可补建 `prediction_miss` 任务。已有该任务时
+  自动消费对应 backlog 项。超出上限写 `miss_backlog_evicted`。
+- **旧状态迁移（schema 3）**：`state.research.schema_version` 低于 3 时，
+  `ensure_state()` 执行显式迁移。v1→v2 继续完成阶段 2.0 关系任务 ID 归一、
+  查询/来源 `task_id` 同步、`content_sha256`→`title_excerpt_sha256`；v2→v3
+  处理升级语义与旧计划查询。所有修复只依据可审计证据：`kind_history` 的
+  迁移轮次、查询的 `created_round`/状态、任务当前 `attempts`。缺失迁移记录
+  或轮次非法时不做猜测，写 `task_migration_unrecoverable` 并说明原因。
+  迁移可重复执行，第二次不再产生变更。
+- **合并语义与正常升级一致**：先确定最终种类（最强信号），再选择生命周期
+  载体。载体种类发生变化时，其当前尝试归档、`attempts`/`rewrites` 重置；
+  `planned` 且种类不同的来源查询全部标记 `cancelled` + `failure=superseded`，
+  查询 ID 写入 `kind_history`；同种类查询、已执行查询、`query_ids`/
+  `source_ids`、候选材料与 `pending_verification` 均保留。生命周期仍按
+  “有活跃任务取活跃；否则有材料取 `materials_found`；仅全部闭合才保留终止态”
+  合并，合并后的可执行任务仍在 `_viable_tasks()` 中。
+- **历史保留**：`attempt_history` 与 `kind_history` 都按 `round` 排序，只保留
+  最近 `HISTORY_KEEP=5` 条。`task_id_migrated` 分别记录双方历史条数、归档的
+  当前尝试条数与归档行数、最终保留/丢弃条数；`attempt_history_truncated` /
+  `kind_history_truncated` 记录截断数，保证
+  “原有 + 导入 + 归档 = 保留 + 丢弃”可对账。
+- **待验证材料不静默删除**：任务超出总上限时，有材料的任务写入
+  `archived_tasks`（上限 `RESEARCH_ARCHIVE_KEEP=40`），快照包含目标、种类、
+  查询/来源快照、验证状态、尝试与历史、归档轮次与原因；`archived_pending()`
+  与 `focus()` 可继续发现这些任务。归档超出上限写 `task_archive_evicted`，
+  不含材料的任务才直接丢弃。
+- 迁移写 `task_id_migrated` / `source_fields_migrated` /
+  `research_schema_migrated`；历史 JSONL 不重写。阶段 2.0 的实验状态可以继续
+  使用，不需要伪装成“从零”状态；若要做全新基线，仍应新建 `from_zero`
+  目录，二者不得混用。
 
 ## 4. 任务来源
 
@@ -143,10 +159,14 @@ question/reason/priority/target。
 `do_web_search(st)` 现在是研究任务的消费者：
 
 1. `research.next_query(st, fallback_topic=...)` 取查询；
-2. 请求 Bing；`cn.bing.com` 传输失败或返回非结果页时回退 `www.bing.com`；
+2. 依次尝试 `cn.bing.com` 与 `www.bing.com`；单台主机明确返回“无结果”不会
+   终止另一台，只有两台都没有结果才按失败结算；
 3. 解析 `b_algo` 结果；Bing 的 `/ck/a?...u=a1<base64>` 跳转链还原为真实 URL；
+   解析阶段即丢弃空 href、相对路径、非 HTTP(S) URL，并去重；
 4. 成功时写 `workspace/web/web-*.md`（含任务 ID、查询 ID/目的、`unverified` 标记）；
-5. 通过 `research.record_execution` 入账。
+5. 通过 `research.record_execution` 入账；入账时再次校验 URL，只把实际写入
+   来源账本的 ID 计入成功。没有任何有效来源时不写 `materials_found`：
+   空结果记 `no_results`，只有无效链接记 `invalid_results`。
 
 来源记录同时写两处：
 
@@ -170,12 +190,20 @@ question/reason/priority/target。
 `source_type=web_runtime`、`verification=unverified` 是硬编码值。阶段 2 不写
 `claims.add_evidence`，不更新 `laws`，不因“多个网页说法相似”晋升任何知识。
 
+**来源成功不变式**：`record_execution()` 的成功、`result_count`、`source_ids` 与
+`pending_verification` 只由“实际写入账本的有效来源 ID”决定，不使用
+`bool(ok and results)` 或原始结果条数。URL 为空、相对路径、协议不是 HTTP(S)、
+解析失败或重复的条目被拒绝并计入 `stats.source_candidates_rejected`；即使
+SERP 有若干条目但全部无效，查询也按 `invalid_results` 失败结算，任务不会被标成
+`materials_found`。
+
 ## 8. 配置指纹
 
 代码指纹只能覆盖 `.py` 文件，覆盖不到运行期配置。阶段 2 额外记录影响研究调度与
 搜索策略的参数快照：
 
-- 代码常量：任务/查询/尝试/改写/去重/历史上限，`RESEARCH_CONFIG_VERSION`；
+- 代码常量：任务/查询/尝试/改写/去重/历史/落空补录/归档上限，
+  `RESEARCH_CONFIG_VERSION=research-config-v3`；
 - `brain/ask_config.json` 的 `web_search`（enabled/top_k/cooldown_rounds）；
 - `ask_config.json` 的 `research` 段（若存在）。
 
@@ -206,8 +234,8 @@ py -m compileall -q selfdrive agent_v9.py tests
 py -m unittest discover -s tests
 ```
 
-- 全量：**142 项通过**（阶段 1.1 为 99 项，阶段 2/2.1 新增 43 项）。
-- `tests/test_research.py`：43 项，覆盖 owner 指定的固定案例：
+- 全量：**163 项通过**（阶段 1.1 为 99 项，阶段 2/2.1 新增 64 项）。
+- `tests/test_research.py`：64 项，覆盖 owner 指定的固定案例：
   - 同一研究目标生成 3 条目的不同的具体查询；
   - 重复主题/相似查询被抑制并计数；
   - `no_results` 生成一次更宽改写；`network_error`/`serp_blocked` 换目的不改写；
@@ -224,35 +252,72 @@ py -m unittest discover -s tests
     `materials_found` + `pending_verification`，候选材料仍能被发现；
   - 被合并任务已有的 `attempt_history` 迁入主任务，当前尝试、查询/来源与
     生命周期状态同时保留；
-  - `attempt_history` 按轮次有界保留最近 5 条，截断写
-    `attempt_history_truncated` 并记录迁入/丢弃数量；
+  - `attempt_history`/`kind_history` 按轮次有界保留最近 5 条（包括单个旧任务
+    自带的超长 `kind_history`），截断写日志，迁入/归档/保留/丢弃数量可对账；
+  - 四类候选在多轮中都能建任务，不被每轮新建预算永久饿死；预算耗尽后既有
+    任务仍可刷新/升级；`edge_preds` 窗口淘汰的落空由 `miss_backlog` 补建，
+    backlog 超限按上限淘汰；
+  - 真正的 v2 状态（归一化 ID、`schema_version=2`、旧种类 `planned` 查询）
+    迁移到 v3：按 `kind_history` 轮次归档旧尝试、取消旧计划查询、可重新规划
+    同文本新查询，重复迁移幂等；缺失/非法迁移记录写
+    `task_migration_unrecoverable`；
+  - 载体换种类时归档并重置尝试、取消不同种类的计划查询，保留已执行查询、
+    来源与生命周期；同种类计划查询不取消；多任务合并时最新历史保留且
+    双方计数对账；
+  - 来源解析与入账双重 URL 校验：缺失/相对/非 HTTP(S)/重复链接不成功，
+    仅有无效结果记为 `invalid_results`，不进入 `materials_found`；
+  - `cn.bing.com` 明确无结果时继续尝试 `www.bing.com`，后者有效则正常入账
+    且不触发改写；两台都失败分别按 `no_results`/`serp_blocked` 结算；
+  - `materials_found` 任务因容量被修剪时进入 `archived_tasks`，查询/来源
+    快照可恢复，`archived_pending()`/`focus()` 可发现；归档超限写淘汰日志；
   - `title_excerpt_sha256` 只覆盖标题+摘要，不再冒充网页正文哈希；
   - 任务上限、尝试上限、配置变更只记一次；
   - 无概念支撑的最近词（日记尾词/文件名）不能变成搜索查询；
   - 工作记忆只读、决策加权、Teacherless 零痕迹等集成行为。
 
-### 隔离冒烟 v8（`attempt_history` 迁移补丁后代码）
+### 隔离冒烟 v9（全链路审计补丁后代码）
 
-`runs/teacherless_smoke_20261026_v8/`（本地临时目录，不提交）：
+`runs/teacherless_smoke_20261026_v9/`（本地临时目录，不提交）：
 
-- `from_zero` 初始化，代码版本 `9.24.4`，代码指纹 `b252df486490`；
-- 3 轮（主动作 `self_talk` → `self_talk` → `tidy_notes`）；
+- `from_zero` 初始化，代码版本 `9.24.5`，代码指纹
+  `b6c924b5a808f532fd1a33baeae1b12076b15ce6ff60227d58c3d6c298f5ad76`；
+- 3 轮（主动作 `self_talk` → `tidy_notes` → `tidy_notes`；辅助动作依次出现
+  `reflect_memory`/`rest`/`self_talk`/`metacognition`/`consolidate_memory`/
+  `build_site`）；
   `status.clean=true`、`code_drift=false`、`seed_problems=[]`、
   `code_migrations=[]`、`violations={}`；
-- 8 项教师/LLM 痕迹全 0；`events.jsonl` 无框架级 error。第 2 轮辅助动作
+- 8 项教师/LLM 痕迹全 0；`events.jsonl` 无框架级 error。第 3 轮辅助动作
   `build_site` 在本机启动网站服务失败（`[WinError 2]`，缺少启动器），
   属环境限制，不影响 Teacherless 隔离与研究账本；
-- `state.research.schema_version=2`，任务/查询/来源均为 0，
+- `state.research.schema_version=3`，任务/查询/来源/归档/落空补录均为 0，
   `research.stats` 全 0，`research.jsonl` 只有 `config_recorded`
-  （`research-config-v2`）；
+  （`research-config-v3`）；
 - 3 轮后 0 概念、0 命题、0 关系、0 预测，没有满足任务生成条件的缺口——
   这是正确行为，不是失败。若强行搜索，只会得到无来源主题的随机词，
   正是阶段 2 要避免的。
 
-v6（`9.24.2`/`b3a2968d30fa`）与 v7（`9.24.3`/`8bc7366a1a23`）作为前两轮隔离
-证据保留在 `EXPERIMENT_LOG.md`。v8 只证明隔离边界未被本次历史迁移补丁破坏；
-它使用全新状态，不能验证旧状态迁移、历史合并与队列拥挤时序——这些由
-`tests/test_research.py` 的合成状态回归覆盖。
+v6（`9.24.2`/`b3a2968d30fa`）、v7（`9.24.3`/`8bc7366a1a23`）与
+v8（`9.24.4`/`b252df486490`）作为前几轮隔离证据保留在
+`EXPERIMENT_LOG.md`。v9 只证明全链路审计补丁没有破坏隔离边界；它使用全新
+状态，不能验证旧状态迁移、历史合并与队列拥挤时序——这些由
+`tests/test_research.py` 的合成状态回归和
+`runs/migration_check_20261026_v3/` 的 v1/v2 合成迁移验证覆盖。
+
+### 合成 v1/v2 迁移验证
+
+`runs/migration_check_20261026_v3/check.py`（独立脚本，只使用临时目录；
+不读取、不写入仓库根目录或火星实时 `state.json`）：
+
+- 最终代码指纹
+  `b6c924b5a808f532fd1a33baeae1b12076b15ce6ff60227d58c3d6c298f5ad76`；
+- `v1`：无 `schema_version` 的旧关系任务 → v3，ID 归一、查询/来源
+  `task_id` 重映射、`content_sha256` 改名；同种类 `planned` 查询与尝试保留；
+- `v2_repair`：归一化 ID、`schema_version=2`、两个尝试、旧种类计划查询 →
+  归档旧尝试、重置尝试/改写、取消旧查询并标 `superseded`、同文本可重新规划；
+  重复执行幂等；
+- `v2_carrier`：载体换种类 → 旧尝试归档、计划查询取消、已执行查询与来源保留、
+  新种类查询可规划，`task_id_migrated` 的归档/保留计数对账；
+- 三个案例均 `ok: true`，报告写入同目录 `report.json`（`runs/` 不提交）。
 
 ### 真实搜索链路验证
 

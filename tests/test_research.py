@@ -20,6 +20,28 @@ FAKE_HTML = """
 </body></html>
 """
 
+NO_RESULTS_HTML = "<html><body>没有与此相关的结果</body></html>"
+
+BAD_LINKS_HTML = """
+<html><body>
+<li class="b_algo"><h2><a href="">缺失链接</a></h2></li>
+<li class="b_algo"><h2><a href="/relative/page">相对路径</a></h2></li>
+<li class="b_algo"><h2><a href="javascript:alert(1)">脚本链接</a></h2></li>
+<li class="b_algo"><h2><a href="ftp://example.org/f">其它协议</a></h2></li>
+<li class="b_algo"><h2><a>没有href</a></h2></li>
+</body></html>
+"""
+
+MIXED_LINKS_HTML = """
+<html><body>
+<li class="b_algo"><h2><a href="https://example.org/valid">有效来源</a></h2>
+<p>有效摘要</p></li>
+<li class="b_algo"><h2><a href="/relative/page">相对路径</a></h2></li>
+<li class="b_algo"><h2><a href="javascript:alert(1)">脚本链接</a></h2></li>
+<li class="b_algo"><h2><a href="https://example.org/valid">重复来源</a></h2></li>
+</body></html>
+"""
+
 
 class ResearchSandbox(unittest.TestCase):
     def setUp(self):
@@ -302,6 +324,107 @@ class TaskCompetitionAndLimitTests(ResearchSandbox):
         self.assertEqual(len(self.tasks_of(st)), 4)
 
 
+class CandidateFairnessTests(ResearchSandbox):
+    def test_existing_tasks_do_not_consume_new_candidate_quota(self):
+        st = self.fresh()
+        st["relations"] = {
+            f"甲{i}|乙{i}": {"w": 1, "n": 1, "last_touch": 1}
+            for i in range(14)
+        }
+        counts = []
+        for round_no in range(100, 105):
+            st["rounds"] = round_no
+            research.ensure_tasks(st)
+            counts.append(len(research.ensure_state(st)["tasks"]))
+        # 旧实现按种类截断候选，已有任务挤满 10 条关系候选后不再新建；
+        # 现在每轮 3 条预算持续推进，14 条弱关系在 5 轮内全部入队。
+        self.assertEqual(counts, [3, 6, 9, 12, 14])
+        tasks = list(research.ensure_state(st)["tasks"].values())
+        self.assertEqual(len(tasks), 14)
+        self.assertEqual(len({t["id"] for t in tasks}), 14)
+        self.assertTrue(all(t["status"] == "open" for t in tasks))
+        self.assertEqual({t["created_round"] for t in tasks}, {100, 101, 102, 103, 104})
+
+    def test_round_budget_does_not_skip_existing_task_refresh(self):
+        st = self.fresh()
+        st["rounds"] = 99
+        st["relations"] = {"光|影": {"w": 1, "n": 1, "last_touch": 1}}
+        research.ensure_tasks(st)
+        existing = self.tasks_of(st)[0]
+        self.assertEqual(existing["created_round"], 99)
+
+        st["rounds"] = 100
+        st["claims"] = {
+            f"C{i}": {"id": f"C{i}", "expression": f"待验证命题{i}",
+                      "status": "hypothesis", "independent_support": 0,
+                      "independent_counter": 0}
+            for i in range(5)
+        }
+        research.ensure_tasks(st)
+        # 3 条高优命题占满本轮预算，已有关系任务仍被刷新而不是被跳过
+        self.assertEqual(existing["last_seen_round"], 100)
+        self.assertEqual(len(self.tasks_of(st, "claim_evidence_gap")), 3)
+        self.assertIn(existing, self.tasks_of(st))
+
+    def test_miss_backlog_survives_edge_preds_window_eviction(self):
+        st = self.fresh()
+        st["rounds"] = 100
+        st["claims"] = {
+            f"C{i}": {"id": f"C{i}", "expression": f"占用预算命题{i}",
+                      "status": "hypothesis", "independent_support": 0,
+                      "independent_counter": 0}
+            for i in range(3)
+        }
+        research.ensure_tasks(st)
+        self.assertEqual(len(self.tasks_of(st, "claim_evidence_gap")), 3)
+
+        st["edge_preds"] = [{"a": "加法", "b": "能量", "round": 50,
+                             "settled_round": 90, "status": "miss"}]
+        research.ensure_tasks(st)
+        r = research.ensure_state(st)
+        self.assertIn("加法|能量", r["miss_backlog"])
+        self.assertFalse(any(t["kind"] == "prediction_miss"
+                             for t in r["tasks"].values()))
+
+        # 模拟落空预测被 edge_preds 最近 60 条窗口淘汰
+        st["edge_preds"] = [
+            {"a": f"甲{i}", "b": f"乙{i}", "round": 1,
+             "settled_round": 2, "status": "hit"}
+            for i in range(70)
+        ]
+        st["rounds"] = 101
+        research.ensure_tasks(st)
+        r = research.ensure_state(st)
+        miss_tasks = [t for t in r["tasks"].values()
+                      if t["kind"] == "prediction_miss"]
+        self.assertEqual(len(miss_tasks), 1)
+        self.assertEqual(miss_tasks[0]["target"]["relation"], "加法|能量")
+        self.assertEqual(miss_tasks[0]["created_round"], 101)
+        self.assertNotIn("加法|能量", r["miss_backlog"])
+
+    def test_miss_backlog_is_bounded_and_evicts_oldest(self):
+        st = self.fresh()
+        st["rounds"] = 100
+        st["edge_preds"] = [
+            {"a": f"甲{i}", "b": f"乙{i}", "round": 1,
+             "settled_round": i, "status": "miss"}
+            for i in range(config.RESEARCH_MISS_BACKLOG + 10)
+        ]
+        r = research.ensure_state(st)
+        research._update_miss_backlog(st, r)
+        self.assertEqual(len(r["miss_backlog"]), config.RESEARCH_MISS_BACKLOG)
+        key0 = "|".join(sorted(["甲0", "乙0"]))
+        key_last = "|".join(sorted([f"甲{config.RESEARCH_MISS_BACKLOG + 9}",
+                                    f"乙{config.RESEARCH_MISS_BACKLOG + 9}"]))
+        self.assertNotIn(key0, r["miss_backlog"])
+        self.assertIn(key_last, r["miss_backlog"])
+        rows = [json.loads(line) for line in
+                (self.logs / "research.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line]
+        evicted = [x for x in rows if x.get("event") == "miss_backlog_evicted"]
+        self.assertEqual(evicted[-1]["count"], 10)
+
+
 class LegacyStateMigrationTests(ResearchSandbox):
     def legacy_state(self):
         st = self.fresh()
@@ -465,20 +588,22 @@ class LegacyStateMigrationTests(ResearchSandbox):
         task = r["tasks"][new_id]
         self.assertEqual(task["kind"], "prediction_miss")
         self.assertEqual(task["status"], "active")
-        self.assertEqual(task["attempts"],
-                         [{"round": 94, "query_id": "RQ:weak",
-                           "outcome": "used", "result_count": 1}])
-        self.assertEqual(task["attempt_history"][-1]["kind"],
+        # 载体换种类：旧种类尝试归档，新种类尝试/改写预算从零开始
+        self.assertEqual(task["attempts"], [])
+        self.assertEqual(task["rewrites"], 0)
+        self.assertEqual([x["round"] for x in task["attempt_history"]],
+                         [90, 95])
+        self.assertEqual(task["attempt_history"][0]["kind"],
                          "prediction_miss")
-        self.assertEqual(task["attempt_history"][-1]["attempts"],
-                         [{"round": 81, "query_id": "RQ:miss1",
-                           "outcome": "failed", "result_count": 0}])
+        self.assertEqual(task["attempt_history"][1]["kind"],
+                         "relation_unverified")
         self.assertIn("RQ:weak", task["query_ids"])
         self.assertIn("RS:weak", task["source_ids"])
         self.assertIn(task, research._viable_tasks(st))
         query = research.next_query(st)
         self.assertIsNotNone(query)
         self.assertEqual(query["task_id"], new_id)
+        self.assertEqual(query["purpose"], "bridge")
 
     def test_merge_keeps_pending_materials_discoverable(self):
         st, r, miss_id, weak_id, new_id = self.collision_state()
@@ -523,19 +648,27 @@ class LegacyStateMigrationTests(ResearchSandbox):
         task = r["tasks"][new_id]
         self.assertEqual(task["kind"], "prediction_miss")
         self.assertEqual(task["status"], "active")
-        self.assertEqual(task["attempts"],
-                         [{"round": 94, "query_id": "RQ:weak",
-                           "outcome": "used", "result_count": 1}])
+        # 载体换种类：当前尝试归档、预算归零；两侧既有历史全部并入
+        self.assertEqual(task["attempts"], [])
+        self.assertEqual(task["rewrites"], 0)
         self.assertEqual([x["round"] for x in task["attempt_history"]],
-                         [70, 90, 92])
+                         [70, 90, 92, 95])
         self.assertEqual(task["attempt_history"][0]["attempts"],
                          [{"round": 69, "query_id": "RQ:miss-old",
                            "outcome": "failed", "result_count": 0}])
         self.assertEqual(task["attempt_history"][1]["kind"],
                          "prediction_miss")
+        self.assertEqual(task["attempt_history"][1]["attempts"],
+                         [{"round": 81, "query_id": "RQ:miss1",
+                           "outcome": "failed", "result_count": 0}])
         self.assertEqual(task["attempt_history"][2]["attempts"],
                          [{"round": 91, "query_id": "RQ:weak-old",
                            "outcome": "failed", "result_count": 0}])
+        self.assertEqual(task["attempt_history"][3]["kind"],
+                         "relation_unverified")
+        self.assertEqual(task["attempt_history"][3]["attempts"],
+                         [{"round": 94, "query_id": "RQ:weak",
+                           "outcome": "used", "result_count": 1}])
         self.assertIn("RQ:weak", task["query_ids"])
         self.assertIn("RQ:miss1", task["query_ids"])
         self.assertEqual(task["source_ids"], ["RS:weak"])
@@ -561,18 +694,448 @@ class LegacyStateMigrationTests(ResearchSandbox):
         task = r["tasks"][new_id]
         self.assertEqual(len(task["attempt_history"]), research.HISTORY_KEEP)
         self.assertEqual([x["round"] for x in task["attempt_history"]],
-                         [81, 82, 83, 84, 90])
+                         [82, 83, 84, 90, 95])
         rows = [json.loads(line) for line in
                 (self.logs / "research.jsonl").read_text(
                     encoding="utf-8").splitlines() if line]
         migrated = [x for x in rows if x.get("event") == "task_id_migrated"][-1]
+        self.assertEqual(migrated["attempt_history_own"], research.HISTORY_KEEP)
         self.assertEqual(migrated["attempt_history_imported"], 2)
-        self.assertEqual(migrated["attempt_history_dropped"], 3)
+        self.assertEqual(migrated["attempts_archived"], 2)
+        self.assertEqual(migrated["attempt_history_kept"], research.HISTORY_KEEP)
+        self.assertEqual(migrated["attempt_history_dropped"], 4)
+        # 每条历史恰好落在 kept 或 dropped 之一
+        self.assertEqual(migrated["attempt_history_own"]
+                         + migrated["attempt_history_imported"]
+                         + migrated["attempts_archived"],
+                         migrated["attempt_history_kept"]
+                         + migrated["attempt_history_dropped"])
         truncated = [x for x in rows
                      if x.get("event") == "attempt_history_truncated"][-1]
         self.assertEqual(truncated["task_id"], new_id)
-        self.assertEqual(truncated["dropped"], 3)
+        self.assertEqual(truncated["dropped"], 4)
         self.assertEqual(truncated["keep"], research.HISTORY_KEEP)
+
+
+class SchemaV3MigrationTests(ResearchSandbox):
+    RELATION = "光|影"
+
+    def query_row(self, qid, task_id, status, purpose, text, created_round,
+                  used_round=None, result_count=0):
+        return {
+            "id": qid, "task_id": task_id, "purpose": purpose,
+            "purpose_label": research.PURPOSE_LABELS.get(purpose, purpose),
+            "text": text, "normalized": research.normalize_query(text),
+            "selection_reason": "测试", "status": status,
+            "created_round": created_round, "used_round": used_round,
+            "result_count": result_count, "failure": None,
+            "rewrite_of": None, "rewrite_reason": None, "sources": [],
+            "serp_url": None, "serp_sha256": None, "fetched_at": None,
+            "detail": "",
+        }
+
+    def relation_task(self, task_id, kind, **overrides):
+        task = {
+            "id": task_id, "kind": kind,
+            "kind_label": research.KIND_LABELS[kind],
+            "question": "《光》和《影》是什么关系？",
+            "reason": "测试任务", "target": {
+                "type": "relation", "relation": self.RELATION,
+                "concepts": ["光", "影"]},
+            "priority": 0.7, "status": "active", "verification": "unverified",
+            "created_round": 80, "updated_round": 95, "last_seen_round": 95,
+            "attempts": [], "attempt_history": [], "kind_history": [],
+            "query_ids": [], "source_ids": [], "result_count": 0,
+            "rewrites": 0,
+        }
+        task.update(overrides)
+        return task
+
+    def new_id(self):
+        return research._stable_id(
+            "RT", research._task_key("prediction_miss",
+                                     {"type": "relation", "relation": self.RELATION}))
+
+    def test_fresh_state_is_schema_3_without_migration(self):
+        st = state.default_state()
+        self.assertEqual(research.RESEARCH_SCHEMA_VERSION, 3)
+        self.assertEqual(st["research"]["schema_version"], 3)
+        r = research.ensure_state(st)
+        self.assertEqual(r["schema_version"], 3)
+        self.assertFalse((self.logs / "research.jsonl").exists())
+
+    def test_v2_normalized_id_repairs_and_replans_cancelled_query(self):
+        st = self.fresh()
+        st["rounds"] = 100
+        r = st["research"]
+        r["schema_version"] = 2
+        task_id = self.new_id()
+        old_q, used_q = "RQ:v2-old", "RQ:v2-used"
+        bridge_text = "光和影有什么联系"
+        r["queries"][old_q] = self.query_row(
+            old_q, task_id, "planned", "relation", bridge_text, 84)
+        r["queries"][used_q] = self.query_row(
+            used_q, task_id, "used", "relation", "光和影有什么关系", 81,
+            used_round=81, result_count=1)
+        r["sources"].append({
+            "id": "RS:v2", "task_id": task_id, "query_id": used_q,
+            "url": "https://example.org/v2", "title": "光与影",
+            "verification": "unverified",
+        })
+        task = self.relation_task(
+            task_id, "prediction_miss",
+            attempts=[
+                {"round": 80, "query_id": used_q, "purpose": "relation",
+                 "outcome": "used", "result_count": 1},
+                {"round": 81, "query_id": used_q, "purpose": "relation",
+                 "outcome": "used", "result_count": 1},
+            ],
+            query_ids=[used_q, old_q], source_ids=["RS:v2"],
+            result_count=1, rewrites=1,
+            kind_history=[{
+                "round": 85, "from": "relation_unverified",
+                "to": "prediction_miss", "archived_attempts": 0,
+                "archived_rewrites": 0, "cancelled_queries": [],
+            }],
+        )
+        r["tasks"][task_id] = task
+
+        research.ensure_state(st)
+        self.assertEqual(r["schema_version"], 3)
+        self.assertEqual(task["attempts"], [])
+        self.assertEqual(task["rewrites"], 0)
+        self.assertEqual(len(task["attempt_history"]), 1)
+        archived = task["attempt_history"][0]
+        self.assertEqual(archived["kind"], "relation_unverified")
+        self.assertEqual([a["round"] for a in archived["attempts"]], [80, 81])
+        self.assertEqual(archived["repaired_by"], "schema-3")
+        self.assertEqual(r["queries"][old_q]["status"], "cancelled")
+        self.assertEqual(r["queries"][old_q]["failure"], "superseded")
+        self.assertEqual(r["queries"][used_q]["status"], "used")
+        self.assertEqual(task["kind_history"][-1]["cancelled_queries"], [old_q])
+
+        rows = [json.loads(line) for line in
+                (self.logs / "research.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line]
+        migrated = [x for x in rows
+                    if x.get("event") == "research_schema_migrated"][-1]
+        self.assertEqual(migrated["from_version"], 2)
+        self.assertEqual(migrated["to_version"], 3)
+        self.assertEqual(migrated["tasks_repaired"], 1)
+        self.assertEqual(migrated["tasks_unrecoverable"], 0)
+        repaired = [x for x in rows
+                    if x.get("event") == "task_migration_repaired"][-1]
+        self.assertEqual(repaired["archived_attempts"], 2)
+        self.assertEqual(repaired["cancelled_queries"], [old_q])
+
+        snapshot = json.dumps(r, ensure_ascii=False, sort_keys=True)
+        logs_before = (self.logs / "research.jsonl").read_text(encoding="utf-8")
+        research.ensure_state(st)
+        self.assertEqual(json.dumps(r, ensure_ascii=False, sort_keys=True),
+                         snapshot)
+        self.assertEqual(
+            (self.logs / "research.jsonl").read_text(encoding="utf-8"),
+            logs_before)
+        self.assertEqual(len([x for x in rows
+                              if x.get("event") == "research_schema_migrated"]), 1)
+
+        # 作废查询不占“已用过文本”额度，同文本可按新种类重新规划
+        used_norm = research._task_query_normalized(task, r)
+        self.assertNotIn(research.normalize_query(bridge_text), used_norm)
+        query = research.next_query(st)
+        self.assertIsNotNone(query)
+        self.assertEqual(query["task_id"], task_id)
+        self.assertEqual(query["purpose"], "bridge")
+        self.assertEqual(query["text"], bridge_text)
+        self.assertNotEqual(query["id"], old_q)
+        self.assertEqual(query["status"], "planned")
+
+    def test_v2_unrecoverable_history_is_logged_and_left_untouched(self):
+        st = self.fresh()
+        st["rounds"] = 100
+        r = st["research"]
+        r["schema_version"] = 2
+        task_id = self.new_id()
+        old_q = "RQ:v2-unrecoverable"
+        r["queries"][old_q] = self.query_row(
+            old_q, task_id, "planned", "relation", "光和影有什么关系", 70)
+        attempt = {"round": 80, "query_id": old_q, "purpose": "relation",
+                   "outcome": "failed", "result_count": 0}
+        task = self.relation_task(
+            task_id, "prediction_miss", attempts=[attempt],
+            query_ids=[old_q], rewrites=2,
+            kind_history=[{"round": None, "from": "relation_unverified",
+                           "to": "prediction_miss"}],
+        )
+        r["tasks"][task_id] = task
+
+        research.ensure_state(st)
+        # 无法定位迁移轮次：不猜测、不改写，只记录不可恢复
+        self.assertEqual(task["attempts"], [attempt])
+        self.assertEqual(task["rewrites"], 2)
+        self.assertEqual(r["queries"][old_q]["status"], "planned")
+        rows = [json.loads(line) for line in
+                (self.logs / "research.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line]
+        unrecoverable = [x for x in rows
+                         if x.get("event") == "task_migration_unrecoverable"]
+        self.assertEqual(len(unrecoverable), 1)
+        self.assertEqual(unrecoverable[0]["reason"], "invalid_transition_round")
+        self.assertEqual(unrecoverable[0]["attempts"], 1)
+        self.assertEqual(unrecoverable[0]["planned_queries"], 1)
+        self.assertFalse([x for x in rows
+                          if x.get("event") == "task_migration_repaired"])
+        migrated = [x for x in rows
+                    if x.get("event") == "research_schema_migrated"][-1]
+        self.assertEqual(migrated["tasks_unrecoverable"], 1)
+
+    def test_single_task_oversized_kind_history_is_bounded_and_logged(self):
+        st = self.fresh()
+        st["rounds"] = 100
+        r = st["research"]
+        r["schema_version"] = 2
+        task_id = self.new_id()
+        history = [{"round": 61 + i, "from": "relation_unverified",
+                    "to": "prediction_miss"} for i in range(7)]
+        task = self.relation_task(
+            task_id, "prediction_miss", kind_history=history)
+        r["tasks"][task_id] = task
+
+        research.ensure_state(st)
+        self.assertEqual([x["round"] for x in task["kind_history"]],
+                         [63, 64, 65, 66, 67])
+        rows = [json.loads(line) for line in
+                (self.logs / "research.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line]
+        truncated = [x for x in rows
+                     if x.get("event") == "kind_history_truncated"][-1]
+        self.assertEqual(truncated["dropped"], 2)
+        self.assertEqual(truncated["keep"], 5)
+        migrated = [x for x in rows
+                    if x.get("event") == "task_id_migrated"][-1]
+        self.assertEqual(migrated["kind_history_own"], 7)
+        self.assertEqual(migrated["kind_history_kept"], 5)
+        self.assertEqual(migrated["kind_history_dropped"], 2)
+
+    def carrier_state(self):
+        st = self.fresh()
+        st["rounds"] = 100
+        r = st["research"]
+        r["schema_version"] = 2
+        new_id = self.new_id()
+        miss_id = research._stable_id(
+            "RT", f"prediction_miss|relation|{self.RELATION}")
+        weak_id = research._stable_id(
+            "RT", f"relation_unverified|relation|{self.RELATION}")
+        miss = self.relation_task(
+            miss_id, "prediction_miss", status="exhausted",
+            updated_round=90, last_seen_round=90, created_round=70,
+            priority=0.8, attempts=[{
+                "round": 81, "query_id": "RQ:miss1",
+                "outcome": "failed", "result_count": 0,
+            }], query_ids=["RQ:miss1"],
+        )
+        weak = self.relation_task(
+            weak_id, "relation_unverified", status="active",
+            updated_round=95, last_seen_round=95, created_round=80,
+            priority=0.6, attempts=[
+                {"round": 93, "query_id": "RQ:weak1",
+                 "outcome": "failed", "result_count": 0},
+                {"round": 94, "query_id": "RQ:weak2",
+                 "outcome": "used", "result_count": 1},
+            ], query_ids=["RQ:weak1", "RQ:weak2", "RQ:weakplan"],
+            source_ids=["RS:weak"], result_count=1, rewrites=1,
+        )
+        r["tasks"][miss_id] = miss
+        r["tasks"][weak_id] = weak
+        r["queries"]["RQ:miss1"] = self.query_row(
+            "RQ:miss1", miss_id, "used", "bridge",
+            "光和影之间有什么中间概念", 80, used_round=81)
+        r["queries"]["RQ:weak1"] = self.query_row(
+            "RQ:weak1", weak_id, "used", "relation", "光和影有什么关系", 92,
+            used_round=93)
+        r["queries"]["RQ:weak2"] = self.query_row(
+            "RQ:weak2", weak_id, "used", "evidence", "光和影 相关证据", 93,
+            used_round=94, result_count=1)
+        r["queries"]["RQ:weakplan"] = self.query_row(
+            "RQ:weakplan", weak_id, "planned", "counterexample",
+            "光和影 无关的反例", 95)
+        r["sources"].append({
+            "id": "RS:weak", "task_id": weak_id, "query_id": "RQ:weak2",
+            "url": "https://example.org/weak", "title": "光影",
+            "verification": "unverified",
+        })
+        return st, r, new_id, weak_id, miss_id
+
+    def test_carrier_kind_change_cancels_old_query_and_resets_budget(self):
+        st, r, new_id, weak_id, miss_id = self.carrier_state()
+        research.ensure_state(st)
+        task = r["tasks"][new_id]
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertEqual(task["status"], "active")
+        # 旧种类两条尝试归档、改写预算清零
+        self.assertEqual(task["attempts"], [])
+        self.assertEqual(task["rewrites"], 0)
+        self.assertEqual([x["round"] for x in task["attempt_history"]],
+                         [90, 95])
+        self.assertEqual(task["attempt_history"][0]["kind"], "prediction_miss")
+        self.assertEqual(len(task["attempt_history"][0]["attempts"]), 1)
+        self.assertEqual(task["attempt_history"][1]["kind"],
+                         "relation_unverified")
+        self.assertEqual(len(task["attempt_history"][1]["attempts"]), 2)
+        # 旧种类的计划查询作废；已执行查询、来源与关联保留
+        self.assertEqual(r["queries"]["RQ:weakplan"]["status"], "cancelled")
+        self.assertEqual(r["queries"]["RQ:weakplan"]["failure"], "superseded")
+        self.assertEqual(r["queries"]["RQ:weak1"]["status"], "used")
+        self.assertEqual(r["queries"]["RQ:weak2"]["status"], "used")
+        self.assertEqual(r["queries"]["RQ:miss1"]["status"], "used")
+        self.assertEqual(task["source_ids"], ["RS:weak"])
+        self.assertIn("RS:weak", task["source_ids"])
+        self.assertEqual(r["queries"]["RQ:weak2"]["task_id"], new_id)
+        self.assertEqual(r["sources"][0]["task_id"], new_id)
+        last = task["kind_history"][-1]
+        self.assertEqual(last["from"], "relation_unverified")
+        self.assertEqual(last["to"], "prediction_miss")
+        self.assertEqual(last["archived_attempts"], 2)
+        self.assertEqual(last["archived_rewrites"], 1)
+        self.assertEqual(last["cancelled_queries"], ["RQ:weakplan"])
+
+        rows = [json.loads(line) for line in
+                (self.logs / "research.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line]
+        migrated = [x for x in rows if x.get("event") == "task_id_migrated"][-1]
+        self.assertEqual(migrated["attempt_history_own"], 0)
+        self.assertEqual(migrated["attempt_history_imported"], 0)
+        self.assertEqual(migrated["attempts_archived"], 2)
+        self.assertEqual(migrated["attempt_rows_archived"], 3)
+        self.assertEqual(migrated["attempt_history_kept"], 2)
+        self.assertEqual(migrated["attempt_history_dropped"], 0)
+        self.assertEqual(migrated["cancelled_queries"], ["RQ:weakplan"])
+
+        query = research.next_query(st)
+        self.assertIsNotNone(query)
+        self.assertEqual(query["task_id"], new_id)
+        self.assertEqual(query["purpose"], "bridge")
+        self.assertEqual(query["text"], "光和影有什么联系")
+        self.assertEqual(query["status"], "planned")
+
+    def test_migration_preserves_final_kind_planned_query(self):
+        st, r, new_id, weak_id, miss_id = self.carrier_state()
+        r["queries"]["RQ:missplan"] = self.query_row(
+            "RQ:missplan", miss_id, "planned", "bridge",
+            "光和影有什么联系", 89)
+        r["tasks"][miss_id]["query_ids"].append("RQ:missplan")
+        research.ensure_state(st)
+        task = r["tasks"][new_id]
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertEqual(r["queries"]["RQ:missplan"]["status"], "planned")
+        self.assertNotIn("RQ:missplan", task["kind_history"][-1]["cancelled_queries"])
+        query = research.next_query(st)
+        self.assertEqual(query["id"], "RQ:missplan")
+        self.assertEqual(query["purpose"], "bridge")
+
+    def test_multi_task_merge_keeps_newest_history_and_reconciles(self):
+        st = self.fresh()
+        st["rounds"] = 100
+        r = st["research"]
+        r["schema_version"] = 2
+        new_id = self.new_id()
+        miss_id = research._stable_id(
+            "RT", f"prediction_miss|relation|{self.RELATION}")
+        weak_id = research._stable_id(
+            "RT", f"relation_unverified|relation|{self.RELATION}")
+
+        def history(kind, rounds, prefix):
+            return [{
+                "kind": kind, "round": rnd,
+                "attempts": [{"round": rnd, "query_id": f"RQ:{prefix}-{rnd}",
+                              "outcome": "failed", "result_count": 0}],
+                "rewrites": 0, "result_count": 0,
+            } for rnd in rounds]
+
+        a = self.relation_task(
+            new_id, "relation_unverified", status="active",
+            updated_round=95, last_seen_round=95, created_round=80,
+            attempts=[{"round": 93, "query_id": "RQ:a1", "outcome": "failed"},
+                      {"round": 94, "query_id": "RQ:a2", "outcome": "failed"}],
+            attempt_history=history("relation_unverified", [90, 91], "a"),
+            kind_history=[{"round": 60, "from": "exploration",
+                           "to": "relation_unverified"}],
+            rewrites=1,
+        )
+        b = self.relation_task(
+            miss_id, "prediction_miss", status="exhausted",
+            updated_round=89, last_seen_round=89, created_round=60,
+            priority=0.8,
+            attempts=[{"round": 88, "query_id": "RQ:b1", "outcome": "failed"}],
+            attempt_history=history("prediction_miss", [70, 71, 72], "b"),
+            kind_history=[
+                {"round": 64, "from": "exploration", "to": "relation_unverified"},
+                {"round": 66, "from": "relation_unverified",
+                 "to": "prediction_miss"},
+                {"round": 68, "from": "prediction_miss",
+                 "to": "relation_unverified"},
+            ],
+        )
+        c = self.relation_task(
+            weak_id, "relation_unverified", status="exhausted",
+            updated_round=85, last_seen_round=85, created_round=50,
+            priority=0.6,
+            attempts=[{"round": 84, "query_id": "RQ:c1", "outcome": "failed"}],
+            attempt_history=history("relation_unverified",
+                                    [80, 81, 82, 83], "c"),
+            kind_history=[
+                {"round": 71, "from": "exploration", "to": "prediction_miss"},
+                {"round": 73, "from": "prediction_miss",
+                 "to": "relation_unverified"},
+                {"round": 76, "from": "exploration", "to": "relation_unverified"},
+            ],
+        )
+        r["tasks"][new_id] = a
+        r["tasks"][miss_id] = b
+        r["tasks"][weak_id] = c
+
+        research.ensure_state(st)
+        task = r["tasks"][new_id]
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertEqual(task["attempts"], [])
+        self.assertEqual(task["rewrites"], 0)
+        # 朴素拼接后尾部截断会丢掉 A 的 90/91/95；排序保留最新五条
+        self.assertEqual([x["round"] for x in task["attempt_history"]],
+                         [85, 89, 90, 91, 95])
+        rows = [json.loads(line) for line in
+                (self.logs / "research.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line]
+        migrated = [x for x in rows if x.get("event") == "task_id_migrated"][-1]
+        self.assertEqual(migrated["attempt_history_own"], 2)
+        self.assertEqual(migrated["attempt_history_imported"], 7)
+        self.assertEqual(migrated["attempts_archived"], 3)
+        self.assertEqual(migrated["attempt_rows_archived"], 4)
+        self.assertEqual(migrated["attempt_history_kept"], 5)
+        self.assertEqual(migrated["attempt_history_dropped"], 7)
+        self.assertEqual(migrated["attempt_history_own"]
+                         + migrated["attempt_history_imported"]
+                         + migrated["attempts_archived"],
+                         migrated["attempt_history_kept"]
+                         + migrated["attempt_history_dropped"])
+        self.assertEqual([x["round"] for x in task["kind_history"]],
+                         [68, 71, 73, 76, 100])
+        self.assertEqual(migrated["kind_history_own"], 1)
+        self.assertEqual(migrated["kind_history_imported"], 6)
+        self.assertEqual(migrated["kind_history_added"], 1)
+        self.assertEqual(migrated["kind_history_kept"], 5)
+        self.assertEqual(migrated["kind_history_dropped"], 3)
+        self.assertEqual(migrated["kind_history_own"]
+                         + migrated["kind_history_imported"]
+                         + migrated["kind_history_added"],
+                         migrated["kind_history_kept"]
+                         + migrated["kind_history_dropped"])
+        truncated = [x for x in rows
+                     if x.get("event") == "attempt_history_truncated"][-1]
+        self.assertEqual(truncated["dropped"], 7)
+        kind_truncated = [x for x in rows
+                          if x.get("event") == "kind_history_truncated"][-1]
+        self.assertEqual(kind_truncated["dropped"], 3)
 
 
 class QueryPlanningTests(ResearchSandbox):
@@ -925,6 +1488,262 @@ class ProvenanceAndIntegrationTests(ResearchSandbox):
         self.assertNotEqual(sha1, sha2)
         self.assertEqual(len(r["config_history"]), 2)
         self.assertEqual(r["config_history"][-1]["values"]["web_search"]["top_k"], 2)
+
+
+class SourceValidationTests(ResearchSandbox):
+    def test_parser_rejects_missing_relative_and_non_http_links(self):
+        self.assertEqual(skills._parse_bing_results(BAD_LINKS_HTML, 5), [])
+
+    def test_parser_dedups_valid_url_and_drops_invalid_neighbours(self):
+        results = skills._parse_bing_results(MIXED_LINKS_HTML, 10)
+        self.assertEqual(len(results), 1)
+        title, _snippet, link = results[0]
+        self.assertEqual(title, "有效来源")
+        self.assertEqual(link, "https://example.org/valid")
+
+    def test_record_execution_counts_only_recorded_valid_sources(self):
+        st = self.fresh()
+        self.add_miss(st)
+        query = research.next_query(st)
+        results = [
+            {"title": "缺URL", "snippet": "s"},
+            {"title": "相对", "snippet": "s", "url": "/relative/path"},
+            {"title": "脚本", "snippet": "s", "url": "javascript:alert(1)"},
+            {"title": "ftp", "snippet": "s", "url": "ftp://example.org/f"},
+            {"title": "空白", "snippet": "s", "url": "   "},
+            {"title": "有效", "snippet": "原文", "url": "https://example.org/ok"},
+        ]
+        query = research.record_execution(st, query, True, results=results)
+        r = research.ensure_state(st)
+        task = r["tasks"][query["task_id"]]
+        self.assertEqual(query["status"], "used")
+        self.assertEqual(query["failure"], None)
+        self.assertEqual(query["result_count"], 1)
+        self.assertEqual(task["result_count"], 1)
+        self.assertEqual(task["verification"], "pending_verification")
+        self.assertEqual(len(r["sources"]), 1)
+        self.assertEqual(r["sources"][0]["url"], "https://example.org/ok")
+        self.assertEqual(r["sources"][0]["verification"], "unverified")
+        self.assertEqual(r["stats"]["sources_recorded"], 1)
+        self.assertEqual(r["stats"]["source_candidates_rejected"], 5)
+        rows = [json.loads(line) for line in
+                (self.logs / "research.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line]
+        rejected = [x for x in rows
+                    if x.get("event") == "source_candidates_rejected"][-1]
+        self.assertEqual(rejected["count"], 5)
+
+    def test_invalid_only_results_do_not_create_materials(self):
+        st = self.fresh()
+        self.add_miss(st)
+        query = research.next_query(st)
+        query = research.record_execution(st, query, True, results=[
+            {"title": "空", "snippet": "s", "url": ""},
+            {"title": "相对", "snippet": "s", "url": "/relative"},
+            {"title": "邮件", "snippet": "s", "url": "mailto:a@example.org"},
+        ])
+        r = research.ensure_state(st)
+        task = r["tasks"][query["task_id"]]
+        self.assertEqual(query["status"], "failed")
+        self.assertEqual(query["failure"], "invalid_results")
+        self.assertEqual(query["result_count"], 0)
+        self.assertEqual(task["result_count"], 0)
+        self.assertEqual(task["verification"], "unverified")
+        self.assertEqual(task["source_ids"], [])
+        self.assertEqual(task["status"], "active")
+        self.assertEqual(r["sources"], [])
+        self.assertEqual(r["stats"]["sources_recorded"], 0)
+        self.assertEqual(r["stats"]["query_failures"], 1)
+        self.assertEqual(r["recent_queries"][-1]["outcome"], "failed")
+        self.assertEqual(r["recent_queries"][-1]["result_count"], 0)
+
+    def test_empty_results_are_failure_not_success(self):
+        st = self.fresh()
+        self.add_miss(st)
+        query = research.next_query(st)
+        query = research.record_execution(st, query, True, results=[])
+        r = research.ensure_state(st)
+        task = r["tasks"][query["task_id"]]
+        self.assertEqual(query["status"], "failed")
+        self.assertEqual(query["failure"], "no_results")
+        self.assertEqual(task["result_count"], 0)
+        self.assertEqual(task["verification"], "unverified")
+        self.assertEqual(r["sources"], [])
+
+    def test_duplicate_url_within_one_serp_is_recorded_once(self):
+        st = self.fresh()
+        self.add_miss(st)
+        query = research.next_query(st)
+        query = research.record_execution(st, query, True, results=[
+            {"title": "第一标题", "snippet": "s1",
+             "url": "https://example.org/same"},
+            {"title": "第二标题", "snippet": "s2",
+             "url": "https://example.org/same"},
+        ])
+        r = research.ensure_state(st)
+        task = r["tasks"][query["task_id"]]
+        self.assertEqual(query["result_count"], 1)
+        self.assertEqual(task["result_count"], 1)
+        self.assertEqual(len(r["sources"]), 1)
+        self.assertEqual(r["stats"]["sources_recorded"], 1)
+        self.assertEqual(r["sources"][0]["title"], "第一标题")
+
+
+class SearchHostFallbackTests(ResearchSandbox):
+    def test_no_results_on_cn_host_still_tries_www(self):
+        st = self.fresh()
+        self.add_miss(st)
+        calls = []
+
+        def fake_fetch(url, headers):
+            calls.append(url)
+            if "cn.bing.com" in url:
+                return NO_RESULTS_HTML
+            return FAKE_HTML
+
+        with mock.patch.object(skills, "_fetch_url_hard", side_effect=fake_fetch):
+            ok, detail = skills.do_web_search(st)
+        self.assertTrue(ok, detail)
+        self.assertEqual(len(calls), 2)
+        self.assertIn("cn.bing.com", calls[0])
+        self.assertIn("www.bing.com", calls[1])
+        r = research.ensure_state(st)
+        query = list(r["queries"].values())[0]
+        self.assertEqual(query["status"], "used")
+        self.assertIn("www.bing.com", query["serp_url"])
+        self.assertEqual(query["result_count"], 2)
+        task = self.tasks_of(st)[0]
+        self.assertEqual(task["verification"], "pending_verification")
+        self.assertEqual(task["status"], "active")
+        self.assertEqual(task["rewrites"], 0)
+        self.assertFalse([q for q in r["queries"].values()
+                          if q.get("purpose") == "broadened"])
+        self.assertEqual(r["stats"]["query_failures"], 0)
+
+    def test_all_invalid_links_never_become_materials(self):
+        st = self.fresh()
+        self.add_miss(st)
+        with mock.patch.object(skills, "_fetch_url_hard",
+                               return_value=BAD_LINKS_HTML):
+            ok, detail = skills.do_web_search(st)
+        self.assertFalse(ok)
+        self.assertIn("serp_blocked", detail)
+        r = research.ensure_state(st)
+        task = self.tasks_of(st)[0]
+        query = r["queries"][task["query_ids"][0]]
+        self.assertEqual(query["status"], "failed")
+        self.assertEqual(query["failure"], "serp_blocked")
+        self.assertEqual(query["result_count"], 0)
+        self.assertEqual(task["result_count"], 0)
+        self.assertEqual(task["verification"], "unverified")
+        self.assertEqual(r["sources"], [])
+        self.assertEqual(r["stats"]["sources_recorded"], 0)
+
+
+class PendingArchiveTests(ResearchSandbox):
+    def materials_task(self, r, i):
+        task_id = f"RT:mat{i}"
+        query_id = f"RQ:mat{i}"
+        source_id = f"RS:mat{i}"
+        updated = (i + 1) * 10
+        r["tasks"][task_id] = {
+            "id": task_id, "kind": "claim_evidence_gap",
+            "kind_label": "命题证据缺口",
+            "question": f"有哪些资料能支持或反驳「命题{i}」？",
+            "reason": "命题证据缺口",
+            "target": {"type": "claim", "claim_id": f"C{i}",
+                       "expression": f"命题{i}", "concepts": [f"命题{i}"]},
+            "priority": 0.7, "status": "materials_found",
+            "verification": "pending_verification",
+            "created_round": 10, "updated_round": updated,
+            "last_seen_round": updated,
+            "attempts": [{"round": updated, "query_id": query_id,
+                          "outcome": "used", "result_count": 1}],
+            "attempt_history": [], "kind_history": [],
+            "query_ids": [query_id], "source_ids": [source_id],
+            "result_count": 1, "rewrites": 0,
+        }
+        r["queries"][query_id] = {
+            "id": query_id, "task_id": task_id, "purpose": "evidence",
+            "text": f"命题{i} 支持证据", "normalized": f"命题{i}支持证据",
+            "status": "used", "created_round": 10, "used_round": updated,
+            "result_count": 1, "sources": [source_id],
+        }
+        r["sources"].append({
+            "id": source_id, "task_id": task_id, "query_id": query_id,
+            "url": f"https://example.org/{i}", "title": f"来源{i}",
+            "verification": "unverified", "source_type": "web_runtime",
+        })
+        return task_id
+
+    def test_material_overflow_is_archived_with_recoverable_links(self):
+        st = self.fresh()
+        st["rounds"] = 100
+        r = research.ensure_state(st)
+        ids = [self.materials_task(r, i) for i in range(4)]
+        with mock.patch.object(config, "RESEARCH_TASK_KEEP", 3):
+            research.ensure_tasks(st)
+        r = research.ensure_state(st)
+        self.assertEqual(len(r["tasks"]), 3)
+        self.assertNotIn(ids[0], r["tasks"])
+        self.assertEqual(len(r["archived_tasks"]), 1)
+        entry = r["archived_tasks"][0]
+        self.assertEqual(entry["id"], ids[0])
+        self.assertEqual(entry["kind"], "claim_evidence_gap")
+        self.assertEqual(entry["status"], "materials_found")
+        self.assertEqual(entry["verification"], "pending_verification")
+        self.assertEqual(entry["archive_reason"], "material_cap")
+        self.assertEqual(entry["query_ids"], [f"RQ:mat0"])
+        self.assertEqual(entry["source_ids"], [f"RS:mat0"])
+        self.assertEqual(entry["queries"][0]["id"], "RQ:mat0")
+        self.assertEqual(entry["queries"][0]["text"], "命题0 支持证据")
+        self.assertEqual(entry["queries"][0]["status"], "used")
+        self.assertEqual(entry["sources"][0]["id"], "RS:mat0")
+        self.assertEqual(entry["sources"][0]["url"], "https://example.org/0")
+        self.assertEqual(entry["sources"][0]["query_id"], "RQ:mat0")
+        self.assertEqual(entry["sources"][0]["verification"], "unverified")
+        # 查询/来源索引仍在，任务归档后关联可恢复
+        self.assertIn("RQ:mat0", r["queries"])
+        self.assertTrue(any(s["id"] == "RS:mat0" for s in r["sources"]))
+        self.assertEqual(r["stats"]["tasks_archived"], 1)
+        pending = research.archived_pending(st)
+        self.assertEqual([x["id"] for x in pending], [ids[0]])
+        self.assertEqual(research.summary(st)["archived_tasks"], 1)
+        focus = research.focus(st, limit=5)
+        archived = [x for x in focus if x["archived"]]
+        self.assertEqual(len(archived), 1)
+        self.assertEqual(archived[0]["id"], ids[0])
+        self.assertEqual(archived[0]["reason"], "material_cap")
+        rows = [json.loads(line) for line in
+                (self.logs / "research.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line]
+        archived_log = [x for x in rows if x.get("event") == "task_archived"][-1]
+        self.assertEqual(archived_log["task_id"], ids[0])
+        self.assertTrue(archived_log["archived"])
+        self.assertEqual(archived_log["reason"], "material_cap")
+        self.assertEqual(archived_log["source_ids"], ["RS:mat0"])
+
+    def test_archive_capacity_is_bounded_and_eviction_is_logged(self):
+        st = self.fresh()
+        st["rounds"] = 100
+        r = research.ensure_state(st)
+        ids = [self.materials_task(r, i) for i in range(5)]
+        with mock.patch.object(config, "RESEARCH_TASK_KEEP", 2), \
+                mock.patch.object(config, "RESEARCH_ARCHIVE_KEEP", 2):
+            research.ensure_tasks(st)
+        r = research.ensure_state(st)
+        self.assertEqual(sorted(r["tasks"]), ids[3:])
+        self.assertEqual([x["id"] for x in r["archived_tasks"]], ids[1:3])
+        self.assertEqual(r["stats"]["tasks_archived"], 3)
+        rows = [json.loads(line) for line in
+                (self.logs / "research.jsonl").read_text(
+                    encoding="utf-8").splitlines() if line]
+        evicted = [x for x in rows
+                   if x.get("event") == "task_archive_evicted"][-1]
+        self.assertEqual(evicted["count"], 1)
+        self.assertEqual(evicted["keep"], 2)
+        self.assertEqual([x["id"] for x in research.archived_pending(st)],
+                         [ids[2], ids[1]])
 
 
 if __name__ == "__main__":

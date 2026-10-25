@@ -727,7 +727,11 @@ def _unwrap_bing_url(url):
 
 
 def _parse_bing_results(html, top_k):
-    """Bing 结果页 → [(title, snippet, url)]；解析失败返回空列表。"""
+    """Bing 结果页 → [(title, snippet, url)]；解析失败返回空列表。
+
+    来源 URL 必须是绝对 HTTP(S)：空 href、相对路径、javascript:/ftp: 等
+    一律丢弃，避免把跟踪页或无效链接写进来源账本。
+    """
     results = []
     seen = set()
     for m in re.finditer(r'<li class="b_algo".*?</li>', html, re.S):
@@ -735,11 +739,12 @@ def _parse_bing_results(html, top_k):
         hm = re.search(r'<h2[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>', block, re.S)
         if not hm:
             continue
-        link = _unwrap_bing_url(_html_unescape(hm.group(1)))
+        link = _unwrap_bing_url(_html_unescape(hm.group(1))).strip()
         title = re.sub(r"<[^>]+>", "", hm.group(2)).strip()
         pm = re.search(r"<p[^>]*>(.*?)</p>", block, re.S)
         snippet = re.sub(r"<[^>]+>", "", pm.group(1)).strip() if pm else ""
-        if title and link and link not in seen:
+        if (title and research.is_valid_source_url(link)
+                and link not in seen):
             seen.add(link)
             results.append((title[:120], snippet[:300], link[:500]))
         if len(results) >= top_k:
@@ -780,33 +785,42 @@ def do_web_search(st):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Accept-Language": "zh-CN,zh;q=0.9",
     }
-    # 本机到 Bing 的 TLS 连接会间歇中断，且偶尔返回首页/反爬页而不是结果页；
-    # 传输失败或非结果页时换主机重试，只有两个主机都失败才记失败。
-    html, search_url, fetch_error = None, "", None
+    # 本机到 Bing 的 TLS 连接会间歇中断，且偶尔返回首页/反爬页而不是结果页。
+    # 两个主机都尝试；单台明确说“无结果”不能代表另一台也没有，只有两台都
+    # 没给出结果才结算失败。成功记录使用真正返回结果页的主机 URL。
+    html, search_url, blocked_url, fetch_error = None, "", "", None
     results, saw_no_results = [], False
+    no_results_url, last_url = "", ""
     for host in ("https://cn.bing.com/search", "https://www.bing.com/search"):
-        search_url = f"{host}?q={query_text}&setlang=zh-hans"
+        last_url = f"{host}?q={query_text}&setlang=zh-hans"
         try:
-            html = _fetch_url_hard(search_url, headers=headers)
+            page = _fetch_url_hard(last_url, headers=headers)
         except Exception as exc:
             fetch_error = exc
             continue
-        results = _parse_bing_results(html, top_k)
-        if results:
+        parsed = _parse_bing_results(page, top_k)
+        if parsed:
+            html, search_url, results = page, last_url, parsed
             break
-        if _serp_says_no_results(html):
+        if _serp_says_no_results(page):
             saw_no_results = True
-            break
+            if not no_results_url:
+                no_results_url = last_url
+        elif html is None:
+            html, blocked_url = page, last_url
     if not results:
         if saw_no_results:
             failure_kind = "no_results"
             detail = f"搜索「{topic}」无可用结果"
+            search_url = no_results_url or last_url
         elif html is None:
             failure_kind = "network_error"
             detail = f"{fetch_error.__class__.__name__}: {fetch_error}"
+            search_url = last_url
         else:
             failure_kind = "serp_blocked"
             detail = f"搜索「{topic}」未返回结果页（首页/反爬/解析失败）"
+            search_url = blocked_url or last_url
         research.record_execution(
             st, query, False, failure_kind=failure_kind, detail=detail,
             serp_url=search_url)
