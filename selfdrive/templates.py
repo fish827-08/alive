@@ -152,6 +152,25 @@ def _bigrams(s):
 
 
 def is_duplicate(question, st):
+    """判重（v9.23.3 三层）：①一字不差；②骨架相似且《》主题/残差重合；
+    ③主题级全量查重——问题核心概念集合与【全部历史问题】重合 ≥0.6 判重
+    （"探索的反面"和"探索的先后"字面不同但主题相同，字面查重拦不住）。"""
+    from .tokenizer import concept_words
+    ensure_asked_texts(st)
+    # 主题词 = 概念集 − 模板句式词（反面/对立面/条件是句式骨架，不算主题）
+    TEMPLATE_WORDS = {"反面", "对立面", "成立", "条件", "引出", "先后", "通常",
+                      "需要", "说说"}
+    qc = set(concept_words(question)) - TEMPLATE_WORDS
+    if qc:
+        for entry in st.get("asked_concepts", []):
+            old_cs = set(entry.get("cs", [])) - TEMPLATE_WORDS
+            if not old_cs or not qc:
+                continue
+            # 主题词交集非空且包含度 ≥0.5 → 同一主题变体
+            inter = qc & old_cs
+            if inter and len(inter) / min(len(qc), len(old_cs)) >= 0.5:
+                return True
+    # 原有两层（骨架 + 《》主题/残差）
     """判重（v9.16.1 修正）：骨架相似【且】内容相同才算重复。
     旧版只比全文二元组——"《信号》的反面"和"《cache》的反面"骨架 Jaccard 0.70，
     新模板刚学会就被锁死（青梧诊断问题1：71% 误拦）。
@@ -211,6 +230,11 @@ def _jaccard(a, b):
 def remember_ask(st, question):
     st.setdefault("asked_texts", []).append(question.strip())
     del st["asked_texts"][:-_ASKED_KEEP]
+    # v9.23.3 主题账本：全量记录每个问题的概念词集合（防"滑出窗口后重问"）
+    from .tokenizer import concept_words
+    cs = sorted(set(concept_words(question)))[:8]
+    st.setdefault("asked_concepts", []).append({"q": question.strip()[:60], "cs": cs})
+    del st["asked_concepts"][:-200]
     st["asks_total"] = st.get("asks_total", 0) + 1
 
 
