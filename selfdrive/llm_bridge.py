@@ -7,7 +7,7 @@ import re
 import time
 import urllib.request
 
-from . import config
+from . import config, teacherless
 from .state import append_jsonl, append_note
 
 _FIELDS = ("proposals", "assumptions", "unknowns", "suggested_checks")
@@ -23,7 +23,7 @@ def _budget(st):
 
 
 def available(st):
-    if not config.LLM_ENABLED:
+    if teacherless.is_enabled() or not config.LLM_ENABLED:
         return False
     if st["rounds"] - st.get("last_llm_round", -999) < config.LLM_COOLDOWN:
         return False
@@ -39,7 +39,7 @@ def available(st):
 
 def think_available(st):
     """思考皮层通道（独立预算，冷却 2 轮）——self_talk 每次触发都应过语言区。"""
-    if not config.LLM_ENABLED:
+    if teacherless.is_enabled() or not config.LLM_ENABLED:
         return False
     if st["rounds"] - st.get("last_think_round", -999) < config.LLM_THINK_COOLDOWN:
         return False
@@ -165,7 +165,11 @@ def think_async(st, focus):
 
 def harvest_think(st):
     """主循环每轮开头调用：收割后台完成的思考（把话说完的接续点）。
-    收割的联想按提案同等待遇入账（unverified，等阅读验证）。"""
+    收割的联想按提案同等待遇入账（unverified，等阅读验证）。
+    Teacherless：继承来的 think_inbox 直接丢弃，不折算成提案。"""
+    if teacherless.is_enabled():
+        st["think_inbox"] = []
+        return 0
     with _think_lock:
         pending = list(st.get("think_inbox", []))
         st["think_inbox"] = []
@@ -222,6 +226,8 @@ def _parse_result(raw, task, elapsed, prompt):
 
 
 def consult(st, task, prompt, max_chars=900):
+    if teacherless.is_enabled():
+        return None
     if not available(st):
         return None
     budget = _budget(st)
@@ -258,7 +264,7 @@ def consult(st, task, prompt, max_chars=900):
 
 
 def save_proposals(st, result, topic):
-    if not result:
+    if teacherless.is_enabled() or not result:
         return 0
     props = st.setdefault("llm_proposals", [])
     n = 0

@@ -129,8 +129,6 @@ class OutcomeTests(SandboxTest):
     def test_main_executes_handler_once_and_settles_after_energy(self):
         st = state.default_state()
         calls = []
-        candidate = {"action": "rest", "success_probability": 0.5,
-                     "expected_energy_delta": -0.008}
 
         def handler(current):
             calls.append(current["current_action"]["status"])
@@ -144,7 +142,7 @@ class OutcomeTests(SandboxTest):
 
         with mock.patch.object(main.skills, "scan_workspace", return_value=([], [])), \
              mock.patch.object(main.skills, "novelty_score", return_value=0.0), \
-             mock.patch.object(main, "choose_action", return_value=("rest", [candidate])), \
+             mock.patch.object(decision, "pick_actions", return_value=["rest"]), \
              mock.patch.object(main.skills, "do_rest", side_effect=handler), \
              mock.patch.object(main, "log_event"), \
              mock.patch.object(main, "save_state", side_effect=record_save), \

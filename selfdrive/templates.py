@@ -10,7 +10,7 @@ v9.16 关键修复：
 import re
 import time
 
-from . import config
+from . import config, teacherless
 from .config import (BUILTIN_TEMPLATE_IDS, INBOX, PRUNE_EVERY, PRUNE_KEEP_MIN,
                      SEED_TEMPLATES, TEMPLATES_DIR, TEMPLATE_MAX)
 
@@ -131,7 +131,11 @@ def ensure_builtin_templates():
 
 
 def ensure_asked_texts(st):
-    """查重窗口为空时从 inbox.md 回填最近提问（老状态升级/首次运行）。"""
+    """查重窗口为空时从 inbox.md 回填最近提问（老状态升级/首次运行）。
+    Teacherless：inbox 是教师通道，不许把历史提问洗成自己的查重窗口。"""
+    if teacherless.is_enabled():
+        st.setdefault("asked_texts", [])
+        return
     if st.get("asked_texts"):
         return
     texts = []

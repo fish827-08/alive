@@ -15,7 +15,7 @@ except ImportError:
     sys.path.insert(0, str(_cfg.BASE))
     import semantics as sem
 
-from . import config, outcomes, rules_compiler, skills, templates, working_memory
+from . import config, outcomes, rules_compiler, skills, templates, teacherless, working_memory
 from .config import LOGS, NOVELTY_WEB_SCALE, ONCE
 from .decision import choose_action, evaluate_candidates, pick_actions
 from .emotions import apply_energy, update_emotions
@@ -60,6 +60,14 @@ def run_round(st):
     working_memory.build(st)
     from .decision import pick_actions
     picks = pick_actions(st, st["emotions"], st["web_built"])
+    blocked = [a for a in picks if not teacherless.allow_action(a)]
+    if blocked:
+        teacherless.audit(event="selection_blocked", channel=",".join(blocked),
+                          detail="决策层试图选择被禁用通道，已在执行前拦截",
+                          round=st["rounds"])
+        picks = [a for a in picks if teacherless.allow_action(a)]
+    if not picks:
+        picks = ["rest"]
     action = picks[0]
     side_picks = picks[1:]           # v9.23.2 辅动作：同一轮内轻量并行执行
     candidates = evaluate_candidates(st, {a: 1.0 for a in picks})
@@ -179,13 +187,30 @@ def run_round(st):
     log_event(st, action, detail)
     save_state(st)
     SEM.save()
+    teacherless.assert_state_clean(st)   # 状态落盘后再验一遍：基线之后不许新增教师/LLM痕迹
     print(f"[round {st['rounds']}] {action} | { {k: round(v, 2) for k, v in st['emotions'].items()} } | {detail}", flush=True)
 
 
 def main():
+    manifest = None
+    if config.TEACHERLESS:
+        # 启动前先验隔离与种子账本：未初始化/状态不属于本实验/基线被突破 → 拒绝运行
+        manifest = teacherless.verify_clean_start()
     LOGS.mkdir(exist_ok=True)
     templates.ensure_builtin_templates()      # ⑤ 相反/先后模板就位
     st = load_state()
+    if config.TEACHERLESS:
+        teacherless.stamp_state(st, manifest)
+        teacherless.assert_state_clean(st, manifest)
+        save_state(st)
+        teacherless.audit(event="startup", channel="runtime",
+                          detail=(f"experiment={manifest['experiment_id']} "
+                                  f"seed_policy={manifest['seed_policy']} "
+                                  f"rounds={st.get('rounds', 0)} "
+                                  f"code_drift="
+                                  f"{teacherless.code_fingerprint() != manifest.get('code_sha256')}"))
+    elif st.get("teacherless"):
+        teacherless.assert_mode_matches_state(st)
     templates.ensure_asked_texts(st)          # 查重窗口回填（升级兼容）
     if ONCE:
         run_round(st)
@@ -197,4 +222,6 @@ def main():
         except Exception as exc:
             log_event(st, "error", f"异常：{exc.__class__.__name__}: {exc}")
             print(f"[error] {exc.__class__.__name__}: {exc}", flush=True)
+            if config.TEACHERLESS:
+                raise              # 隔离基线失败要停机暴露，不能带病继续跑
         time.sleep(config.INTERVAL)

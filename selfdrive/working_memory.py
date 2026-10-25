@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """容量受限的当前工作记忆；构建过程只读长期记忆，不强化边权。"""
-from . import config
+from . import config, teacherless
 
 
 def build(st):
     energy = st.get("energy", 1.0)
     unread = []
-    if config.OUTBOX.exists():
+    if not teacherless.is_enabled() and config.OUTBOX.exists():
         unread = [p.stem for p in config.OUTBOX.glob("*.md")
                   if p.stem not in st.get("brain_read", [])]
     if energy < 0.35:
@@ -55,10 +55,12 @@ def build(st):
         "active_claims": claims[:8],
         "open_predictions": pending,
         "contradictions": contradictions,
-        "available_skills": list(config.SKILLS),
+        "available_skills": [s for s in config.SKILLS if teacherless.allow_action(s)],
         "candidates": [],
         "selected_action": None,
     }
+    if teacherless.is_enabled():
+        wm["mode"] = "teacherless"
     st["working_memory"] = wm
     return wm
 

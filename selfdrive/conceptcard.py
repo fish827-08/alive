@@ -17,7 +17,7 @@ v9.20 先点亮两张卡：『加法』(探针=COMPOSE) 和『能量』(读自�
 """
 import random
 
-from . import claims, config, probes
+from . import claims, config, probes, teacherless
 from .state import append_note
 
 HISTORY_KEEP = 12            # 每卡履历保留条数（情景记忆遗忘：旧的淡出）
@@ -85,10 +85,11 @@ def situation_match(st):
         st["card_boost"] = {"rest": 1.6, "explore_file": 0.85, "web_search": 0.85}
         append_note(st, f"- 概念使用（能量卡）：能量 {en:.2f} 低于阈值，算得缺口 {abs(gap):.2f}"
                         f"——按『能量』卡的决定倾向：先休息回能，缓一缓耗能动作")
-    unread = [p for p in config.OUTBOX.glob("*.md") if p.stem not in st.get("brain_read", [])] \
-        if config.OUTBOX.exists() else []
-    if unread:
-        hits.setdefault("回答", f"未读回答 {len(unread)} 条")
+    if not teacherless.is_enabled():
+        unread = [p for p in config.OUTBOX.glob("*.md") if p.stem not in st.get("brain_read", [])] \
+            if config.OUTBOX.exists() else []
+        if unread:
+            hits.setdefault("回答", f"未读回答 {len(unread)} 条")
     for name, why in hits.items():
         use_card(st, name, "activated", why)
     return hits

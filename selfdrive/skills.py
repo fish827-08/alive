@@ -20,7 +20,7 @@ import urllib.request
 from collections import Counter
 from pathlib import Path
 
-from . import config, learning, predictions, rules_compiler, templates, tokenizer
+from . import config, learning, predictions, rules_compiler, templates, tokenizer, teacherless
 from . import abstraction, activation, conceptcard, dream
 
 try:                                    # 顶层模块（BASE/semantics.py，兜底联想层）
@@ -214,6 +214,10 @@ def do_explore_file(files, st):
 
 
 def do_explore_wider(st):
+    if not teacherless.allow_action("explore_wider"):
+        teacherless.audit(event="skill_blocked", channel="explore_wider",
+                          detail="外部目录扫描在 Teacherless 模式被硬禁用", round=st.get("rounds"))
+        return False, teacherless.blocked_reason("explore_wider")
     found = scan_wider(st)
     if not found:
         return False, "更大范围没有新文本文件"
@@ -311,7 +315,12 @@ def _write_question(st, qid, question, source, rel_tag=None, topic=""):
 
 def do_ask_brain(st):
     """写一个问题到 inbox（节流 + 未读抑制 + v9.16 查重拦截④）。
-    通道优先级：变换组合 → 图激活推理 → 开放求知 → 模板（相反/先后内置其中）。"""
+    通道优先级：变换组合 → 图激活推理 → 开放求知 → 模板（相反/先后内置其中）。
+    Teacherless：教师通道硬禁用——提问不落盘、不计数。"""
+    if not teacherless.allow_action("ask_brain"):
+        teacherless.audit(event="skill_blocked", channel="ask_brain",
+                          detail="教师提问通道在 Teacherless 模式被硬禁用", round=st.get("rounds"))
+        return False, teacherless.blocked_reason("ask_brain")
     if st["rounds"] - st["last_ask_round"] < 3:
         return False, "提问节流中（距上次提问不足 3 轮）"
     OUTBOX.mkdir(parents=True, exist_ok=True)
@@ -469,7 +478,12 @@ def do_ask_brain(st):
 
 
 def do_read_brain(st):
-    """读 outbox 未读回答：入笔记/入 kb/提取模板/VERDICT 回写 + ③ [RULE] 编译。"""
+    """读 outbox 未读回答：入笔记/入 kb/提取模板/VERDICT 回写 + ③ [RULE] 编译。
+    Teacherless：不读任何教师回答，避免历史载荷或运行期投喂混入。"""
+    if not teacherless.allow_action("read_brain"):
+        teacherless.audit(event="skill_blocked", channel="read_brain",
+                          detail="教师回答读取在 Teacherless 模式被硬禁用", round=st.get("rounds"))
+        return False, teacherless.blocked_reason("read_brain")
     OUTBOX.mkdir(parents=True, exist_ok=True)
     read_any = False
     new_tpl = 0
@@ -1084,6 +1098,10 @@ def do_reflect_memory(st):
 
 def do_llm_consult(st, me="huiyue"):
     """LLM 只扩展候选空间；原文不直接进入概念、关系、变换或信念。"""
+    if not teacherless.allow_action("llm_consult"):
+        teacherless.audit(event="skill_blocked", channel="llm_consult",
+                          detail="LLM 通道在 Teacherless 模式被硬禁用", round=st.get("rounds"))
+        return False, teacherless.blocked_reason("llm_consult")
     if not config.LLM_ENABLED:
         return False, "LLM 未启用（纯无 LLM 路线）"
     from . import llm_bridge
@@ -1205,7 +1223,12 @@ def _sibling_name(st, me):
 def do_sibling_letter(st, me="huiyue"):
     """兄弟信箱：读兄弟的信（按普通阅读消化——信里的话也要过我自己的概念晋升和
     验证，无特权、不全信）+ 写一封信（冷却 100 轮，防依赖拐杖）。
-    串行调度器保证两 agent 不会同时读写同一文件。老师只读不写此信箱。"""
+    串行调度器保证两 agent 不会同时读写同一文件。老师只读不写此信箱。
+    Teacherless：兄弟信箱不独立（可能夹带教师转述），硬禁用。"""
+    if not teacherless.allow_action("sibling_letter"):
+        teacherless.audit(event="skill_blocked", channel="sibling_letter",
+                          detail="兄弟信箱在 Teacherless 模式被硬禁用", round=st.get("rounds"))
+        return False, teacherless.blocked_reason("sibling_letter")
     me_name, sib_name, my_outbox_dir, sib_outbox_dir = _sibling_name(st, me)
     SHARED = config.SHARED_LETTERS
     SHARED.mkdir(parents=True, exist_ok=True)

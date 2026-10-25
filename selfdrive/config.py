@@ -27,6 +27,12 @@ DECISION_MODE = os.environ.get("SELFDRIVE_DECISION_MODE", "enforce")
 if DECISION_MODE not in {"legacy", "shadow", "enforce"}:
     raise ValueError("SELFDRIVE_DECISION_MODE 必须是 legacy、shadow 或 enforce")
 
+# ---- Teacherless 实验模式（阶段 1：教师/LLM/外部继承通道硬禁用） ----
+MODE = os.environ.get("SELFDRIVE_MODE", "standard").strip().lower()
+if MODE not in {"standard", "teacherless"}:
+    raise ValueError("SELFDRIVE_MODE 必须是 standard 或 teacherless")
+TEACHERLESS = MODE == "teacherless"
+
 # ---- v9.16 ①：世界重开——web 自食缓存读入配额 ----
 WEB_SHARE_CAP = 0.20        # 最近 RECENT_READS_MAX 次阅读中，web-* 占比上限
 RECENT_READS_MAX = 100      # 阅读来源滑窗长度
@@ -142,7 +148,8 @@ PRUNE_EVERY = 25
 PRUNE_KEEP_MIN = 5
 
 # ---- 外部扫描（explore_wider / visit_new_dir） ----
-WIDER_ROOTS = ["/home/qingwu", "/usr/share/doc"]
+# Teacherless：外部目录扫描是继承教师/兄弟数据的通道，硬关闭（不是降权）。
+WIDER_ROOTS = [] if TEACHERLESS else ["/home/qingwu", "/usr/share/doc"]
 WIDER_EXTS = {".txt", ".md", ".py", ".json", ".html", ".rst", ".log"}
 # v9.16.1: 补 site-packages/dist-packages（kbvenv 的库文件曾被整目录扫进清单）、
 # selfdrive_data（服务器数据副本目录）、runs（冒烟沙箱）
@@ -197,14 +204,16 @@ DREAM_BET_HORIZON = 120       # 梦注有效期加倍（梦押本就冷门，60 
 
 # ---- v9.21 兄弟信箱（同伴学习通道；老师只读不写，兄弟纯通道） ----
 SHARED_LETTERS = BASE.parent / "shared_letters"   # /home/qingwu/shared_letters
-SIBLING_NAME = os.environ.get("SELFDRIVE_SIBLING", "").strip()
+# Teacherless：兄弟信箱可能夹带教师转述，身份也不独立，硬关闭。
+SIBLING_NAME = "" if TEACHERLESS else os.environ.get("SELFDRIVE_SIBLING", "").strip()
 LETTER_COOLDOWN = 100         # 每个 agent 写信冷却（轮）——防依赖，同伴是补充不是拐杖
 LETTER_MAX_CHARS = 300        # 信件篇幅上限
 LETTERS_KEEP = 30             # 各信箱保留信件数（LRU）
 
 # ---- v9.22 LLM 提案模块（设计稿第 10 节；本地 Ollama 小模型） ----
 # 权力边界：LLM 只有提案权。云端部署时设 LLM_ENABLED=false（纯无 LLM 路线 A）。
-LLM_ENABLED = os.environ.get("SELFDRIVE_LLM", "0") == "1"   # 显式开启才启用；云端默认关
+# Teacherless：无论环境变量怎么给，LLM 硬关闭。
+LLM_ENABLED = (not TEACHERLESS) and os.environ.get("SELFDRIVE_LLM", "0") == "1"
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 LLM_MODEL = os.environ.get("SELFDRIVE_LLM_MODEL", "qwen3:1.7b")
 LLM_TIMEOUT = 90              # 秒（首次加载模型可能较慢）

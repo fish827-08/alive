@@ -5,6 +5,10 @@
 > LLM 只在明确划定的边界内作为"提案生成器"参与（可插拔、可关闭）。
 > 它们不会写文章，但它们会：自己归纳加法变换、对无边概念下注并被世界判对错、
 > 做梦、向老师提问、把老师的批评变成制度、以及——问出你没想到的问题。
+>
+> 另有**无教师实验基线**（`SELFDRIVE_MODE=teacherless`）：独立目录、独立状态，
+> 硬禁用教师与 LLM 通道，用于回答"没有老师时它还能学什么"。目前只完成阶段 1
+> （隔离性验收），搜索与自主验证闭环尚未实现。
 
 ---
 
@@ -46,6 +50,7 @@ selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是�
 ├── llm_bridge.py     # LLM 提案桥（Ollama；只提案不掌权，失败静默降级）
 ├── emotions.py       # 情感演化/昼夜节律/能量内稳态
 ├── templates.py      # 提问模板库 + 查重
+├── teacherless.py    # 无教师实验：独立初始化/种子溯源/污染拒绝/运行期审计
 ├── state.py / kb.py  # 状态持久化 / 向量记忆库客户端
 ```
 
@@ -105,6 +110,36 @@ LLM 的回答**不直接进概念库**——接口只接受含 `proposals`、`as
 模型不在线时自动降级为无 LLM 路径。火星需用 `SELFDRIVE_SIBLING=同伴目录名`
 显式配置通信对象，不会默认冒充 moon。
 
+### 无教师实验基线（Teacherless，阶段 1）
+
+该模式硬禁用教师问答、教师回答读取、LLM、兄弟信箱、外部目录扫描与共享向量库，
+并要求**独立工作目录 + 独立 state/logs**。它不会接管辉月/moon/火星的任何数据。
+
+```bash
+# 1) 建独立目录（不要复用已有 state/brain/workspace/logs/semantics 的目录）
+mkdir ~/teacherless && cd ~/teacherless
+cp -r /path/to/alive/selfdrive /path/to/alive/agent_v9.py /path/to/alive/semantics.py .
+
+# 2) 初始化：from_zero 要求目录干净，并登记代码级种子先验
+SELFDRIVE_MODE=teacherless python3 -m selfdrive.teacherless init --experiment TL-001
+
+# 3) 运行与体检
+SELFDRIVE_MODE=teacherless python3 agent_v9.py --once
+SELFDRIVE_MODE=teacherless python3 -m selfdrive.teacherless status
+```
+
+Windows 用 `py` 代替 `python3`，并用 `set SELFDRIVE_MODE=teacherless` 设置环境变量。
+`init` 会写 `teacherless_manifest.json`：记录代码指纹、种子来源、被禁通道与基线计数。
+若确实要带入训练资料或历史资料，须在初始化时显式声明来源，`seed_policy` 会标为
+`declared` 或 `teacher_history_seeded`——后者不能再宣称“完全从零”。
+运行期每轮结束都会核对状态标记与基线计数，出现教师/LLM 痕迹会直接终止实验。
+
+**阶段边界**：当前只完成阶段 1 的隔离性验收；研究任务、定向搜索、统一验证器、
+留出评估尚未实现，不能据此宣称“已实现无教师自主学习”。
+设计与审计见 [docs/teacherless/MASTER_PROMPT.md](docs/teacherless/MASTER_PROMPT.md)、
+[docs/teacherless/PHASE0_AUDIT.md](docs/teacherless/PHASE0_AUDIT.md)、
+[docs/teacherless/EXPERIMENT_LOG.md](docs/teacherless/EXPERIMENT_LOG.md)。
+
 ### 老师如何教学（答疑协议）
 
 学生把问题写进自己的 `brain/inbox.md`，老师把回答放进 `brain/outbox/Q-编号.md`。
@@ -115,11 +150,17 @@ LLM 的回答**不直接进概念库**——接口只接受含 `proposals`、`as
 - `[RULE] 触发 -> 效果 [/RULE]` 直接编译进决策层（权重乘子/情绪/概念合并/新模板）
 - `FEED-*.md` 主动投喂新概念
 
-## 三个实验
+## 四个实验
 
 1. **教学对照**：辉月（进修式教学）vs moon（幼儿式教学）——同环境同口粮，教学风格的差异
 2. **路线对照**：云端纯无 LLM vs 本地 LLM 提案——LLM 只提提案时的增量
 3. **消融**：任何模块（情绪/做梦/概念卡/LLM）没有可测贡献就移除，不因"像脑"保留
+4. **无教师基线**：`teacherless` 模式下教师/LLM 零调用、独立状态、种子来源可追溯。
+   当前只验收隔离性；是否有自主学习增益，要等阶段 2–4 的搜索、验证与留出评估
+
+实验 4 的判据是"无教师、无 LLM 条件下在未参与训练的任务上是否变强"，
+不是轮次、概念数或日志体积。阶段 1 的冒烟结果（80 项测试通过、隔离运行零违规）
+只能证明通道关闭与状态未被污染，不能证明学习发生。
 
 ## 目录结构
 
@@ -129,6 +170,7 @@ selfdrive/            # 认知包（见上）
 brain/                # 辉月的师生通道（inbox/outbox/PROTOCOL.md/模板）
 moon/                 # moon 的档案快照（云端运行时在 ~/moon）
 docs/                 # 行为诊断报告与设计文档（从 v9.15 到当前架构设计）
+  teacherless/        # 无教师实验：主提示词/阶段 0 审计/实验日志
 logs/                 # events.jsonl（每轮认知事件）+ console.txt
 state.json            # 辉月的长期记忆（概念/关系/定律/概念卡/预测/履历）
 workspace/            # 学生的"世界"（archive 口粮资料 + 自己搜的 web 缓存 + 笔记）
@@ -138,6 +180,7 @@ requirements.txt      # 唯一依赖：jieba（LLM 学生另需本机 Ollama）
 ## 观察它
 
 - `logs/events.jsonl`：每轮的认知事件（含预测结算/做梦/规则编译/自省）
+- `logs/teacherless_audit.jsonl`：仅 Teacherless 模式生成，记录初始化/启动/通道拦截
 - `workspace/notes/journey.md`：它的日记（含"概念使用""定律毕业""自省"条目）
 - 构建站：`build_site` 技能会生成 `workspace/web/index.html`（探索站网页）
 

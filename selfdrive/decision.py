@@ -12,7 +12,7 @@
 import math
 import random
 
-from . import config
+from . import config, teacherless
 from .config import (SKILLS, WEB_SHARE_CAP, load_ask_config)
 from .state import web_share
 from .tokenizer import FORMAT_NOISE
@@ -55,7 +55,7 @@ def legacy_weights(st, e, web_built):
         w["ask_brain"] += 0.5
     # ③ 有未读回答优先读；无未读强抑（修"read_brain 空转"）
     unread = []
-    if config.OUTBOX.exists():
+    if not teacherless.is_enabled() and config.OUTBOX.exists():
         unread = [p for p in config.OUTBOX.glob("*.md") if p.stem not in st["brain_read"]]
     if unread:
         w["read_brain"] *= 1.0 + min(2.0, len(unread) * 1.2)
@@ -146,6 +146,11 @@ def legacy_weights(st, e, web_built):
     if web_share(st) >= WEB_SHARE_CAP:
         w["explore_file"] *= 0.25
         w["web_search"] *= 1.3
+    # ⑯ Teacherless 硬门禁：教师/LLM/外部继承通道权重清零（执行层还会再挡一次）
+    if teacherless.is_enabled():
+        for a in teacherless.BLOCKED_SKILLS:
+            if a in w:
+                w[a] = 0.0
     if sum(w.values()) <= 0.0:
         w["rest"] = 1.0
     return w
