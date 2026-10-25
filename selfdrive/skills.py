@@ -701,6 +701,28 @@ def _pick_search_topic(st):
     return "涌现"
 
 
+def _fetch_url_hard(url, headers, timeout=15, hard=30):
+    """带硬超时的抓取（v9.19.2）：urlopen 的 timeout 管不到 DNS 解析——
+    网络劣化时 getaddrinfo 卡死会把一轮拖成十分钟（round5082-5084 事故）。
+    Linux 下用 SIGALRM 强杀；Windows 无 SIGALRM，回退普通 urlopen。"""
+    import signal as _signal
+    if hasattr(_signal, "SIGALRM"):
+        def _kick(signum, frame):
+            raise TimeoutError(f"网络硬超时 {hard}s（DNS或连接卡死）")
+        old = _signal.signal(_signal.SIGALRM, _kick)
+        _signal.alarm(hard)
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return r.read().decode("utf-8", errors="ignore")
+        finally:
+            _signal.alarm(0)
+            _signal.signal(_signal.SIGALRM, old)
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read().decode("utf-8", errors="ignore")
+
+
 def do_web_search(st):
     """上网搜索（无 LLM 关键词级）：Bing 标题+摘要 → workspace/web/*.md + kb。"""
     ws = load_ask_config().get("web_search", {})
@@ -715,12 +737,10 @@ def do_web_search(st):
     query = urllib.parse.quote(topic)
     url = f"https://cn.bing.com/search?q={query}&setlang=zh-hans"
     try:
-        req = urllib.request.Request(url, headers={
+        html = _fetch_url_hard(url, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             "Accept-Language": "zh-CN,zh;q=0.9",
         })
-        with urllib.request.urlopen(req, timeout=15) as r:
-            html = r.read().decode("utf-8", errors="ignore")
     except Exception as exc:
         return False, f"搜索失败（{exc.__class__.__name__}），静默降级"
     results = []
