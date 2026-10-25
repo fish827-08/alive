@@ -1,6 +1,6 @@
 # Phase 2：研究任务队列与定向搜索规划
 
-状态：**已实现第一小步并完成两轮审查修正，等待 owner 复审。** 阶段 3
+状态：**已实现第一小步并完成三轮审查修正，等待 owner 复审。** 阶段 3
 （自主验证闭环）、统一验证器、留出评估与策略优化均未启动。
 
 ## 1. 这一阶段解决什么
@@ -33,7 +33,7 @@
 | `selfdrive/skills.py` | `do_web_search` 消费研究查询；SERP 解析、主机回退、Bing 跳转链还原 |
 | `selfdrive/decision.py` | 有开放研究任务时轻微抬升 `web_search` 权重；搜索禁用/冷却仍优先 |
 | `selfdrive/working_memory.py` | 工作记忆暴露只读 `research_focus`（最多 3 条） |
-| `selfdrive/__init__.py` | 版本 `9.24.2` |
+| `selfdrive/__init__.py` | 版本 `9.24.3` |
 
 ## 3. 任务结构
 
@@ -78,11 +78,17 @@
   执行一次显式迁移——把阶段 2.0 含 `kind` 的关系任务 ID 归一到关系键
   （`relation|A|B`），同步改写查询与来源索引里的 `task_id`，并把旧来源索引的
   `content_sha256` 更名为 `title_excerpt_sha256`。若同一关系同时存在新旧任务，
-  合并为一条，旧尝试归档进 `attempt_history`，查询/来源关联保留。迁移写
-  `task_id_migrated` / `source_fields_migrated`；历史 JSONL 不重写。
-  因此阶段 2.0 的实验状态可以继续使用，不需要伪装成“从零”状态。
-  选择迁移而非强制重建：旧候选材料可继续被阶段 3 消费；若要做全新基线，
-  仍应新建 `from_zero` 目录，二者不得混用。
+  合并为一条：任务种类取**最强信号**，生命周期取**仍可执行的那条**——
+  有 `open`/`active` 任务时以它为准（`active` 优先，其次更新时间与优先级）；
+  没有活跃任务但有候选材料时落为 `materials_found` 并标
+  `pending_verification`；只有全部任务都已闭合时才保留
+  `blocked`/`exhausted`/`abandoned` 的终止态。其他任务的尝试归档进
+  `attempt_history`，`kind_history` 记录种类切换，`query_ids`/`source_ids`
+  合并保留。迁移写 `task_id_migrated` / `source_fields_migrated`；历史 JSONL
+  不重写。因此阶段 2.0 的实验状态可以继续使用，不需要伪装成“从零”状态；
+  合并后的可执行任务仍在 `_viable_tasks()` 中，待验证材料仍能被
+  `focus()`/阶段 3 验证入口发现。选择迁移而非强制重建：旧候选材料可继续被
+  阶段 3 消费；若要做全新基线，仍应新建 `from_zero` 目录，二者不得混用。
 
 ## 4. 任务来源
 
@@ -197,8 +203,8 @@ py -m compileall -q selfdrive agent_v9.py tests
 py -m unittest discover -s tests
 ```
 
-- 全量：**138 项通过**（阶段 1.1 为 99 项，阶段 2/2.1 新增 39 项）。
-- `tests/test_research.py`：39 项，覆盖 owner 指定的固定案例：
+- 全量：**140 项通过**（阶段 1.1 为 99 项，阶段 2/2.1 新增 41 项）。
+- `tests/test_research.py`：41 项，覆盖 owner 指定的固定案例：
   - 同一研究目标生成 3 条目的不同的具体查询；
   - 重复主题/相似查询被抑制并计数；
   - `no_results` 生成一次更宽改写；`network_error`/`serp_blocked` 换目的不改写；
@@ -209,29 +215,37 @@ py -m unittest discover -s tests
   - 每轮新建额度用尽后，排在后面的既有弱关系任务仍被预测落空信号升级；
   - 阶段 2.0 的关系任务 ID、查询/来源 `task_id` 与旧来源字段可迁移，
     新旧任务碰撞时合并且不丢历史关联；
+  - 终止态旧任务与活跃旧任务碰撞时，合并后仍保持可执行并出现在
+    `_viable_tasks()` 中，不会继承旧 `exhausted`；
+  - 终止态旧任务与 `materials_found` 旧任务碰撞时，合并后保留
+    `materials_found` + `pending_verification`，候选材料仍能被发现；
   - `title_excerpt_sha256` 只覆盖标题+摘要，不再冒充网页正文哈希；
   - 任务上限、尝试上限、配置变更只记一次；
   - 无概念支撑的最近词（日记尾词/文件名）不能变成搜索查询；
   - 工作记忆只读、决策加权、Teacherless 零痕迹等集成行为。
 
-### 隔离冒烟 v6（Phase 2.1 复审修正后代码）
+### 隔离冒烟 v7（Phase 2.1 第三次复审修正后代码）
 
-`runs/teacherless_smoke_20261026_v6/`（本地临时目录，不提交）：
+`runs/teacherless_smoke_20261026_v7/`（本地临时目录，不提交）：
 
-- `from_zero` 初始化，代码版本 `9.24.2`，代码指纹 `b3a2968d30fa`；
-- 3 轮；`status.clean=true`、`code_drift=false`、`seed_problems=[]`、
-  `violations={}`；
-- 8 项教师/LLM 痕迹全 0；`events.jsonl` 无 error；
+- `from_zero` 初始化，代码版本 `9.24.3`，代码指纹 `8bc7366a1a23`；
+- 3 轮（`tidy_notes` → `build_site` → `tidy_notes`）；
+  `status.clean=true`、`code_drift=false`、`seed_problems=[]`、
+  `code_migrations=[]`、`violations={}`；
+- 8 项教师/LLM 痕迹全 0；`events.jsonl` 无框架级 error。第 2 轮 `build_site`
+  在本机启动网站服务失败（`[WinError 2]`，缺少启动器），属环境限制，
+  不影响 Teacherless 隔离与研究账本；
 - `state.research.schema_version=2`，任务/查询/来源均为 0，
   `research.stats` 全 0，`research.jsonl` 只有 `config_recorded`
   （`research-config-v2`）；
-- 3 轮后 1 个未晋升概念（`index`，n=1）、0 命题、0 关系、0 预测，
-  没有满足任务生成条件的缺口——这是正确行为，不是失败。若强行搜索，
-  只会得到无来源主题的随机词，正是阶段 2 要避免的。
+- 3 轮后 0 概念、0 命题、0 关系、0 预测，没有满足任务生成条件的缺口——
+  这是正确行为，不是失败。若强行搜索，只会得到无来源主题的随机词，
+  正是阶段 2 要避免的。
 
-v6 只证明隔离边界未被本次迁移/扫描修正破坏；它使用全新状态，不能验证旧状态
-迁移，也不能验证队列拥挤时的升级时序——后者由 `tests/test_research.py` 的
-合成状态回归覆盖。
+v6（`9.24.2`/`b3a2968d30fa`，1 个未晋升概念）作为上一轮隔离证据保留在
+`EXPERIMENT_LOG.md`。v7 只证明隔离边界未被本次生命周期合并修正破坏；它使用
+全新状态，不能验证旧状态迁移，也不能验证队列拥挤时的升级时序——后者由
+`tests/test_research.py` 的合成状态回归覆盖。
 
 ### 真实搜索链路验证
 
@@ -262,7 +276,9 @@ v6 只证明隔离边界未被本次迁移/扫描修正破坏；它使用全新�
    何时因新证据重开需要后续阶段设计。
 8. **旧状态迁移只覆盖已知格式**：只迁移阶段 2.0 的关系任务 ID 与来源字段；
    更早/未知的研究 schema 不做猜测性修复。迁移只在 `ensure_state()` 首次运行，
-   历史 JSONL 保持原样。
+   历史 JSONL 保持原样。碰撞合并的生命周期规则只处理当前已知的
+   `open`/`active`/`materials_found`/`exhausted`/`blocked`/`abandoned` 组合；
+   它保留可执行性与待验证入口，不推断候选材料是否真的支持命题。
 9. **没有评估**：本阶段不能证明“搜索让系统变强”。
 
 ## 12. 下一阶段门槛（阶段 3，尚未启动）

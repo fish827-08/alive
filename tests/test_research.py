@@ -409,6 +409,100 @@ class LegacyStateMigrationTests(ResearchSandbox):
         self.assertEqual(r["queries"][query_id]["task_id"], new_id)
         self.assertEqual(r["sources"][0]["task_id"], new_id)
 
+    def collision_state(self):
+        st = self.fresh()
+        r = st["research"]
+        r.pop("schema_version", None)
+        relation = "影|光"
+        miss_id = research._stable_id(
+            "RT", f"prediction_miss|relation|{relation}")
+        weak_id = research._stable_id(
+            "RT", f"relation_unverified|relation|{relation}")
+        new_id = research._stable_id(
+            "RT", research._task_key(
+                "prediction_miss", {"type": "relation", "relation": "光|影"}))
+        miss = {
+            "id": miss_id, "kind": "prediction_miss", "kind_label": "预测落空",
+            "question": "《光》和《影》之间缺少什么中间概念？",
+            "reason": "预测落空",
+            "target": {"type": "relation", "relation": relation,
+                       "concepts": ["光", "影"]},
+            "priority": 0.8, "status": "exhausted", "verification": "unverified",
+            "created_round": 80, "updated_round": 90, "last_seen_round": 90,
+            "attempts": [{"round": 81, "query_id": "RQ:miss1",
+                          "outcome": "failed", "result_count": 0}],
+            "query_ids": ["RQ:miss1"], "source_ids": [],
+            "result_count": 0, "rewrites": 0,
+        }
+        weak = {
+            "id": weak_id, "kind": "relation_unverified",
+            "kind_label": "关系未验证",
+            "question": "《光》和《影》是什么关系？",
+            "reason": "弱关系未验证",
+            "target": {"type": "relation", "relation": relation,
+                       "concepts": ["光", "影"]},
+            "priority": 0.6, "status": "active",
+            "verification": "unverified",
+            "created_round": 85, "updated_round": 95, "last_seen_round": 95,
+            "attempts": [{"round": 94, "query_id": "RQ:weak",
+                          "outcome": "used", "result_count": 1}],
+            "query_ids": ["RQ:weak"], "source_ids": ["RS:weak"],
+            "result_count": 1, "rewrites": 0,
+        }
+        r["tasks"][miss_id] = miss
+        r["tasks"][weak_id] = weak
+        r["queries"]["RQ:weak"] = {
+            "id": "RQ:weak", "task_id": weak_id, "purpose": "relation",
+            "text": "光和影有什么关系", "normalized": "光和影有什么关系",
+            "status": "used", "sources": ["RS:weak"],
+        }
+        return st, r, miss_id, weak_id, new_id
+
+    def test_merge_keeps_active_task_executable(self):
+        st, r, miss_id, weak_id, new_id = self.collision_state()
+        research.ensure_state(st)
+        self.assertEqual(len(r["tasks"]), 1)
+        task = r["tasks"][new_id]
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertEqual(task["status"], "active")
+        self.assertEqual(task["attempts"],
+                         [{"round": 94, "query_id": "RQ:weak",
+                           "outcome": "used", "result_count": 1}])
+        self.assertEqual(task["attempt_history"][-1]["kind"],
+                         "prediction_miss")
+        self.assertEqual(task["attempt_history"][-1]["attempts"],
+                         [{"round": 81, "query_id": "RQ:miss1",
+                           "outcome": "failed", "result_count": 0}])
+        self.assertIn("RQ:weak", task["query_ids"])
+        self.assertIn("RS:weak", task["source_ids"])
+        self.assertIn(task, research._viable_tasks(st))
+        query = research.next_query(st)
+        self.assertIsNotNone(query)
+        self.assertEqual(query["task_id"], new_id)
+
+    def test_merge_keeps_pending_materials_discoverable(self):
+        st, r, miss_id, weak_id, new_id = self.collision_state()
+        weak = r["tasks"][weak_id]
+        weak["status"] = "materials_found"
+        weak["verification"] = "pending_verification"
+        weak["result_count"] = 2
+        weak["source_ids"] = ["RS:weak", "RS:weak2"]
+        research.ensure_state(st)
+        self.assertEqual(len(r["tasks"]), 1)
+        task = r["tasks"][new_id]
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertEqual(task["status"], "materials_found")
+        self.assertEqual(task["verification"], "pending_verification")
+        self.assertEqual(task["result_count"], 2)
+        self.assertEqual(task["source_ids"], ["RS:weak", "RS:weak2"])
+        self.assertEqual(task["attempt_history"][-1]["kind"],
+                         "relation_unverified")
+        self.assertNotIn(task, research._viable_tasks(st))
+        focused = {t["id"]: t for t in research.focus(st)}
+        self.assertEqual(focused[new_id]["status"], "materials_found")
+        self.assertEqual(focused[new_id]["verification"],
+                         "pending_verification")
+
 
 class QueryPlanningTests(ResearchSandbox):
     def test_same_goal_gets_distinct_purposes_and_specific_text(self):

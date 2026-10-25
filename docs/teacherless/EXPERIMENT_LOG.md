@@ -289,9 +289,55 @@ SELFDRIVE_MODE=standard py -u agent_v9.py --once
 - 边界：仍不做正文提取、证据门禁、来源可信度、定律晋升与留出评估；
   不能据此宣称学习发生。
 
+## 2026-10-26 / Phase 2.1 第三次复审修正（碰撞任务生命周期合并）
+
+- 阶段：2.1（仍不扩展功能，不进入阶段 3）
+- 触发：owner 复审 `6ba0116` 指出旧状态碰撞合并的生命周期缺陷——当同一关系的
+  旧 `prediction_miss` 任务已 `exhausted`、旧 `relation_unverified` 任务仍
+  `active` 或 `materials_found` 时，按种类优先级选主记录会把合并结果留在
+  `exhausted`，可能同时带着 `pending_verification` 与候选材料；`_viable_tasks()`
+  只选 `open`/`active`，这些材料会被埋掉。
+- 修正：
+  1. **种类与生命周期分开选**：`kind_source` 仍取最强研究信号（决定
+     `kind`/问题/原因/目标），`carrier` 取仍可执行的任务（`active` 优先于
+     `open`，其次更新时间与优先级）。合并以 `carrier` 为载体，其他任务的尝试
+     归档进 `attempt_history`，`kind_history` 记录种类切换，
+     `query_ids`/`source_ids`/`result_count` 合并保留。
+  2. **无活跃任务时**：有候选材料则落为 `materials_found` +
+     `pending_verification`，保留待验证入口；否则才按
+     `blocked`/`exhausted`/`abandoned` 优先级保留终止态。
+  3. 迁移后，可继续任务仍出现在 `_viable_tasks()` 中，待验证材料仍能被
+     `focus()`/阶段 3 验证入口发现；不把冲突简单重置为 `open`，避免掩盖
+     旧任务已经失败/阻断的事实。
+- 自动化测试：
+  - `py -m compileall -q selfdrive agent_v9.py tests`：通过。
+  - `py -m unittest discover -s tests`：**140 项全部通过**
+    （阶段 1.1 为 99 项，阶段 2/2.1 为 41 项）。
+  - 新增 2 项回归：终止态 `prediction_miss` + 活跃 `relation_unverified`
+    碰撞后，合并任务保持 `active`、可被 `_viable_tasks()` 选中且
+    `next_query` 可用；终止态 `prediction_miss` + `materials_found`
+    碰撞后，合并任务为 `materials_found` + `pending_verification`，
+    结果数/来源保留且能在 `focus()` 中看到。
+  - 另修正 `tests/test_teacherless.py` 子进程文本解码：显式
+    `PYTHONIOENCODING=utf-8` + `encoding="utf-8"`，避免 UTF-8 locale 下
+    父进程按 GBK 解码子进程 stderr 造成假失败；不改变运行逻辑。
+- 隔离冒烟 v7：`runs/teacherless_smoke_20261026_v7/`（本地临时目录，不提交）。
+  - `from_zero`，代码版本 `9.24.3`，指纹
+    `8bc7366a1a23860763abd948ec1237e119a3ec5aaa7b497d811bf205fa449f93`，3 轮。
+  - `status`：`clean=true`、`code_drift=false`、`seed_problems=[]`、
+    `code_migrations=[]`、`violations={}`；8 项教师/LLM 痕迹全 0。
+  - `state.research.schema_version=2`，任务/查询/来源均为 0，`stats` 全 0；
+    `research.jsonl` 仅 `config_recorded`（`research-config-v2`）；
+    3 轮后 0 概念/命题/关系/预测。
+  - 第 2 轮 `build_site` 在本机启动服务失败（`[WinError 2]`，缺少启动器），
+    属环境限制，不影响隔离与研究账本。
+  - 该冒烟为全新状态，不验证旧状态迁移；迁移与碰撞生命周期由合成状态单测覆盖。
+- 边界：仍不做正文提取、证据门禁、来源可信度、定律晋升与留出评估；
+  不能据此宣称学习发生。
+
 ## 下一门槛
 
-1. owner 复查 Phase 2.1 复审修正提交，确认是否进入阶段 3。
+1. owner 复查 Phase 2.1 第三次复审修正提交，确认是否进入阶段 3。
 2. 阶段 3 前必须先确定：
    - 候选材料如何进入证据门禁（正文提取、来源可信度、同源去重、支持/反驳计数）；
    - 命题/关系边更新的可撤销记录与回滚方式；

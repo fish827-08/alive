@@ -209,8 +209,22 @@ def _task_key(kind, target):
     return f"{kind}|exploration|{target.get('topic')}|{target.get('bucket', 0)}"
 
 
+def _merged_terminal_status(tasks, has_materials, fallback):
+    if has_materials:
+        return "materials_found"
+    statuses = {t.get("status") for t in tasks}
+    for status in ("blocked", "exhausted", "abandoned"):
+        if status in statuses:
+            return status
+    return fallback
+
+
 def _merge_relation_task(primary, other):
-    """迁移时合并同一关系的两条旧任务，历史尝试与关联不丢。"""
+    """迁移时合并同一关系的两条旧任务，历史尝试与关联不丢。
+
+    primary 是生命周期载体（活跃/新建任务优先），其 attempts 保持为当前进度；
+    其余任务的尝试归档进 attempt_history。
+    """
     attempts = list(other.get("attempts") or [])
     if attempts:
         history = primary.setdefault("attempt_history", [])
@@ -275,11 +289,53 @@ def _migrate_legacy_state(st, r):
         if ids == [new_id]:
             continue
         tasks = [r["tasks"][task_id] for task_id in ids]
-        primary = max(tasks, key=lambda t: (KIND_BASE.get(t.get("kind"), 0.0),
-                                            _int(t.get("updated_round"), 0)))
+        kind_source = max(tasks, key=lambda t: (
+            KIND_BASE.get(t.get("kind"), 0.0), _int(t.get("updated_round"), 0)))
+        live = [t for t in tasks if t.get("status") in ("open", "active")]
+        # 生命周期与种类分开选：种类取最强信号，进度取仍可执行/待验证的那条
+        carrier = max(live, key=lambda t: (
+            t.get("status") == "active", _int(t.get("updated_round"), 0),
+            float(t.get("priority") or 0.0))) if live else None
+        primary = carrier or kind_source
         for task in tasks:
             if task is not primary:
                 _merge_relation_task(primary, task)
+        if primary is not kind_source:
+            previous_kind = primary.get("kind")
+            if previous_kind != kind_source.get("kind"):
+                history = primary.setdefault("kind_history", [])
+                history.append({
+                    "round": st.get("rounds", 0),
+                    "from": previous_kind,
+                    "to": kind_source.get("kind"),
+                    "from_priority": primary.get("priority"),
+                    "to_priority": kind_source.get("priority"),
+                    "reason": "迁移合并：同一关系采用更强信号的任务种类",
+                    "archived_attempts": len(kind_source.get("attempts") or []),
+                    "archived_rewrites": kind_source.get("rewrites", 0),
+                    "cancelled_queries": [],
+                    "previous_question": primary.get("question"),
+                    "previous_reason": primary.get("reason"),
+                    "previous_target": primary.get("target"),
+                })
+                del history[:-5]
+            primary["kind"] = kind_source.get("kind")
+            primary["kind_label"] = (kind_source.get("kind_label")
+                                     or KIND_LABELS.get(kind_source.get("kind"),
+                                                        kind_source.get("kind")))
+            primary["question"] = kind_source.get("question")
+            primary["reason"] = kind_source.get("reason")
+            primary["target"] = kind_source.get("target")
+        has_materials = (primary.get("result_count", 0) > 0
+                         or bool(primary.get("source_ids"))
+                         or primary.get("verification") == "pending_verification")
+        if carrier is not None:
+            primary["status"] = carrier.get("status")
+        else:
+            primary["status"] = _merged_terminal_status(
+                tasks, has_materials, primary.get("status"))
+        if has_materials:
+            primary["verification"] = "pending_verification"
         old_ids = [task_id for task_id in ids if task_id != new_id]
         for task_id in ids:
             r["tasks"].pop(task_id, None)

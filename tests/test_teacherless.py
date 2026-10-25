@@ -596,11 +596,13 @@ class ConfigModeTests(unittest.TestCase):
         env = os.environ.copy()
         env.pop("SELFDRIVE_MODE", None)
         env.update(extra)
+        env["PYTHONIOENCODING"] = "utf-8"
         code = ("from selfdrive import config; "
                 "print(config.TEACHERLESS, config.LLM_ENABLED, "
                 "repr(config.SIBLING_NAME), len(config.WIDER_ROOTS))")
         return subprocess.run([sys.executable, "-c", code], cwd=str(REPO),
-                              env=env, capture_output=True, text=True)
+                              env=env, capture_output=True, text=True,
+                              encoding="utf-8", errors="replace")
 
     def test_teacherless_forces_channels_off(self):
         result = self._run({"SELFDRIVE_MODE": "teacherless",
