@@ -2,6 +2,7 @@
 """可关闭的 LLM 提案桥：严格 JSON、调用预算、失败降级、无执行权限。"""
 import hashlib
 import json
+import re
 import time
 import urllib.request
 
@@ -33,6 +34,76 @@ def available(st):
             return False
         budget["fails"] = 0
     return True
+
+
+def think_available(st):
+    """思考皮层通道（独立预算，冷却 2 轮）——self_talk 每次触发都应过语言区。"""
+    if not config.LLM_ENABLED:
+        return False
+    if st["rounds"] - st.get("last_think_round", -999) < config.LLM_THINK_COOLDOWN:
+        return False
+    today = time.strftime("%Y%m%d")
+    budget = st.setdefault("think_budget", {})
+    if budget.get("day") != today:
+        budget.clear()
+        budget.update({"day": today, "calls": 0, "fails": 0})
+    if budget["calls"] >= config.LLM_THINK_DAILY_MAX:
+        return False
+    if budget.get("fails", 0) >= 3:
+        if st["rounds"] - budget.get("fail_round", -999) < config.LLM_FAILURE_SILENCE:
+            return False
+        budget["fails"] = 0
+    return True
+
+
+def _think_failed(st):
+    budget = st.setdefault("think_budget", {})
+    budget["fails"] = budget.get("fails", 0) + 1
+    budget["fail_round"] = st["rounds"]
+    return None
+
+
+def think(st, focus):
+    """思考皮层：把当前焦点交给语言区联想，返回 2-3 条候选想法（或 None）。
+    输出与提案通道同等待遇——全部 unverified 存入 llm_proposals，由后续阅读验证。"""
+    if not think_available(st):
+        return None
+    budget = st.setdefault("think_budget", {})
+    budget["calls"] = budget.get("calls", 0) + 1
+    st["last_think_round"] = st["rounds"]
+    prompt = f"它正在想：{focus[:config.LLM_MAX_PROMPT_CHARS]}"
+    body = json.dumps({
+        "model": config.LLM_MODEL,
+        "messages": [
+            {"role": "system", "content": config.LLM_THINK_PROMPT + " /no_think"},
+            {"role": "user", "content": prompt},
+        ],
+        "stream": False,
+        "options": {"temperature": 0.8, "num_predict": 800},
+    }).encode("utf-8")
+    started = time.time()
+    try:
+        req = urllib.request.Request(
+            config.OLLAMA_URL.rstrip("/") + "/api/chat", data=body,
+            headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=config.LLM_TIMEOUT) as response:
+            data = json.loads(response.read().decode("utf-8", errors="strict"))
+        content = data.get("message", {}).get("content", "")
+        raw = _strip_think(content if isinstance(content, str) else "")
+        junk = re.compile(r"^[0-9\-\u2022\.\*\s]+")
+        lines = [junk.sub("", line).strip()
+                 for line in raw.splitlines() if line.strip()]
+        lines = [line[:config.LLM_PROPOSAL_MAX_CHARS] for line in lines if len(line) >= 6][:3]
+        if not lines:
+            return None
+    except Exception:
+        return _think_failed(st)
+    budget["fails"] = 0
+    budget.pop("fail_round", None)
+    # 思考的产物也是提案——unverified，与提案通道同等待遇
+    save_proposals(st, {"proposals": lines, "model": config.LLM_MODEL,
+                        "task": "think"}, focus[:20])
+    return lines
 
 
 def _strip_think(text):

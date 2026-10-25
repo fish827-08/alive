@@ -211,6 +211,17 @@ LLM_MAX_PROMPT_CHARS = 1500   # 提示词截断
 LLM_PROPOSAL_MAX_CHARS = 300  # 单条提案截断
 LLM_PROPOSALS_PER_CALL = 3    # 每次调用最多入账提案数
 LLM_FAILURE_SILENCE = 50      # 连续失败后的静默轮数
+
+# ---- v9.22.1 思考皮层（用户定义：LLM 是思考的工具，self_talk 每次都调用；
+#      不调用=没经过思考。与提案通道分开预算，云端 LLM_ENABLED=false 时不触发） ----
+LLM_THINK_COOLDOWN = 2        # 思考通道冷却（轮）——几乎每次自言自语都过语言区
+LLM_THINK_DAILY_MAX = 1500    # 思考通道日预算（独立于提案通道）
+LLM_THINK_PROMPT_VERSION = "think-lines-v1"
+LLM_THINK_PROMPT = (
+    "你是某个小生命大脑里的语言区。它正在想下面这件事——帮它联想："
+    "给 2-3 条下一步可以想到的方向、可能的解释、或值得怀疑的点，每条一行，简短。"
+    "你的话只是它的候选想法，它自己会验证。"
+)
 LLM_PROMPT_VERSION = "proposal-json-v1"
 LLM_SYSTEM_PROMPT = (
     "你是自主认知系统的候选生成器，不是裁判或执行器。只输出一个JSON对象，不要Markdown。"

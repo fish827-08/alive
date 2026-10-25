@@ -1217,6 +1217,18 @@ def do_self_talk(st):
     ③ 兜底：随机无边对下注（图太小撒不开网时）。
     旧版抽强边猜共同邻居 30/30 全命中（零信息）——已废弃。"""
     st.setdefault("self_talk_log", [])
+    # v9.22.1 思考皮层：LLM 启用时，每次自言自语都过语言区（用户定义：不调用=没思考）。
+    # 符号层先给焦点（语义中心），语言区联想 2-3 条候选方向——全部 unverified，
+    # 与提案同等待遇；云端 LLM_ENABLED=false 时此处不触发，moon 纯符号思考。
+    try:
+        from . import llm_bridge
+        if llm_bridge.think_available(st):
+            focus = (st.get("last_kw") or "").split("、")[0] or "涌现"
+            lines = llm_bridge.think(st, f"《{focus}》——我正在想它和谁有关、它能推出什么")
+            if lines:
+                append_note(st, "- 语言区联想：" + "；".join(lines[:2]))
+    except Exception:
+        pass
     roll = random.random()
     if roll < 0.33:
         exp = _virtual_experiment(st)
