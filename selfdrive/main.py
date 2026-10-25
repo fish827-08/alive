@@ -23,14 +23,19 @@ from .state import clamp, load_state, log_event, save_state
 
 SEM = sem.Semantics(config.BASE)
 
-# v9.21/v9.22：按安装目录自动识别自己是谁
-# selfdrive=辉月(huiyue)、moon=moon、其他任意目录名=本机学生（如“火星”）
-if config.BASE.name == "moon":
-    AGENT_NAME = "moon"
-elif config.BASE.name == "selfdrive":
-    AGENT_NAME = "huiyue"
-else:
-    AGENT_NAME = config.BASE.name
+# v9.21/v9.22：按安装目录自动识别自己是谁；目录下的 agent_name.txt 优先（用户命名，如"火星"）
+AGENT_NAME = None
+try:
+    AGENT_NAME = (config.BASE / "agent_name.txt").read_text(encoding="utf-8").strip()
+except Exception:
+    AGENT_NAME = None
+if not AGENT_NAME:
+    if config.BASE.name == "moon":
+        AGENT_NAME = "moon"
+    elif config.BASE.name == "selfdrive":
+        AGENT_NAME = "huiyue"
+    else:
+        AGENT_NAME = config.BASE.name
 
 
 def run_round(st):
