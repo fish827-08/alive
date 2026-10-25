@@ -23,8 +23,14 @@ from .state import clamp, load_state, log_event, save_state
 
 SEM = sem.Semantics(config.BASE)
 
-# v9.21 兄弟信箱：按安装目录自动识别自己是谁（selfdrive=辉月，moon=moon）
-AGENT_NAME = "moon" if config.BASE.name == "moon" else "huiyue"
+# v9.21/v9.22：按安装目录自动识别自己是谁
+# selfdrive=辉月(huiyue)、moon=moon、其他任意目录名=第三个学生（本地 LLM 学生等）
+if config.BASE.name == "moon":
+    AGENT_NAME = "moon"
+elif config.BASE.name == "selfdrive":
+    AGENT_NAME = "huiyue"
+else:
+    AGENT_NAME = config.BASE.name
 
 
 def run_round(st):
@@ -68,12 +74,14 @@ def run_round(st):
         "reflect_memory": skills.do_reflect_memory,
         "self_talk": skills.do_self_talk,
         "sibling_letter": skills.do_sibling_letter,   # v9.21 兄弟信箱
+        "llm_consult": skills.do_llm_consult,         # v9.22 LLM 提案（可插拔）
         "rest": skills.do_rest,
     }
     args_map = {
         "explore_file": (files, st),
         "visit_new_dir": (dirs, st),
         "sibling_letter": (st, AGENT_NAME),
+        "llm_consult": (st, AGENT_NAME),
     }
     fn = handlers[action]
     if action in args_map:

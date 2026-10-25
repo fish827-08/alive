@@ -128,6 +128,9 @@ def pick_action(st, e, web_built):
     for a, f in st.pop("card_boost", {}).items():
         if a in w:
             w[a] *= max(0.0, f)
+    # ⑭ v9.22 LLM 开关：未启用时 llm_consult 权重归零（云端纯无 LLM 路线 A）
+    if not config.LLM_ENABLED:
+        w["llm_consult"] = 0.0
     # ⑫ v9.16 web 配额：自食缓存占比超限 → 压制读文件（去外部找吃的）
     if web_share(st) >= WEB_SHARE_CAP:
         w["explore_file"] *= 0.25

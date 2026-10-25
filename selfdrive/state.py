@@ -80,6 +80,9 @@ def default_state():
         "last_meta_round": -999,       # 元认知自省：上次自省轮
         "letters_read": [],            # v9.21 兄弟信箱：已读信件列表
         "last_letter_round": -999,     # v9.21 兄弟信箱：上次写信轮（冷却）
+        "last_llm_round": -999,        # v9.22 LLM：上次调用轮（冷却）
+        "llm_budget": {},              # v9.22 LLM：当日调用/失败计数
+        "llm_proposals": [],           # v9.22 LLM：待验证提案（unverified，影子运行）
         # ---- v9.20 概念卡 ----
         "concept_cards": {},           # 七面概念卡 {名: {ground/affordances/frame/links/laws/history/stats}}
         "laws": {},                    # 定律表（独立于概念卡，卡只引用）

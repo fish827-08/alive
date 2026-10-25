@@ -1121,6 +1121,32 @@ def do_reflect_memory(st):
                   f"（因果 {built['causal']} / 相反 {built['contrast']} / 相似 {built['similar']} / 时序 {built['temporal']}）｜关系分布：{dist_s}")
 
 
+# ---------- 技能：LLM 提案（v9.22，设计稿路线 B 最小版） ----------
+
+def do_llm_consult(st, me="huiyue"):
+    """向本地 LLM 请教当前语义中心（只在 LLM_ENABLED 时可被选中）。
+    输出处理（设计稿 10.3 管线）：
+    ① 回答文本按普通阅读消化——概念走晋升制，LLM 的话和网页平等，无特权；
+    ② 提案存入 llm_proposals（status=unverified，影子运行）——不晋升、不进决策，
+       等后续自然阅读同现时才被晋升制自然验证。
+    失败/超时/未启用 → 返回 False，无 LLM 路径照常。"""
+    if not config.LLM_ENABLED:
+        return False, "LLM 未启用（云端纯无 LLM 路线）"
+    from . import llm_bridge
+    if not llm_bridge.available(st):
+        return False, "LLM 冷却中或预算已用完"
+    topic = (st.get("last_kw") or "").split("、")[0][:12]
+    prompt = (f"我正在自学中文资料，最近在读「{topic or '涌现'}」相关的概念。"
+              f"请给我 2-3 条关于它的简短解释或值得验证的问题，每条一行。")
+    result = llm_bridge.consult(st, task="hypothesize", prompt=prompt)
+    if not result:
+        return False, "LLM 调用失败（Ollama 未启动或超时），继续无 LLM 路径"
+    n = llm_bridge.save_proposals(st, result, topic)
+    # 回答文本按普通阅读消化（词汇层无特权）
+    learn_from_text(st, result.get("raw", ""), f"llm-{me}-{st['rounds']}", f"llm:{result.get('model')}")
+    return True, f"LLM提案 {n} 条（待验证）已入账，回答按普通阅读消化（模型 {result.get('model')}）"
+
+
 # ---------- 技能：兄弟信箱（v9.21 同伴学习通道） ----------
 
 def _sibling_name(st, me):

@@ -86,6 +86,9 @@ SKILLS = {
     # v9.21 兄弟信箱：读对方的信（普通阅读消化，无特权）+ 写信（冷却节流）
     "sibling_letter": {"sense": ["兄弟信箱"], "act": ["读信", "写信"],
                        "cost": 0.2, "weight": {"base": 0.04, "curiosity": 0.3, "boredom": 0.15}},
+    # v9.22 LLM 提案：向本地 LLM 请教当前主题（只产出待验证提案，不直接进概念库）
+    "llm_consult": {"sense": ["LLM 提案模块"], "act": ["提问", "收提案"],
+                    "cost": 0.3, "weight": {"base": 0.06, "curiosity": 0.4, "boredom": 0.1}},
 }
 
 # ---- 情感默认配置（brain/emotions.json 不存在时写入；存在则以文件为准） ----
@@ -191,6 +194,23 @@ SHARED_LETTERS = BASE.parent / "shared_letters"   # /home/qingwu/shared_letters
 LETTER_COOLDOWN = 100         # 每个 agent 写信冷却（轮）——防依赖，同伴是补充不是拐杖
 LETTER_MAX_CHARS = 300        # 信件篇幅上限
 LETTERS_KEEP = 30             # 各信箱保留信件数（LRU）
+
+# ---- v9.22 LLM 提案模块（设计稿第 10 节；本地 Ollama 小模型） ----
+# 权力边界：LLM 只有提案权。云端部署时设 LLM_ENABLED=false（纯无 LLM 路线 A）。
+LLM_ENABLED = os.environ.get("SELFDRIVE_LLM", "0") == "1"   # 显式开启才启用；云端默认关
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
+LLM_MODEL = os.environ.get("SELFDRIVE_LLM_MODEL", "qwen3:1.7b")
+LLM_TIMEOUT = 90              # 秒（首次加载模型可能较慢）
+LLM_COOLDOWN = 50             # 两次调用最小间隔（轮）
+LLM_DAILY_MAX = 40            # 每自然日调用上限（预算）
+LLM_MAX_PROMPT_CHARS = 1500   # 提示词截断
+LLM_PROPOSAL_MAX_CHARS = 300  # 单条提案截断
+LLM_PROPOSALS_PER_CALL = 3    # 每次调用最多入账提案数
+LLM_SYSTEM_PROMPT = (
+    "你是一个学习助手的提案生成器。你只提出候选解释、候选概念和值得验证的问题，"
+    "你说的内容不会被当作事实——必须由系统自己通过阅读和验证确认。"
+    "回答保持简短（150字内），直接给出想法列表，不要客套。"
+)
 
 
 def load_ask_config():
