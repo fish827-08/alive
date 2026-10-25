@@ -140,16 +140,16 @@ class RegressionTests(SandboxTest):
     def test_third_student_does_not_impersonate_moon(self):
         with mock.patch.object(config, "SIBLING_NAME", "peer"), \
              mock.patch.object(config, "SHARED_LETTERS", self.root / "letters"):
-            me, sibling, outbox, inbox = skills._sibling_name(self.st, "alive_star")
-        self.assertEqual(me, "alive_star")
+            me, sibling, outbox, inbox = skills._sibling_name(self.st, "火星")
+        self.assertEqual(me, "火星")
         self.assertEqual(sibling, "peer")
-        self.assertEqual(outbox.name, "from_alive_star")
+        self.assertEqual(outbox.name, "from_火星")
         self.assertEqual(inbox.name, "from_peer")
 
     def test_unconfigured_third_student_has_no_default_sibling(self):
         with mock.patch.object(config, "SIBLING_NAME", ""), \
              mock.patch.object(config, "SHARED_LETTERS", self.root / "letters"):
-            _, sibling, _, inbox = skills._sibling_name(self.st, "alive_star")
+            _, sibling, _, inbox = skills._sibling_name(self.st, "火星")
         self.assertEqual(sibling, "")
         self.assertIsNone(inbox)
 
@@ -161,9 +161,9 @@ class RegressionTests(SandboxTest):
             (inbox / f"L-{index}.md").write_text(f"第{index}封来信，包含足够长的普通阅读文本内容。", encoding="utf-8")
         with mock.patch.object(config, "SIBLING_NAME", "peer"), \
              mock.patch.object(config, "SHARED_LETTERS", letters):
-            skills.do_sibling_letter(self.st, "alive_star")
+            skills.do_sibling_letter(self.st, "火星")
             self.assertEqual(len(self.st["letters_read"]), 3)
-            skills.do_sibling_letter(self.st, "alive_star")
+            skills.do_sibling_letter(self.st, "火星")
         self.assertEqual(len(self.st["letters_read"]), 5)
 
 

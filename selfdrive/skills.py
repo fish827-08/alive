@@ -1105,9 +1105,9 @@ def do_llm_consult(st, me="huiyue"):
 
 def _sibling_name(st, me):
     """返回身份对应的发件箱与同伴发件箱；第三个学生须显式配置同伴。"""
-    me_name = re.sub(r"[^A-Za-z0-9_-]", "_", me)
+    me_name = re.sub(r"[^\w-]", "_", me)
     sibling = config.SIBLING_NAME or {"huiyue": "moon", "moon": "huiyue"}.get(me_name, "")
-    sibling = re.sub(r"[^A-Za-z0-9_-]", "_", sibling)
+    sibling = re.sub(r"[^\w-]", "_", sibling)
     my_outbox = config.SHARED_LETTERS / f"from_{me_name}"
     sib_outbox = config.SHARED_LETTERS / f"from_{sibling}" if sibling else None
     return me_name, sibling, my_outbox, sib_outbox

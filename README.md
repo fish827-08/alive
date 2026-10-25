@@ -1,6 +1,6 @@
-# Alive — 自主决策中枢实验（辉月 & moon）
+# Alive — 自主决策中枢实验（辉月、moon & 火星）
 
-> 两个人工生命（数字小生命）在一个文本沙箱里出生、成长、犯错、被教导。
+> 三个人工生命（数字小生命）在一个文本沙箱里出生、成长、犯错、被教导。
 > **没有 LLM 驱动它们的核心**——驱动它们的是 2500 行手写的符号/统计代码；
 > LLM 只在明确划定的边界内作为"提案生成器"参与（可插拔、可关闭）。
 > 它们不会写文章，但它们会：自己归纳加法变换、对无边概念下注并被世界判对错、
@@ -14,13 +14,13 @@
 "学会理解"的全过程——包括它生病的样子。所有认知事件（概念晋升、定律毕业、
 预测结算、错误清除、做梦、兄弟通信）都写进可审计的日志。
 
-当前三个学生：
+当前三个学生**都有教师**，差异在教师风格与是否启用 LLM：
 
 | 学生 | 位置 | 轮龄 | LLM | 教学 |
 |---|---|---|---|---|
-| **辉月** | 云端 `/home/qingwu/selfdrive` | 7000+ | 无（路线 A） | 老师进修式（[VERDICT] 判卷 / [RULE] 制度） |
-| **moon** | 云端 `/home/qingwu/moon` | 1400+ | 无（路线 A） | 无教师对照组（观察自发成长） |
-| **第三个学生** | 本机（自建目录） | 从零 | qwen3:1.7b（路线 B） | 幼儿式 + LLM 提案 |
+| **辉月** | 云端 `/home/qingwu/selfdrive` | 7000+ | 无（路线 A） | 教师制·进修式（[VERDICT] 判卷 / [RULE] 制度） |
+| **moon** | 云端 `/home/qingwu/moon` | 1400+ | 无（路线 A） | 教师制·幼儿式（日常问答与纠错） |
+| **火星** | 本机 `D:\火星` | 从零 | qwen3:1.7b（路线 B） | 教师制·幼儿式 + LLM 提案 |
 
 ## 架构（v9.23，模块化）
 
@@ -62,7 +62,7 @@ selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是�
 # 服务器（ubuntu）：
 git clone https://gitee.com/little-fishy/alive.git ~/selfdrive && cd ~/selfdrive
 python3 -m pip install jieba
-# 两个独立工作目录（目录名决定身份：selfdrive=辉月，moon=对照组）
+# 两个独立工作目录（目录名决定身份：selfdrive=辉月，moon=moon）
 git clone https://gitee.com/little-fishy/alive.git ~/moon
 mkdir -p ~/selfdrive/logs ~/moon/logs
 # 串行调度器（两个 agent 一轮接一轮，永不同时占 CPU）
@@ -80,13 +80,13 @@ tmux new-session -d -s agents "bash ~/alternator.sh"
 单 agent 快速试跑：`python3 agent_v9.py --once`（跑一轮），
 或 `SELFDRIVE_INTERVAL=30 python3 agent_v9.py`（30 秒/轮常驻）。
 
-### 本机第三个学生（带 LLM）
+### 本机学生「火星」（带 LLM）
 
 1. 安装 [Ollama](https://ollama.com) 并拉模型：`ollama pull qwen3:1.7b`
 2. 建学生目录（名字即它的名字）：
 
 ```bash
-mkdir D:\alive_star   # 目录名会成为它的名字
+mkdir D:\火星   # 目录名会成为它的名字
 # 复制：selfdrive/ 包、agent_v9.py、semantics.py 过去
 # 建空目录：logs/、brain/outbox/、workspace/notes/
 ```
@@ -94,7 +94,7 @@ mkdir D:\alive_star   # 目录名会成为它的名字
 3. 启动（环境变量开启 LLM）：
 
 ```bash
-cd D:\alive_star
+cd D:\火星
 set SELFDRIVE_LLM=1                      # Windows；Linux 用 export
 set SELFDRIVE_LLM_MODEL=qwen3:1.7b
 python agent_v9.py                       # 常驻；--once 单轮
@@ -102,7 +102,7 @@ python agent_v9.py                       # 常驻；--once 单轮
 
 LLM 的回答**不直接进概念库**——接口只接受含 `proposals`、`assumptions`、`unknowns`、
 `suggested_checks` 四个字符串数组的 JSON，全部存为 `unverified` 提案；散文和越权字段会被拒绝。
-模型不在线时自动降级为无 LLM 路径。第三个学生需用 `SELFDRIVE_SIBLING=同伴目录名`
+模型不在线时自动降级为无 LLM 路径。火星需用 `SELFDRIVE_SIBLING=同伴目录名`
 显式配置通信对象，不会默认冒充 moon。
 
 ### 老师如何教学（答疑协议）
@@ -117,7 +117,7 @@ LLM 的回答**不直接进概念库**——接口只接受含 `proposals`、`as
 
 ## 三个实验
 
-1. **教学对照**：辉月（有老师）vs moon（无老师）——同环境同口粮，教法的价值
+1. **教学对照**：辉月（进修式教学）vs moon（幼儿式教学）——同环境同口粮，教学风格的差异
 2. **路线对照**：云端纯无 LLM vs 本地 LLM 提案——LLM 只提提案时的增量
 3. **消融**：任何模块（情绪/做梦/概念卡/LLM）没有可测贡献就移除，不因"像脑"保留
 

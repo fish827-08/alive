@@ -24,7 +24,7 @@ from .state import clamp, load_state, log_event, save_state
 SEM = sem.Semantics(config.BASE)
 
 # v9.21/v9.22：按安装目录自动识别自己是谁
-# selfdrive=辉月(huiyue)、moon=moon、其他任意目录名=第三个学生（本地 LLM 学生等）
+# selfdrive=辉月(huiyue)、moon=moon、其他任意目录名=本机学生（如“火星”）
 if config.BASE.name == "moon":
     AGENT_NAME = "moon"
 elif config.BASE.name == "selfdrive":
