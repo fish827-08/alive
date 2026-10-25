@@ -1,0 +1,7953 @@
+{
+ "emotions": {
+  "curiosity": 1.0,
+  "boredom": 0.07999999999999999,
+  "satisfaction": 1.0,
+  "fatigue": 0.33000000000000007,
+  "fear": 0.0
+ },
+ "visited_files": [
+  "workspace/web/web-20261025-1135.md",
+  "workspace/archive/tech/温度与天气的关系.md",
+  "workspace/archive/tech/云服务器运维笔记.txt",
+  "workspace/archive/数字与加法初探.md",
+  "workspace/archive/候鸟迁徙.md",
+  "workspace/web/web-20261024-2140.md",
+  "workspace/archive/认数字.md",
+  "workspace/archive/数字加法进阶二.md",
+  "workspace/archive/数字加法进阶.md",
+  "workspace/web/web-20261024-2337.md",
+  "workspace/archive/加法是什么.md",
+  "workspace/archive/后继与数数.md",
+  "workspace/web/index.html",
+  "workspace/archive/一是什么.md",
+  "workspace/web/web-20261024-1640.md",
+  "workspace/archive/alife/人工生命与涌现.md",
+  "workspace/archive/关系的本质与网络思维.md",
+  "workspace/archive/进化与自我改进.md",
+  "workspace/archive/alife/信号与语言.txt",
+  "workspace/web/web-20261023-1321.md",
+  "workspace/archive/认符号.md",
+  "workspace/archive/tech/压缩与熵.txt",
+  "workspace/archive/alife/好奇心与内在动机.txt",
+  "workspace/archive/alife/数字生命实验记录.json",
+  "workspace/web/web-20261024-1135.md",
+  "workspace/archive/加法器.md",
+  "workspace/archive/tech/数据压缩原理.txt",
+  "workspace/archive/artificial-词源与人工生命.md",
+  "workspace/archive/tech/人工智能简史.md",
+  "workspace/web/web-20261023-1957.md",
+  "workspace/archive/数字与加法初探-中文数字版.md",
+  "workspace/archive/概率入门.md"
+ ],
+ "visited_dirs": [
+  "workspace/archive/alife",
+  "workspace/archive/tech"
+ ],
+ "wider_files": {
+  "/home/qingwu/kb_stress_out.txt": 1792908432.9421477,
+  "/home/qingwu/kb_stress3.py": 1792908432.942164,
+  "/home/qingwu/kb_via.py": 1792908432.9421782,
+  "/home/qingwu/kb_stress.py": 1792908432.9422066,
+  "/home/qingwu/kb_install.log": 1792908432.942219,
+  "/home/qingwu/kb_via2.py": 1792908432.9422758,
+  "/home/qingwu/kb_serve.log": 1792908432.9422882,
+  "/home/qingwu/kb_stress2.py": 1792908432.9423068,
+  "/home/qingwu/kb_stress4.py": 1792908432.9423187,
+  "/home/qingwu/rag-kb-src/server.json": 1792908432.9424007,
+  "/home/qingwu/rag-kb-src/README.md": 1792908432.942414,
+  "/home/qingwu/rag-kb-src/requirements.txt": 1792908432.9424274,
+  "/home/qingwu/rag-kb-src/kb/ingest.py": 1792908432.942486,
+  "/home/qingwu/rag-kb-src/kb/scopes.py": 1792908432.9424996,
+  "/home/qingwu/rag-kb-src/kb/discovery.py": 1792908432.9425123,
+  "/home/qingwu/rag-kb-src/kb/governance.py": 1792908432.9425251,
+  "/home/qingwu/rag-kb-src/kb/monitor.py": 1792908432.9425373,
+  "/home/qingwu/rag-kb-src/kb/cli.py": 1792908432.9425495,
+  "/home/qingwu/rag-kb-src/kb/logging_setup.py": 1792908432.9425626,
+  "/home/qingwu/rag-kb-src/kb/watcher.py": 1792908432.9425745,
+  "/home/qingwu/rag-kb-src/kb/links.py": 1792908432.9425867,
+  "/home/qingwu/rag-kb-src/kb/idle.py": 1792908432.9425986,
+  "/home/qingwu/rag-kb-src/kb/embedder.py": 1792908432.9426117,
+  "/home/qingwu/rag-kb-src/kb/sparse.py": 1792908432.9426239,
+  "/home/qingwu/rag-kb-src/kb/i18n.py": 1792908432.942636,
+  "/home/qingwu/rag-kb-src/kb/eval.py": 1792908432.9426484,
+  "/home/qingwu/rag-kb-src/kb/reranker.py": 1792908432.94266,
+  "/home/qingwu/rag-kb-src/kb/retriever.py": 1792908432.9426725,
+  "/home/qingwu/rag-kb-src/kb/llm.py": 1792908432.942685,
+  "/home/qingwu/rag-kb-src/kb/consolidation.py": 1792908432.9426973,
+  "/home/qingwu/rag-kb-src/kb/models.py": 1792908432.9427102,
+  "/home/qingwu/rag-kb-src/kb/service.py": 1792908432.9427226,
+  "/home/qingwu/rag-kb-src/kb/api.py": 1792908432.942735,
+  "/home/qingwu/rag-kb-src/kb/mcp.py": 1792908432.9427469,
+  "/home/qingwu/rag-kb-src/kb/__init__.py": 1792908432.9427588,
+  "/home/qingwu/rag-kb-src/kb/config.py": 1792908432.9427712,
+  "/home/qingwu/rag-kb-src/kb/__main__.py": 1792908432.9427843,
+  "/home/qingwu/rag-kb-src/kb/audit.py": 1792908432.9427967,
+  "/home/qingwu/rag-kb-src/kb/storage.py": 1792908432.9428093,
+  "/home/qingwu/rag-kb-src/kb/bm25.py": 1792908432.9428213,
+  "/home/qingwu/rag-kb-src/build/lib/kb/ingest.py": 1792908432.9429295,
+  "/home/qingwu/rag-kb-src/build/lib/kb/scopes.py": 1792908432.9429438,
+  "/home/qingwu/rag-kb-src/build/lib/kb/discovery.py": 1792908432.9429572,
+  "/home/qingwu/rag-kb-src/build/lib/kb/governance.py": 1792908432.9429717,
+  "/home/qingwu/rag-kb-src/build/lib/kb/monitor.py": 1792908432.9429843,
+  "/home/qingwu/rag-kb-src/build/lib/kb/cli.py": 1792908432.9429975,
+  "/home/qingwu/rag-kb-src/build/lib/kb/logging_setup.py": 1792908432.9430108,
+  "/home/qingwu/rag-kb-src/build/lib/kb/watcher.py": 1792908432.9430237,
+  "/home/qingwu/rag-kb-src/build/lib/kb/links.py": 1792908432.9430363,
+  "/home/qingwu/rag-kb-src/build/lib/kb/idle.py": 1792908432.9430492,
+  "/home/qingwu/rag-kb-src/build/lib/kb/embedder.py": 1792908432.9430623,
+  "/home/qingwu/rag-kb-src/build/lib/kb/sparse.py": 1792908432.9430747,
+  "/home/qingwu/rag-kb-src/build/lib/kb/i18n.py": 1792908432.9430873,
+  "/home/qingwu/rag-kb-src/build/lib/kb/eval.py": 1792908432.9431002,
+  "/home/qingwu/rag-kb-src/build/lib/kb/reranker.py": 1792908432.9431126,
+  "/home/qingwu/rag-kb-src/build/lib/kb/retriever.py": 1792908432.9431252,
+  "/home/qingwu/rag-kb-src/build/lib/kb/llm.py": 1792908432.943138,
+  "/home/qingwu/rag-kb-src/build/lib/kb/consolidation.py": 1792908432.9431505,
+  "/home/qingwu/rag-kb-src/build/lib/kb/models.py": 1792908432.9431632,
+  "/home/qingwu/rag-kb-src/build/lib/kb/service.py": 1792908432.9431753,
+  "/home/qingwu/rag-kb-src/build/lib/kb/api.py": 1792908432.9431882,
+  "/home/qingwu/rag-kb-src/build/lib/kb/mcp.py": 1792908432.9432006,
+  "/home/qingwu/rag-kb-src/build/lib/kb/__init__.py": 1792908432.9432127,
+  "/home/qingwu/rag-kb-src/build/lib/kb/config.py": 1792908432.9432256,
+  "/home/qingwu/rag-kb-src/build/lib/kb/__main__.py": 1792908432.9432383,
+  "/home/qingwu/rag-kb-src/build/lib/kb/audit.py": 1792908432.9432507,
+  "/home/qingwu/rag-kb-src/build/lib/kb/storage.py": 1792908432.9432697,
+  "/home/qingwu/rag-kb-src/build/lib/kb/bm25.py": 1792908432.943282,
+  "/home/qingwu/rag-kb-src/kb_memory.egg-info/SOURCES.txt": 1792908432.943315,
+  "/home/qingwu/rag-kb-src/kb_memory.egg-info/entry_points.txt": 1792908432.9433281,
+  "/home/qingwu/rag-kb-src/kb_memory.egg-info/requires.txt": 1792908432.9433413,
+  "/home/qingwu/rag-kb-src/kb_memory.egg-info/top_level.txt": 1792908432.9433615,
+  "/home/qingwu/rag-kb-src/kb_memory.egg-info/dependency_links.txt": 1792908432.9433742,
+  "/home/qingwu/selfdrive_b/agent_v2.py": 1792908432.943448,
+  "/home/qingwu/selfdrive_b/agent_v8.py": 1792908432.943461,
+  "/home/qingwu/selfdrive_b/agent.py": 1792908432.9435763,
+  "/home/qingwu/selfdrive_b/agent_v9.py": 1792908432.9435961,
+  "/home/qingwu/selfdrive_b/state.json": 1792908432.9436162,
+  "/home/qingwu/selfdrive_b/agent_v6.py": 1792908432.9436288,
+  "/home/qingwu/selfdrive_b/agent_v5.py": 1792908432.9436479,
+  "/home/qingwu/selfdrive_b/semantics.py": 1792908432.9436736,
+  "/home/qingwu/selfdrive_b/agent_v4.py": 1792908432.9436855,
+  "/home/qingwu/selfdrive_b/agent_v3.py": 1792908432.9436977,
+  "/home/qingwu/selfdrive_b/agent_v7.py": 1792908432.9437225,
+  "/home/qingwu/selfdrive_b/requirements.txt": 1792908432.9437606,
+  "/home/qingwu/selfdrive_b/brain/inbox.md": 1792908432.9438531,
+  "/home/qingwu/selfdrive_b/brain/ask_config.json": 1792908432.9438689,
+  "/home/qingwu/selfdrive_b/brain/PROTOCOL.md": 1792908432.943899,
+  "/home/qingwu/selfdrive_b/brain/noisy_words.json": 1792908432.9439127,
+  "/home/qingwu/selfdrive_b/brain/emotions.json": 1792908432.9439328,
+  "/home/qingwu/selfdrive_b/brain/templates/seed-temporal.txt": 1792908432.943996,
+  "/home/qingwu/selfdrive_b/brain/templates/seed-contrast.txt": 1792908432.944009,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0003.txt": 1792908432.94406,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0020.txt": 1792908432.9440737,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0013.txt": 1792908432.9440875,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0011.txt": 1792908432.944101,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0012.txt": 1792908432.944115,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0018.txt": 1792908432.944128,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0001.txt": 1792908432.944141,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0015.txt": 1792908432.9441538,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0006.txt": 1792908432.9441674,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0004.txt": 1792908432.9441803,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0002.txt": 1792908432.9441936,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0009.txt": 1792908432.944206,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0010.txt": 1792908432.944219,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0008.txt": 1792908432.9442315,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0014.txt": 1792908432.9442441,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0016.txt": 1792908432.9442635,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0007.txt": 1792908432.9442763,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0017.txt": 1792908432.9442904,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0019.txt": 1792908432.944303,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0022.txt": 1792908432.9443471,
+  "/home/qingwu/selfdrive_b/brain/templates/retired/t0021.txt": 1792908432.9443603,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-0635.md": 1792908432.9444087,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-1049.md": 1792908432.9444222,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-0641.md": 1792908432.9444363,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-1048.md": 1792908432.9444501,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-0835.md": 1792908432.9444628,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-0935.md": 1792908432.9444904,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-0932.md": 1792908432.944504,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-1100.md": 1792908432.9445179,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-0405.md": 1792908432.9445312,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-1034.md": 1792908432.9445446,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-1038.md": 1792908432.9445584,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-1040.md": 1792908432.9445715,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-1315.md": 1792908432.9445846,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-1045.md": 1792908432.9445984,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-0905.md": 1792908432.9446115,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-0405.md": 1792908432.9446247,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-1030.md": 1792908432.9446383,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-0205.md": 1792908432.9446507,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-1005.md": 1792908432.9446635,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-0505.md": 1792908432.9446764,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-0605.md": 1792908432.944689,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-1043.md": 1792908432.9447021,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-0435.md": 1792908432.9447153,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-1037.md": 1792908432.9447286,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-0305.md": 1792908432.9447424,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-0720.md": 1792908432.944756,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-0623.md": 1792908432.944769,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-1215.md": 1792908432.9447818,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-0732.md": 1792908432.9447954,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-0429.md": 1792908432.9448082,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-0450.md": 1792908432.9448266,
+  "/home/qingwu/selfdrive_b/brain/outbox/Q-20261025-1052.md": 1792908432.9448397,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/tokenizer.py": 1792908432.9449277,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/predictions.py": 1792908432.944941,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/templates.py": 1792908432.9449542,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/learning.py": 1792908432.9449673,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/main.py": 1792908432.9449816,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/state.py": 1792908432.944994,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/dream.py": 1792908432.9450076,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/decision.py": 1792908432.9450204,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/skills.py": 1792908432.9450343,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/activation.py": 1792908432.945047,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/kb.py": 1792908432.9450595,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/abstraction.py": 1792908432.9450722,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/rules_compiler.py": 1792908432.9450853,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/__init__.py": 1792908432.9450974,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/emotions.py": 1792908432.94511,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v918/config.py": 1792908432.9451225,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-0203.md": 1792908432.9451883,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-1123.md": 1792908432.9452019,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-1112.md": 1792908432.9452152,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-1326.md": 1792908432.9452326,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-0905.md": 1792908432.9452455,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-1145.md": 1792908432.9452653,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-0420.md": 1792908432.9452786,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-1048.md": 1792908432.9452918,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-1059.md": 1792908432.9453049,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-1316.md": 1792908432.9453177,
+  "/home/qingwu/selfdrive_b/workspace/web/index.html": 1792908432.9453342,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-1034.md": 1792908432.9453466,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-0629.md": 1792908432.9453597,
+  "/home/qingwu/selfdrive_b/workspace/web/web-20261025-1134.md": 1792908432.9453723,
+  "/home/qingwu/selfdrive_b/workspace/notes/journey.md": 1792908432.9454012,
+  "/home/qingwu/selfdrive_b/workspace/notes/index.md": 1792908432.9454138,
+  "/home/qingwu/selfdrive_b/workspace/archive/加法器.md": 1792908432.9454534,
+  "/home/qingwu/selfdrive_b/workspace/archive/加法.md": 1792908432.9454684,
+  "/home/qingwu/selfdrive_b/workspace/archive/一是什么.md": 1792908432.9454827,
+  "/home/qingwu/selfdrive_b/workspace/archive/认数字.md": 1792908432.945496,
+  "/home/qingwu/selfdrive_b/workspace/archive/三是什么.md": 1792908432.9455101,
+  "/home/qingwu/selfdrive_b/workspace/archive/认符号.md": 1792908432.9455237,
+  "/home/qingwu/selfdrive_b/workspace/archive/二是什么.md": 1792908432.945537,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/tokenizer.py": 1792908432.9455726,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/predictions.py": 1792908432.945586,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/templates.py": 1792908432.945599,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/learning.py": 1792908432.9456117,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/main.py": 1792908432.9456277,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/state.py": 1792908432.9456398,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/decision.py": 1792908432.9456525,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/skills.py": 1792908432.9456644,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/kb.py": 1792908432.9456778,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/rules_compiler.py": 1792908432.9456904,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/__init__.py": 1792908432.9457023,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/emotions.py": 1792908432.9457145,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9161/config.py": 1792908432.9457269,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/tokenizer.py": 1792908432.9457607,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/predictions.py": 1792908432.9457736,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/templates.py": 1792908432.945786,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/learning.py": 1792908432.9457986,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/main.py": 1792908432.945812,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/state.py": 1792908432.9458241,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/decision.py": 1792908432.945837,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/skills.py": 1792908432.9458492,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/kb.py": 1792908432.945861,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/rules_compiler.py": 1792908432.9458735,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/__init__.py": 1792908432.9458947,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/emotions.py": 1792908432.945908,
+  "/home/qingwu/selfdrive_b/selfdrive.bak.v9160/config.py": 1792908432.94592,
+  "/home/qingwu/selfdrive_b/logs/http.log": 1792908432.9459567,
+  "/home/qingwu/selfdrive_b/logs/console.txt": 1792908432.9459696,
+  "/home/qingwu/kb.bak.212/ingest.py": 1792908432.9460135,
+  "/home/qingwu/kb.bak.212/scopes.py": 1792908432.946027,
+  "/home/qingwu/kb.bak.212/discovery.py": 1792908432.9460394,
+  "/home/qingwu/kb.bak.212/governance.py": 1792908432.9460516,
+  "/home/qingwu/kb.bak.212/monitor.py": 1792908432.9460635,
+  "/home/qingwu/kb.bak.212/cli.py": 1792908432.946076,
+  "/home/qingwu/kb.bak.212/logging_setup.py": 1792908432.946088,
+  "/home/qingwu/kb.bak.212/watcher.py": 1792908432.9461,
+  "/home/qingwu/kb.bak.212/idle.py": 1792908432.9461124,
+  "/home/qingwu/kb.bak.212/embedder.py": 1792908432.946124,
+  "/home/qingwu/kb.bak.212/sparse.py": 1792908432.9461358,
+  "/home/qingwu/kb.bak.212/i18n.py": 1792908432.9461474,
+  "/home/qingwu/kb.bak.212/eval.py": 1792908432.9461594,
+  "/home/qingwu/kb.bak.212/reranker.py": 1792908432.946171,
+  "/home/qingwu/kb.bak.212/retriever.py": 1792908432.9461834,
+  "/home/qingwu/kb.bak.212/llm.py": 1792908432.9461954,
+  "/home/qingwu/kb.bak.212/consolidation.py": 1792908432.9462073,
+  "/home/qingwu/kb.bak.212/models.py": 1792908432.9462192,
+  "/home/qingwu/kb.bak.212/service.py": 1792908432.9462311,
+  "/home/qingwu/kb.bak.212/api.py": 1792908432.9462426,
+  "/home/qingwu/kb.bak.212/mcp.py": 1792908432.9462605,
+  "/home/qingwu/kb.bak.212/__init__.py": 1792908432.9462729,
+  "/home/qingwu/kb.bak.212/config.py": 1792908432.9462955,
+  "/home/qingwu/kb.bak.212/__main__.py": 1792908432.9463158,
+  "/home/qingwu/kb.bak.212/audit.py": 1792908432.9463308,
+  "/home/qingwu/kb.bak.212/storage.py": 1792908432.9463432,
+  "/home/qingwu/kb.bak.212/bm25.py": 1792908432.9463558,
+  "/home/qingwu/logs/governance-audit.log": 1792908432.9467463,
+  "/usr/share/doc/python3/python-policy.html": 1792908432.9509048,
+  "/usr/share/doc/python3/index.html": 1792908432.9509482,
+  "/usr/share/doc/python3-botocore/requirements.txt": 1792908432.9519885,
+  "/usr/share/doc/util-linux/deprecated.txt": 1792908432.952043,
+  "/usr/share/doc/util-linux/release-schedule.txt": 1792908432.952057,
+  "/usr/share/doc/util-linux/mount.txt": 1792908432.9520783,
+  "/usr/share/doc/util-linux/cal.txt": 1792908432.9520915,
+  "/usr/share/doc/util-linux/howto-build-sys.txt": 1792908432.9521112,
+  "/usr/share/doc/util-linux/howto-debug.txt": 1792908432.9521239,
+  "/usr/share/doc/util-linux/00-about-docs.txt": 1792908432.9521368,
+  "/usr/share/doc/util-linux/PAM-configuration.txt": 1792908432.9522424,
+  "/usr/share/doc/util-linux/getopt_changelog.txt": 1792908432.9522753,
+  "/usr/share/doc/util-linux/howto-man-page.txt": 1792908432.952311,
+  "/usr/share/doc/util-linux/blkid.txt": 1792908432.9523306,
+  "/usr/share/doc/util-linux/getopt.txt": 1792908432.9523497,
+  "/usr/share/doc/util-linux/howto-compilation.txt": 1792908432.9523706,
+  "/usr/share/doc/util-linux/howto-tests.txt": 1792908432.952395,
+  "/usr/share/doc/util-linux/pg.txt": 1792908432.9524195,
+  "/usr/share/doc/util-linux/hwclock.txt": 1792908432.952472,
+  "/usr/share/doc/util-linux/modems-with-agetty.txt": 1792908432.9525201,
+  "/usr/share/doc/util-linux/col.txt": 1792908432.9525728,
+  "/usr/share/doc/python3-jwt/README.rst": 1792908432.9531868,
+  "/usr/share/doc/python3-colorama/examples/demo03.py": 1792908432.9540951,
+  "/usr/share/doc/python3-colorama/examples/demo06.py": 1792908432.954122,
+  "/usr/share/doc/python3-colorama/examples/demo05.py": 1792908432.9541464,
+  "/usr/share/doc/python3-colorama/examples/demo07.py": 1792908432.954171,
+  "/usr/share/doc/python3-colorama/examples/demo01.py": 1792908432.9541953,
+  "/usr/share/doc/python3-colorama/examples/demo08.py": 1792908432.9542341,
+  "/usr/share/doc/python3-colorama/examples/fixpath.py": 1792908432.9542682,
+  "/usr/share/doc/python3-colorama/examples/demo09.py": 1792908432.9542947,
+  "/usr/share/doc/python3-colorama/examples/demo04.py": 1792908432.9543185,
+  "/usr/share/doc/python3-colorama/examples/demo02.py": 1792908432.9543562,
+  "/usr/share/doc/lvm2/lvmpolld_overview.txt": 1792908432.954812,
+  "/usr/share/doc/lvm2/pvmove_outline.txt": 1792908432.9548266,
+  "/usr/share/doc/lvm2/testing.txt": 1792908432.9548466,
+  "/usr/share/doc/lvm2/udev_assembly.txt": 1792908432.95488,
+  "/usr/share/doc/psmisc/README.md": 1792908432.955203,
+  "/usr/share/doc/polkitd/README.md": 1792908432.9556215,
+  "/usr/share/doc/plymouth/README.md": 1792908432.9559479,
+  "/usr/share/doc/python3-pip/requirements.txt": 1792908432.9560192,
+  "/usr/share/doc/python3-pip/html/quickstart.rst": 1792908432.9560761,
+  "/usr/share/doc/python3-pip/html/index.md": 1792908432.9560905,
+  "/usr/share/doc/python3-pip/html/getting-started.md": 1792908432.9561114,
+  "/usr/share/doc/python3-pip/html/news.rst": 1792908432.9561253,
+  "/usr/share/doc/python3-pip/html/installation.md": 1792908432.9561381,
+  "/usr/share/doc/python3-pip/html/copyright.rst": 1792908432.9561589,
+  "/usr/share/doc/python3-pip/html/ux_research_design.rst": 1792908432.9561718,
+  "/usr/share/doc/python3-pip/html/installing.rst": 1792908432.9561849,
+  "/usr/share/doc/python3-pip/html/cli/pip_cache.rst": 1792908432.9562385,
+  "/usr/share/doc/python3-pip/html/cli/index.md": 1792908432.9562583,
+  "/usr/share/doc/python3-pip/html/cli/pip.rst": 1792908432.9562736,
+  "/usr/share/doc/python3-pip/html/cli/pip_inspect.rst": 1792908432.956302,
+  "/usr/share/doc/python3-pip/html/cli/pip_uninstall.rst": 1792908432.9563153,
+  "/usr/share/doc/python3-pip/html/cli/pip_hash.rst": 1792908432.9563284,
+  "/usr/share/doc/python3-pip/html/cli/pip_config.rst": 1792908432.9563415,
+  "/usr/share/doc/python3-pip/html/cli/pip_check.rst": 1792908432.9563549,
+  "/usr/share/doc/python3-pip/html/cli/pip_debug.rst": 1792908432.956376,
+  "/usr/share/doc/python3-pip/html/cli/pip_wheel.rst": 1792908432.9563894,
+  "/usr/share/doc/python3-pip/html/cli/pip_freeze.rst": 1792908432.956402,
+  "/usr/share/doc/python3-pip/html/cli/pip_search.rst": 1792908432.956415,
+  "/usr/share/doc/python3-pip/html/reference/pip_cache.rst": 1792908432.956466,
+  "/usr/share/doc/python3-pip/html/reference/pip_list.rst": 1792908432.9564872,
+  "/usr/share/doc/python3-pip/html/reference/index.md": 1792908432.9565003,
+  "/usr/share/doc/python3-pip/html/reference/pip.rst": 1792908432.9565141,
+  "/usr/share/doc/python3-pip/html/reference/pip_install.rst": 1792908432.9565275,
+  "/usr/share/doc/python3-pip/html/reference/pip_uninstall.rst": 1792908432.9565406,
+  "/usr/share/doc/python3-pip/html/reference/pip_hash.rst": 1792908432.956554,
+  "/usr/share/doc/python3-pip/html/reference/pip_config.rst": 1792908432.9565673,
+  "/usr/share/doc/python3-pip/html/reference/pip_check.rst": 1792908432.9565802,
+  "/usr/share/doc/python3-pip/html/reference/requirement-specifiers.md": 1792908432.9565947,
+  "/usr/share/doc/python3-pip/html/reference/pip_debug.rst": 1792908432.9566076,
+  "/usr/share/doc/python3-pip/html/reference/pip_wheel.rst": 1792908432.9566202,
+  "/usr/share/doc/python3-pip/html/reference/pip_freeze.rst": 1792908432.956633,
+  "/usr/share/doc/python3-pip/html/reference/pip_search.rst": 1792908432.956646,
+  "/usr/share/doc/python3-pip/html/reference/pip_download.rst": 1792908432.9566593,
+  "/usr/share/doc/python3-pip/html/reference/pip_show.rst": 1792908432.9566882,
+  "/usr/share/doc/python3-pip/html/topics/https-certificates.md": 1792908432.9567857,
+  "/usr/share/doc/python3-pip/html/topics/index.md": 1792908432.9567993,
+  "/usr/share/doc/python3-pip/html/topics/repeatable-installs.md": 1792908432.9568126,
+  "/usr/share/doc/python3-pip/html/topics/python-option.md": 1792908432.956834,
+  "/usr/share/doc/python3-pip/html/topics/local-project-installs.md": 1792908432.9568698,
+  "/usr/share/doc/python3-pip/html/development/index.rst": 1792908432.956959,
+  "/usr/share/doc/python3-pip/html/development/conventions.rst": 1792908432.95701,
+  "/usr/share/doc/python3-pip/html/development/vendoring-policy.rst": 1792908432.9570243,
+  "/usr/share/doc/python3-pip/html/development/architecture/upgrade-options.rst": 1792908432.9570632,
+  "/usr/share/doc/python3-pip/html/development/architecture/index.rst": 1792908432.9570775,
+  "/usr/share/doc/python3-pip/html/development/architecture/command-line-interface.rst": 1792908432.9571009,
+  "/usr/share/doc/python3-pip/man/index.rst": 1792908432.9571528,
+  "/usr/share/doc/python3-pip/man/commands/list.rst": 1792908432.9571948,
+  "/usr/share/doc/python3-pip/man/commands/cache.rst": 1792908432.9572177,
+  "/usr/share/doc/python3-pip/man/commands/check.rst": 1792908432.9572375,
+  "/usr/share/doc/python3-pip/man/commands/hash.rst": 1792908432.9572647,
+  "/usr/share/doc/python3-pip/man/commands/wheel.rst": 1792908432.9572823,
+  "/usr/share/doc/python3-pip/man/commands/search.rst": 1792908432.957296,
+  "/usr/share/doc/python3-pip/man/commands/freeze.rst": 1792908432.957309,
+  "/usr/share/doc/python3-pip/man/commands/install.rst": 1792908432.9573228,
+  "/usr/share/doc/python3-pip/man/commands/uninstall.rst": 1792908432.9573357,
+  "/usr/share/doc/python3-pip/man/commands/debug.rst": 1792908432.9573495,
+  "/usr/share/doc/python3-pip/man/commands/show.rst": 1792908432.9573636,
+  "/usr/share/doc/python3-pip/man/commands/download.rst": 1792908432.9573774,
+  "/usr/share/doc/python3-pip/man/commands/help.rst": 1792908432.9573915,
+  "/usr/share/doc/python3-pip/man/commands/config.rst": 1792908432.957405,
+  "/usr/share/doc/needrestart/README.nagios.md": 1792908432.9574533,
+  "/usr/share/doc/needrestart/README.batch.md": 1792908432.9574678,
+  "/usr/share/doc/needrestart/README.Interp.md": 1792908432.9574964,
+  "/usr/share/doc/needrestart/README.raspberry.md": 1792908432.9575093,
+  "/usr/share/doc/needrestart/README.uCode.md": 1792908432.9575222,
+  "/usr/share/doc/needrestart/README.md": 1792908432.9575348,
+  "/usr/share/doc/needrestart/README.Cont.md": 1792908432.9575624,
+  "/usr/share/doc/libxslt1.1/README.md": 1792908432.9581878,
+  "/usr/share/doc/python3-hamcrest/examples/CustomDateMatcher.py": 1792908432.9582822,
+  "/usr/share/doc/python3-hamcrest/examples/ExampleWithAssertThat.py": 1792908432.9582982,
+  "/usr/share/doc/time/time.html": 1792908432.958417,
+  "/usr/share/doc/python3-setuptools/index.rst": 1792908432.9590821,
+  "/usr/share/doc/python3-setuptools/history.rst": 1792908432.9591045,
+  "/usr/share/doc/python3-setuptools/roadmap.rst": 1792908432.9591253,
+  "/usr/share/doc/python3-setuptools/python 2 sunset.rst": 1792908432.9591532,
+  "/usr/share/doc/libjson-c5/README.html": 1792908432.9592035,
+  "/usr/share/doc/byobu/help.screen.txt": 1792908432.9593873,
+  "/usr/share/doc/byobu/help.tmux.txt": 1792908432.959408,
+  "/usr/share/doc/byobu/README.md": 1792908432.9594266,
+  "/usr/share/doc/python3-debian/README.rst": 1792908432.9595487,
+  "/usr/share/doc/python3-debian/examples/copyright/check_parse_and_dump.py": 1792908432.9596171,
+  "/usr/share/doc/python3-debian/examples/deb822/grep_native_packages.py": 1792908432.959776,
+  "/usr/share/doc/libfuse3-3/README.md": 1792908432.9603612,
+  "/usr/share/doc/libxmlsec1t64-openssl/README.md": 1792908432.9604294,
+  "/usr/share/doc/cryptsetup/Keyring.txt": 1792908432.9618814,
+  "/usr/share/doc/cryptsetup/LUKS2-locking.txt": 1792908432.9621782,
+  "/usr/share/doc/libglib2.0-0t64/README.md": 1792908432.9627542,
+  "/usr/share/doc/openssl/FAQ.md": 1792908432.9628305,
+  "/usr/share/doc/openssl/fingerprints.txt": 1792908432.9628794,
+  "/usr/share/doc/openssl/HOWTO/keys.txt": 1792908432.9629483,
+  "/usr/share/doc/fonts-dejavu-core/README.md": 1792908432.963393,
+  "/usr/share/doc/libqrtr-glib0/README.md": 1792908432.9635062,
+  "/usr/share/doc/gawk/examples/network/stoxdata.txt": 1792908432.965435,
+  "/usr/share/doc/python3-yaml/README.md": 1792908432.9655938,
+  "/usr/share/doc/python3-yaml/examples/yaml-highlight/yaml_hl.py": 1792908432.9656565,
+  "/usr/share/doc/python3-yaml/examples/pygments-lexer/yaml.py": 1792908432.9656947,
+  "/usr/share/doc/libibverbs1/libibverbs.md": 1792908432.9658513,
+  "/usr/share/doc/libexpat1-dev/expat.html/reference.html": 1792908432.9660113,
+  "/usr/share/doc/libexpat1-dev/expat.html/index.html": 1792908432.9660323,
+  "/usr/share/doc/python3-httplib2/README.md": 1792908432.9669216,
+  "/usr/share/doc/sg3-utils/examples/reassign_addr.txt": 1792908432.9671316,
+  "/usr/share/doc/sg3-utils/examples/sdiag_sas_p1_idle.txt": 1792908432.9671602,
+  "/usr/share/doc/sg3-utils/examples/sg_compare_and_write.txt": 1792908432.967181,
+  "/usr/share/doc/sg3-utils/examples/sdiag_sas_p0_prbs9.txt": 1792908432.9672015,
+  "/usr/share/doc/sg3-utils/examples/forwarded_sense.txt": 1792908432.967267,
+  "/usr/share/doc/sg3-utils/examples/sdiag_sas_p1_stop.txt": 1792908432.9672806,
+  "/usr/share/doc/sg3-utils/examples/ref_sense.txt": 1792908432.967294,
+  "/usr/share/doc/sg3-utils/examples/transport_ids.txt": 1792908432.9673142,
+  "/usr/share/doc/sg3-utils/examples/sdiag_sas_p1_cjtpat.txt": 1792908432.9673347,
+  "/usr/share/doc/sg3-utils/examples/sdiag_sas_p1_prbs15.txt": 1792908432.9673526,
+  "/usr/share/doc/sg3-utils/examples/sdiag_sas_p0_cjtpat.txt": 1792908432.9674075,
+  "/usr/share/doc/sg3-utils/examples/sg_unmap_example.txt": 1792908432.9674215,
+  "/usr/share/doc/python3-lazr.uri/index.rst": 1792908432.9677894,
+  "/usr/share/doc/jq/README.md": 1792908432.968059,
+  "/usr/share/doc/libkmod2/README.md": 1792908432.9682105,
+  "/usr/share/doc/sudo/HISTORY.md": 1792908432.9683604,
+  "/usr/share/doc/sudo/SECURITY.md": 1792908432.9684095,
+  "/usr/share/doc/sudo/README.md": 1792908432.968423,
+  "/usr/share/doc/sudo/CONTRIBUTING.md": 1792908432.9684362,
+  "/usr/share/doc/libxmlsec1t64/README.md": 1792908432.9687433,
+  "/usr/share/doc/adduser/examples/adduser.local.conf.examples/skel.other/index.html": 1792908432.969056,
+  "/usr/share/doc/bpftrace/examples/tcpdrop_example.txt": 1792908432.969826,
+  "/usr/share/doc/bpftrace/examples/undump_example.txt": 1792908432.969842,
+  "/usr/share/doc/bpftrace/examples/biosnoop_example.txt": 1792908432.969856,
+  "/usr/share/doc/bpftrace/examples/threadsnoop_example.txt": 1792908432.9698706,
+  "/usr/share/doc/bpftrace/examples/tcpsynbl_example.txt": 1792908432.9698837,
+  "/usr/share/doc/bpftrace/examples/syncsnoop_example.txt": 1792908432.9699092,
+  "/usr/share/doc/bpftrace/examples/syscount_example.txt": 1792908432.9699223,
+  "/usr/share/doc/bpftrace/examples/capable_example.txt": 1792908432.9699354,
+  "/usr/share/doc/bpftrace/examples/killsnoop_example.txt": 1792908432.969949,
+  "/usr/share/doc/bpftrace/examples/vfsstat_example.txt": 1792908432.9699626,
+  "/usr/share/doc/bpftrace/examples/bitesize_example.txt": 1792908432.969975,
+  "/usr/share/doc/bpftrace/examples/dcsnoop_example.txt": 1792908432.9699876,
+  "/usr/share/doc/bpftrace/examples/ssllatency_example.txt": 1792908432.9700007,
+  "/usr/share/doc/bpftrace/examples/tcpconnect_example.txt": 1792908432.970014,
+  "/usr/share/doc/bpftrace/examples/sslsnoop_example.txt": 1792908432.970027,
+  "/usr/share/doc/bpftrace/examples/mdflush_example.txt": 1792908432.9700394,
+  "/usr/share/doc/bpftrace/examples/execsnoop_example.txt": 1792908432.9700527,
+  "/usr/share/doc/bpftrace/examples/tcpretrans_example.txt": 1792908432.9700654,
+  "/usr/share/doc/bpftrace/examples/tcpaccept_example.txt": 1792908432.9700782,
+  "/usr/share/doc/bpftrace/examples/tcplife_example.txt": 1792908432.9700909,
+  "/usr/share/doc/bpftrace/examples/biostacks_example.txt": 1792908432.9701037,
+  "/usr/share/doc/bpftrace/examples/cpuwalk_example.txt": 1792908432.9701169,
+  "/usr/share/doc/bpftrace/examples/opensnoop_example.txt": 1792908432.97013,
+  "/usr/share/doc/bpftrace/examples/writeback_example.txt": 1792908432.970143,
+  "/usr/share/doc/bpftrace/examples/gethostlatency_example.txt": 1792908432.9701562,
+  "/usr/share/doc/bpftrace/examples/loads_example.txt": 1792908432.9701693,
+  "/usr/share/doc/bpftrace/examples/runqlen_example.txt": 1792908432.9701827,
+  "/usr/share/doc/bpftrace/examples/vfscount_example.txt": 1792908432.9701953,
+  "/usr/share/doc/bpftrace/examples/biolatency_example.txt": 1792908432.9702084,
+  "/usr/share/doc/bpftrace/examples/swapin_example.txt": 1792908432.9702215,
+  "/usr/share/doc/bpftrace/examples/pidpersec_example.txt": 1792908432.9702344,
+  "/usr/share/doc/bpftrace/examples/oomkill_example.txt": 1792908432.9702475,
+  "/usr/share/doc/bpftrace/examples/statsnoop_example.txt": 1792908432.9702656,
+  "/usr/share/doc/bpftrace/examples/runqlat_example.txt": 1792908432.970279,
+  "/usr/share/doc/bpftrace/examples/bashreadline_example.txt": 1792908432.9702914,
+  "/usr/share/doc/bpftrace/examples/naptime_example.txt": 1792908432.9703047,
+  "/usr/share/doc/bpftrace/examples/setuids_example.txt": 1792908432.9703178,
+  "/usr/share/doc/bpftrace/examples/xfsdist_example.txt": 1792908432.970331,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-stream.1.html": 1792908432.970543,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-dump.1.html": 1792908432.9705603,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-listen.1.html": 1792908432.970574,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-start.1.html": 1792908432.9705865,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-show.1.html": 1792908432.9705994,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-stop.1.html": 1792908432.9706118,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd.dat.v7.5.html": 1792908432.9706244,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-restore.1.html": 1792908432.9706376,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-mem.1.html": 1792908432.9706507,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-reset.1.html": 1792908432.9706633,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-profile.1.html": 1792908432.97068,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-extract.1.html": 1792908432.9706936,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-options.1.html": 1792908432.9707065,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-snapshot.1.html": 1792908432.9707189,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-check-events.1.html": 1792908432.9707317,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-agent.1.html": 1792908432.9707446,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-attach.1.html": 1792908432.9707584,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-hist.1.html": 1792908432.9707708,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-stack.1.html": 1792908432.9707842,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-clear.1.html": 1792908432.9707968,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-stat.1.html": 1792908432.9708097,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-convert.1.html": 1792908432.9708219,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-list.1.html": 1792908432.9708347,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-report.1.html": 1792908432.9708483,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd.1.html": 1792908432.970862,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-split.1.html": 1792908432.9708743,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-set.1.html": 1792908432.9708955,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd-record.1.html": 1792908432.9709094,
+  "/usr/share/doc/trace-cmd/trace-cmd/trace-cmd.dat.v6.5.html": 1792908432.970922,
+  "/usr/share/doc/libtasn1-6/README.md": 1792908432.970977,
+  "/usr/share/doc/procps/bugs.md": 1792908432.9713724,
+  "/usr/share/doc/libgusb2/README.md": 1792908432.971492,
+  "/usr/share/doc/powermgmt-base/power_supply.txt": 1792908432.9728045,
+  "/usr/share/doc/python3-rich/examples/link.py": 1792908432.9738612,
+  "/usr/share/doc/python3-rich/examples/cp_progress.py": 1792908432.9738767,
+  "/usr/share/doc/python3-rich/examples/dynamic_progress.py": 1792908432.9738998,
+  "/usr/share/doc/python3-rich/examples/tree.py": 1792908432.9739144,
+  "/usr/share/doc/python3-rich/examples/listdir.py": 1792908432.973928,
+  "/usr/share/doc/python3-rich/examples/attrs.py": 1792908432.9739413,
+  "/usr/share/doc/python3-rich/examples/jobs.py": 1792908432.9739552,
+  "/usr/share/doc/python3-rich/examples/exception.py": 1792908432.9739683,
+  "/usr/share/doc/python3-rich/examples/justify2.py": 1792908432.9739811,
+  "/usr/share/doc/python3-rich/examples/highlighter.py": 1792908432.9739945,
+  "/usr/share/doc/python3-rich/examples/downloader.py": 1792908432.9740076,
+  "/usr/share/doc/python3-rich/examples/justify.py": 1792908432.97402,
+  "/usr/share/doc/python3-rich/examples/status.py": 1792908432.974035,
+  "/usr/share/doc/python3-rich/examples/rainbow.py": 1792908432.9740496,
+  "/usr/share/doc/python3-rich/examples/layout.py": 1792908432.9740624,
+  "/usr/share/doc/python3-rich/examples/table_movie.py": 1792908432.9740753,
+  "/usr/share/doc/python3-rich/examples/group2.py": 1792908432.9740884,
+  "/usr/share/doc/python3-rich/examples/columns.py": 1792908432.9741013,
+  "/usr/share/doc/python3-rich/examples/screen.py": 1792908432.9741144,
+  "/usr/share/doc/python3-rich/examples/fullscreen.py": 1792908432.9741266,
+  "/usr/share/doc/python3-rich/examples/recursive_error.py": 1792908432.97414,
+  "/usr/share/doc/python3-rich/examples/export.py": 1792908432.974153,
+  "/usr/share/doc/python3-rich/examples/repr.py": 1792908432.9741652,
+  "/usr/share/doc/python3-rich/examples/README.md": 1792908432.9741778,
+  "/usr/share/doc/python3-rich/examples/spinners.py": 1792908432.9741905,
+  "/usr/share/doc/python3-rich/examples/bars.py": 1792908432.9742036,
+  "/usr/share/doc/python3-rich/examples/suppress.py": 1792908432.9742167,
+  "/usr/share/doc/python3-rich/examples/top_lite_simulator.py": 1792908432.9742293,
+  "/usr/share/doc/python3-rich/examples/save_table_svg.py": 1792908432.974242,
+  "/usr/share/doc/python3-rich/examples/live_progress.py": 1792908432.9742625,
+  "/usr/share/doc/python3-rich/examples/group.py": 1792908432.9742756,
+  "/usr/share/doc/python3-rich/examples/padding.py": 1792908432.974289,
+  "/usr/share/doc/python3-rich/examples/print_calendar.py": 1792908432.9743018,
+  "/usr/share/doc/python3-rich/examples/overflow.py": 1792908432.9743142,
+  "/usr/share/doc/python3-rich/examples/file_progress.py": 1792908432.9743273,
+  "/usr/share/doc/python3-rich/examples/log.py": 1792908432.9743402,
+  "/usr/share/doc/python3-rich/examples/table.py": 1792908432.974353,
+  "/usr/share/doc/libpcap0.8t64/README.md": 1792908432.9746737,
+  "/usr/share/doc/systemd/TRANSLATORS.md": 1792908432.974726,
+  "/usr/share/doc/systemd/DISTRO_PORTING.md": 1792908432.9747891,
+  "/usr/share/doc/python3-lazr.restfulclient/index.rst": 1792908432.975087,
+  "/usr/share/doc/python3-lazr.restfulclient/CONTRIBUTING.rst": 1792908432.9751415,
+  "/usr/share/doc/python3-lazr.restfulclient/retry.standalone.rst": 1792908432.975155,
+  "/usr/share/doc/bolt/README.md": 1792908432.976003,
+  "/usr/share/doc/libbpfcc/FAQ.txt": 1792908432.9761546,
+  "/usr/share/doc/git/README.md": 1792908432.9771452,
+  "/usr/share/doc/git/RelNotes/1.8.5.1.txt": 1792908432.977539,
+  "/usr/share/doc/git/RelNotes/2.30.9.txt": 1792908432.9775574,
+  "/usr/share/doc/git/RelNotes/1.8.4.txt": 1792908432.9775727,
+  "/usr/share/doc/git/RelNotes/2.4.9.txt": 1792908432.9775867,
+  "/usr/share/doc/git/RelNotes/2.15.4.txt": 1792908432.9776008,
+  "/usr/share/doc/git/RelNotes/2.16.0.txt": 1792908432.9776144,
+  "/usr/share/doc/git/RelNotes/1.9.5.txt": 1792908432.9776273,
+  "/usr/share/doc/git/RelNotes/1.8.1.5.txt": 1792908432.9776402,
+  "/usr/share/doc/git/RelNotes/1.7.6.6.txt": 1792908432.9776537,
+  "/usr/share/doc/git/RelNotes/1.7.2.3.txt": 1792908432.9776664,
+  "/usr/share/doc/git/RelNotes/2.7.0.txt": 1792908432.9776807,
+  "/usr/share/doc/git/RelNotes/2.8.3.txt": 1792908432.9776936,
+  "/usr/share/doc/git/RelNotes/2.37.7.txt": 1792908432.9777067,
+  "/usr/share/doc/git/RelNotes/2.21.1.txt": 1792908432.9777195,
+  "/usr/share/doc/git/RelNotes/2.23.2.txt": 1792908432.977733,
+  "/usr/share/doc/git/RelNotes/2.0.0.txt": 1792908432.9777467,
+  "/usr/share/doc/git/RelNotes/2.33.4.txt": 1792908432.9777598,
+  "/usr/share/doc/git/RelNotes/2.31.8.txt": 1792908432.977774,
+  "/usr/share/doc/git/RelNotes/1.7.5.3.txt": 1792908432.9777875,
+  "/usr/share/doc/git/RelNotes/2.35.1.txt": 1792908432.9778001,
+  "/usr/share/doc/git/RelNotes/2.14.5.txt": 1792908432.9778132,
+  "/usr/share/doc/git/RelNotes/1.6.0.4.txt": 1792908432.9778268,
+  "/usr/share/doc/git/RelNotes/1.7.0.4.txt": 1792908432.97784,
+  "/usr/share/doc/git/RelNotes/1.7.2.1.txt": 1792908432.9778535,
+  "/usr/share/doc/git/RelNotes/1.7.12.4.txt": 1792908432.9778671,
+  "/usr/share/doc/git/RelNotes/2.3.6.txt": 1792908432.9778798,
+  "/usr/share/doc/git/RelNotes/2.20.0.txt": 1792908432.9779043,
+  "/usr/share/doc/git/RelNotes/1.8.5.4.txt": 1792908432.9779177,
+  "/usr/share/doc/git/RelNotes/1.7.7.4.txt": 1792908432.9779315,
+  "/usr/share/doc/git/RelNotes/2.25.2.txt": 1792908432.9779444,
+  "/usr/share/doc/git/RelNotes/1.8.4.3.txt": 1792908432.9779568,
+  "/usr/share/doc/git/RelNotes/2.3.0.txt": 1792908432.9779696,
+  "/usr/share/doc/git/RelNotes/2.16.2.txt": 1792908432.9779825,
+  "/usr/share/doc/git/RelNotes/1.7.7.3.txt": 1792908432.9780643,
+  "/usr/share/doc/git/RelNotes/1.7.7.2.txt": 1792908432.9780898,
+  "/usr/share/doc/git/RelNotes/2.29.1.txt": 1792908432.9781132,
+  "/usr/share/doc/git/RelNotes/1.7.7.1.txt": 1792908432.9781322,
+  "/usr/share/doc/git/RelNotes/1.8.3.2.txt": 1792908432.9781513,
+  "/usr/share/doc/git/RelNotes/1.7.4.2.txt": 1792908432.9781706,
+  "/usr/share/doc/git/RelNotes/2.9.3.txt": 1792908432.978194,
+  "/usr/share/doc/git/RelNotes/2.32.1.txt": 1792908432.978218,
+  "/usr/share/doc/git/RelNotes/1.5.0.7.txt": 1792908432.9782424,
+  "/usr/share/doc/git/RelNotes/1.7.6.3.txt": 1792908432.9782753,
+  "/usr/share/doc/git/RelNotes/2.4.4.txt": 1792908432.978312,
+  "/usr/share/doc/git/RelNotes/1.7.2.4.txt": 1792908432.9783335,
+  "/usr/share/doc/git/RelNotes/1.7.2.5.txt": 1792908432.9783592,
+  "/usr/share/doc/git/RelNotes/1.5.1.5.txt": 1792908432.9783835,
+  "/usr/share/doc/git/RelNotes/1.8.4.2.txt": 1792908432.978408,
+  "/usr/share/doc/git/RelNotes/2.14.0.txt": 1792908432.9784312,
+  "/usr/share/doc/git/RelNotes/2.19.4.txt": 1792908432.9784553,
+  "/usr/share/doc/git/RelNotes/2.35.4.txt": 1792908432.9784799,
+  "/usr/share/doc/git/RelNotes/2.30.3.txt": 1792908432.9785032,
+  "/usr/share/doc/git/RelNotes/2.39.2.txt": 1792908432.9785283,
+  "/usr/share/doc/git/RelNotes/1.6.1.1.txt": 1792908432.9785516,
+  "/usr/share/doc/git/RelNotes/1.6.6.txt": 1792908432.978574,
+  "/usr/share/doc/git/RelNotes/2.32.4.txt": 1792908432.9785957,
+  "/usr/share/doc/git/RelNotes/1.7.8.3.txt": 1792908432.9786172,
+  "/usr/share/doc/git/RelNotes/2.8.6.txt": 1792908432.978637,
+  "/usr/share/doc/git/RelNotes/2.40.0.txt": 1792908432.9786577,
+  "/usr/share/doc/git/RelNotes/2.43.0.txt": 1792908432.9786785,
+  "/usr/share/doc/git/RelNotes/2.24.4.txt": 1792908432.978699,
+  "/usr/share/doc/git/RelNotes/1.7.6.2.txt": 1792908432.9787192,
+  "/usr/share/doc/git/RelNotes/2.32.5.txt": 1792908432.9787395,
+  "/usr/share/doc/git/RelNotes/1.6.2.2.txt": 1792908432.9787598,
+  "/usr/share/doc/git/RelNotes/2.38.0.txt": 1792908432.978781,
+  "/usr/share/doc/git/RelNotes/1.7.2.2.txt": 1792908432.9788034,
+  "/usr/share/doc/git/RelNotes/1.5.1.1.txt": 1792908432.9788277,
+  "/usr/share/doc/git/RelNotes/2.34.1.txt": 1792908432.9788523,
+  "/usr/share/doc/git/RelNotes/2.18.1.txt": 1792908432.9788742,
+  "/usr/share/doc/git/RelNotes/1.7.11.2.txt": 1792908432.9789133,
+  "/usr/share/doc/git/RelNotes/1.7.3.2.txt": 1792908432.9789348,
+  "/usr/share/doc/git/RelNotes/1.7.0.7.txt": 1792908432.9789553,
+  "/usr/share/doc/git/RelNotes/2.14.1.txt": 1792908432.978976,
+  "/usr/share/doc/git/RelNotes/1.5.4.3.txt": 1792908432.9789972,
+  "/usr/share/doc/git/RelNotes/1.5.6.6.txt": 1792908432.9790165,
+  "/usr/share/doc/git/RelNotes/1.5.5.1.txt": 1792908432.979038,
+  "/usr/share/doc/git/RelNotes/2.31.0.txt": 1792908432.9790592,
+  "/usr/share/doc/git/RelNotes/2.22.0.txt": 1792908432.9790833,
+  "/usr/share/doc/git/RelNotes/2.20.3.txt": 1792908432.9791033,
+  "/usr/share/doc/git/RelNotes/1.7.10.4.txt": 1792908432.9791234,
+  "/usr/share/doc/git/RelNotes/1.7.11.4.txt": 1792908432.9791458,
+  "/usr/share/doc/git/RelNotes/2.35.7.txt": 1792908432.9791675,
+  "/usr/share/doc/git/RelNotes/1.7.1.1.txt": 1792908432.9791887,
+  "/usr/share/doc/git/RelNotes/1.6.4.1.txt": 1792908432.9792092,
+  "/usr/share/doc/git/RelNotes/2.20.5.txt": 1792908432.9792302,
+  "/usr/share/doc/git/RelNotes/2.6.2.txt": 1792908432.979251,
+  "/usr/share/doc/git/RelNotes/2.7.1.txt": 1792908432.9792774,
+  "/usr/share/doc/git/RelNotes/2.6.3.txt": 1792908432.97929,
+  "/usr/share/doc/git/RelNotes/1.8.3.3.txt": 1792908432.9793036,
+  "/usr/share/doc/git/RelNotes/2.4.6.txt": 1792908432.9793172,
+  "/usr/share/doc/git/RelNotes/2.36.2.txt": 1792908432.9793303,
+  "/usr/share/doc/git/RelNotes/2.24.3.txt": 1792908432.9793434,
+  "/usr/share/doc/git/RelNotes/1.8.5.3.txt": 1792908432.979356,
+  "/usr/share/doc/git/RelNotes/1.9.4.txt": 1792908432.9793696,
+  "/usr/share/doc/git/RelNotes/1.7.6.1.txt": 1792908432.9793835,
+  "/usr/share/doc/git/RelNotes/2.20.2.txt": 1792908432.979397,
+  "/usr/share/doc/git/RelNotes/2.35.3.txt": 1792908432.9794104,
+  "/usr/share/doc/git/RelNotes/2.18.0.txt": 1792908432.979424,
+  "/usr/share/doc/git/RelNotes/2.4.12.txt": 1792908432.9794374,
+  "/usr/share/doc/git/RelNotes/1.5.2.5.txt": 1792908432.9794538,
+  "/usr/share/doc/git/RelNotes/1.6.1.2.txt": 1792908432.9794688,
+  "/usr/share/doc/git/RelNotes/2.10.0.txt": 1792908432.979482,
+  "/usr/share/doc/git/RelNotes/1.8.5.txt": 1792908432.9794948,
+  "/usr/share/doc/git/RelNotes/1.6.3.1.txt": 1792908432.979511,
+  "/usr/share/doc/git/RelNotes/2.22.3.txt": 1792908432.9795244,
+  "/usr/share/doc/git/RelNotes/2.2.1.txt": 1792908432.9795375,
+  "/usr/share/doc/git/RelNotes/2.7.5.txt": 1792908432.9795513,
+  "/usr/share/doc/git/RelNotes/1.7.10.txt": 1792908432.9795642,
+  "/usr/share/doc/git/RelNotes/2.4.1.txt": 1792908432.979577,
+  "/usr/share/doc/git/RelNotes/1.5.4.6.txt": 1792908432.9795897,
+  "/usr/share/doc/git/RelNotes/2.12.3.txt": 1792908432.9796023,
+  "/usr/share/doc/git/RelNotes/2.41.0.txt": 1792908432.9796152,
+  "/usr/share/doc/git/RelNotes/1.8.1.3.txt": 1792908432.9796286,
+  "/usr/share/doc/git/RelNotes/2.14.2.txt": 1792908432.979642,
+  "/usr/share/doc/git/RelNotes/2.34.3.txt": 1792908432.9796555,
+  "/usr/share/doc/git/RelNotes/2.6.5.txt": 1792908432.9796693,
+  "/usr/share/doc/git/RelNotes/1.6.4.3.txt": 1792908432.979682,
+  "/usr/share/doc/git/RelNotes/1.7.0.3.txt": 1792908432.9796948,
+  "/usr/share/doc/git/RelNotes/2.37.6.txt": 1792908432.9797075,
+  "/usr/share/doc/git/RelNotes/2.32.6.txt": 1792908432.9797204,
+  "/usr/share/doc/git/RelNotes/1.6.6.3.txt": 1792908432.9797332,
+  "/usr/share/doc/git/RelNotes/2.17.6.txt": 1792908432.979746,
+  "/usr/share/doc/git/RelNotes/2.37.1.txt": 1792908432.9797592,
+  "/usr/share/doc/git/RelNotes/2.10.5.txt": 1792908432.979775,
+  "/usr/share/doc/git/RelNotes/2.8.2.txt": 1792908432.979791,
+  "/usr/share/doc/git/RelNotes/2.32.0.txt": 1792908432.9798043,
+  "/usr/share/doc/git/RelNotes/1.6.5.8.txt": 1792908432.9798172,
+  "/usr/share/doc/git/RelNotes/1.6.5.1.txt": 1792908432.9798307,
+  "/usr/share/doc/git/RelNotes/2.13.5.txt": 1792908432.979844,
+  "/usr/share/doc/git/RelNotes/1.5.1.3.txt": 1792908432.9798572,
+  "/usr/share/doc/git/RelNotes/2.23.4.txt": 1792908432.9798706,
+  "/usr/share/doc/git/RelNotes/1.5.3.3.txt": 1792908432.9798841,
+  "/usr/share/doc/git/RelNotes/2.18.4.txt": 1792908432.9799201,
+  "/usr/share/doc/git/RelNotes/1.8.3.1.txt": 1792908432.9799337,
+  "/usr/share/doc/git/RelNotes/2.13.0.txt": 1792908432.9799473,
+  "/usr/share/doc/git/RelNotes/2.25.1.txt": 1792908432.9799607,
+  "/usr/share/doc/git/RelNotes/1.6.0.1.txt": 1792908432.9799736,
+  "/usr/share/doc/git/RelNotes/2.7.3.txt": 1792908432.9799864,
+  "/usr/share/doc/git/RelNotes/1.8.3.txt": 1792908432.9799995,
+  "/usr/share/doc/git/RelNotes/2.14.6.txt": 1792908432.9800122,
+  "/usr/share/doc/git/RelNotes/2.4.0.txt": 1792908432.980025,
+  "/usr/share/doc/git/RelNotes/2.13.2.txt": 1792908432.9800377,
+  "/usr/share/doc/git/RelNotes/2.26.1.txt": 1792908432.980051,
+  "/usr/share/doc/git/RelNotes/1.5.3.4.txt": 1792908432.9800642,
+  "/usr/share/doc/git/RelNotes/2.20.4.txt": 1792908432.9800773,
+  "/usr/share/doc/git/RelNotes/2.4.10.txt": 1792908432.9800906,
+  "/usr/share/doc/git/RelNotes/2.32.7.txt": 1792908432.980104,
+  "/usr/share/doc/git/RelNotes/1.7.3.1.txt": 1792908432.9801173,
+  "/usr/share/doc/git/RelNotes/2.31.6.txt": 1792908432.9801302,
+  "/usr/share/doc/git/RelNotes/1.6.5.6.txt": 1792908432.9801433,
+  "/usr/share/doc/git/RelNotes/2.6.4.txt": 1792908432.980156,
+  "/usr/share/doc/git/RelNotes/1.6.3.4.txt": 1792908432.9801683,
+  "/usr/share/doc/git/RelNotes/2.6.7.txt": 1792908432.980182,
+  "/usr/share/doc/git/RelNotes/2.38.5.txt": 1792908432.9801962,
+  "/usr/share/doc/git/RelNotes/2.21.4.txt": 1792908432.9802098,
+  "/usr/share/doc/git/RelNotes/2.35.0.txt": 1792908432.9802234,
+  "/usr/share/doc/git/RelNotes/1.5.3.2.txt": 1792908432.9802363,
+  "/usr/share/doc/git/RelNotes/1.7.12.txt": 1792908432.9802494,
+  "/usr/share/doc/git/RelNotes/1.9.2.txt": 1792908432.980271,
+  "/usr/share/doc/git/RelNotes/1.7.4.1.txt": 1792908432.9802842,
+  "/usr/share/doc/git/RelNotes/2.11.0.txt": 1792908432.980298,
+  "/usr/share/doc/git/RelNotes/1.7.8.6.txt": 1792908432.9803112,
+  "/usr/share/doc/git/RelNotes/2.0.3.txt": 1792908432.980324,
+  "/usr/share/doc/git/RelNotes/2.4.5.txt": 1792908432.9803507,
+  "/usr/share/doc/git/RelNotes/1.7.12.2.txt": 1792908432.9803638,
+  "/usr/share/doc/git/RelNotes/2.10.3.txt": 1792908432.9803772,
+  "/usr/share/doc/git/RelNotes/2.33.8.txt": 1792908432.9803896,
+  "/usr/share/doc/git/RelNotes/1.6.3.2.txt": 1792908432.9804022,
+  "/usr/share/doc/git/RelNotes/1.5.5.2.txt": 1792908432.9804149,
+  "/usr/share/doc/git/RelNotes/2.1.1.txt": 1792908432.9804277,
+  "/usr/share/doc/git/RelNotes/1.7.1.2.txt": 1792908432.9804404,
+  "/usr/share/doc/git/RelNotes/2.30.1.txt": 1792908432.9804528,
+  "/usr/share/doc/git/RelNotes/2.24.1.txt": 1792908432.9804654,
+  "/usr/share/doc/git/RelNotes/1.7.4.5.txt": 1792908432.980479,
+  "/usr/share/doc/git/RelNotes/2.19.3.txt": 1792908432.9804919,
+  "/usr/share/doc/git/RelNotes/1.7.9.4.txt": 1792908432.9805045,
+  "/usr/share/doc/git/RelNotes/2.12.5.txt": 1792908432.9805174,
+  "/usr/share/doc/git/RelNotes/1.5.3.txt": 1792908432.98053,
+  "/usr/share/doc/git/RelNotes/1.5.2.4.txt": 1792908432.9805424,
+  "/usr/share/doc/git/RelNotes/2.12.2.txt": 1792908432.980555,
+  "/usr/share/doc/git/RelNotes/1.8.0.txt": 1792908432.9805677,
+  "/usr/share/doc/git/RelNotes/2.9.1.txt": 1792908432.9805803,
+  "/usr/share/doc/git/RelNotes/2.17.4.txt": 1792908432.980593,
+  "/usr/share/doc/git/RelNotes/2.26.3.txt": 1792908432.9806054,
+  "/usr/share/doc/git/RelNotes/1.8.2.2.txt": 1792908432.9806185,
+  "/usr/share/doc/git/RelNotes/2.3.9.txt": 1792908432.980631,
+  "/usr/share/doc/git/RelNotes/1.7.3.4.txt": 1792908432.980644,
+  "/usr/share/doc/git/RelNotes/2.1.2.txt": 1792908432.9806569,
+  "/usr/share/doc/git/RelNotes/1.5.6.2.txt": 1792908432.9806697,
+  "/usr/share/doc/git/RelNotes/1.7.0.8.txt": 1792908432.9806828,
+  "/usr/share/doc/git/RelNotes/1.8.4.5.txt": 1792908432.9806952,
+  "/usr/share/doc/git/RelNotes/2.30.0.txt": 1792908432.980708,
+  "/usr/share/doc/git/RelNotes/1.7.7.6.txt": 1792908432.9807208,
+  "/usr/share/doc/git/RelNotes/2.7.4.txt": 1792908432.9807332,
+  "/usr/share/doc/git/RelNotes/1.7.0.5.txt": 1792908432.980746,
+  "/usr/share/doc/git/RelNotes/1.6.1.txt": 1792908432.9807591,
+  "/usr/share/doc/git/RelNotes/2.9.4.txt": 1792908432.980772,
+  "/usr/share/doc/git/RelNotes/1.7.7.txt": 1792908432.9807847,
+  "/usr/share/doc/git/RelNotes/1.9.1.txt": 1792908432.9807978,
+  "/usr/share/doc/git/RelNotes/2.21.3.txt": 1792908432.9808104,
+  "/usr/share/doc/git/contrib/subtree/git-subtree.txt": 1792908432.9819715,
+  "/usr/share/doc/git/contrib/fast-import/import-zips.py": 1792908432.9820929,
+  "/usr/share/doc/git/contrib/contacts/git-contacts.txt": 1792908432.9821894,
+  "/usr/share/doc/git/contrib/buildsystems/CMakeLists.txt": 1792908432.982252,
+  "/usr/share/doc/git/contrib/vscode/README.md": 1792908432.9823422,
+  "/usr/share/doc/git/contrib/hg-to-git/hg-to-git.py": 1792908432.9823792,
+  "/usr/share/doc/git/contrib/hg-to-git/hg-to-git.txt": 1792908432.9823935,
+  "/usr/share/doc/python3-launchpadlib/README.rst": 1792908432.983174,
+  "/usr/share/doc/python3-launchpadlib/docs/index.rst": 1792908432.9832234,
+  "/usr/share/doc/python3-launchpadlib/docs/operations.rst": 1792908432.983238,
+  "/usr/share/doc/python3-launchpadlib/docs/command-line.rst": 1792908432.9832642,
+  "/usr/share/doc/python3-launchpadlib/docs/toplevel.rst": 1792908432.9832869,
+  "/usr/share/doc/python3-launchpadlib/docs/hosted-files.rst": 1792908432.983308,
+  "/usr/share/doc/python3-launchpadlib/docs/CONTRIBUTING.rst": 1792908432.9833217,
+  "/usr/share/doc/zlib1g-dev/examples/zlib_how.html": 1792908432.9835382,
+  "/usr/share/doc/kbd/font-formats/font-formats-2.html": 1792908432.9852972,
+  "/usr/share/doc/kbd/font-formats/font-formats-5.html": 1792908432.985312,
+  "/usr/share/doc/kbd/font-formats/font-formats.html": 1792908432.9853256,
+  "/usr/share/doc/kbd/font-formats/font-formats-1.html": 1792908432.9853466,
+  "/usr/share/doc/kbd/font-formats/font-formats-3.html": 1792908432.9853604,
+  "/usr/share/doc/kbd/font-formats/font-formats-4.html": 1792908432.985374,
+  "/usr/share/doc/python3-serial/README.rst": 1792908432.985921,
+  "/usr/share/doc/python3-serial/examples/port_publisher.py": 1792908432.9859636,
+  "/usr/share/doc/python3-serial/examples/rfc2217_server.py": 1792908432.985978,
+  "/usr/share/doc/python3-serial/examples/setup-wxTerminal-py2exe.py": 1792908432.9859998,
+  "/usr/share/doc/python3-serial/examples/at_protocol.py": 1792908432.9860132,
+  "/usr/share/doc/python3-serial/examples/setup-rfc2217_server-py2exe.py": 1792908432.9860766,
+  "/usr/share/doc/python3-serial/examples/wxSerialConfigDialog.py": 1792908432.9860985,
+  "/usr/share/doc/python3-serial/examples/setup-miniterm-py2exe.py": 1792908432.9861112,
+  "/usr/share/doc/python3-serial/examples/tcp_serial_redirect.py": 1792908432.9861238,
+  "/usr/share/doc/python3-serial/examples/wxTerminal.py": 1792908432.9861367,
+  "/usr/share/doc/python3-requests/README.md": 1792908432.986242,
+  "/usr/share/doc/libjansson4/README.rst": 1792908432.986302,
+  "/usr/share/doc/modemmanager/README.md": 1792908432.9865465,
+  "/usr/share/doc/gdisk/sgdisk.html": 1792908432.986785,
+  "/usr/share/doc/gdisk/fixparts.html": 1792908432.986799,
+  "/usr/share/doc/gdisk/gdisk.html": 1792908432.9868267,
+  "/usr/share/doc/gdisk/cgdisk.html": 1792908432.9868395,
+  "/usr/share/doc/gdisk/index.html": 1792908432.9868598,
+  "/usr/share/doc/gcc-13-base/NEWS.html": 1792908432.9869986,
+  "/usr/share/doc/command-not-found/README.md": 1792908432.9873042,
+  "/usr/share/doc/udisks2/README.md": 1792908432.9874814,
+  "/usr/share/doc/fonts-dejavu-mono/README.md": 1792908432.9876997,
+  "/usr/share/doc/intel-microcode/security.md": 1792908432.9881954,
+  "/usr/share/doc/nano/faq.html": 1792908432.9890938,
+  "/usr/share/doc/nano/nano.html": 1792908432.9891076,
+  "/usr/share/doc/dpkg/spec/triggers.txt": 1792908432.9897044,
+  "/usr/share/doc/dpkg/spec/rootless-builds.txt": 1792908432.9897192,
+  "/usr/share/doc/dpkg/spec/frontend-api.txt": 1792908432.9897325,
+  "/usr/share/doc/dpkg/spec/protected-field.txt": 1792908432.9897454,
+  "/usr/share/doc/shared-mime-info/README.md": 1792908432.990709,
+  "/usr/share/doc/shared-mime-info/shared-mime-info-spec.html/b521.html": 1792908432.9907675,
+  "/usr/share/doc/shared-mime-info/shared-mime-info-spec.html/x500.html": 1792908432.990782,
+  "/usr/share/doc/shared-mime-info/shared-mime-info-spec.html/x34.html": 1792908432.9907959,
+  "/usr/share/doc/shared-mime-info/shared-mime-info-spec.html/index.html": 1792908432.9908102,
+  "/usr/share/doc/base-passwd/users-and-groups.html": 1792908432.9908683,
+  "/usr/share/doc/python3-wadllib/README.rst": 1792908432.9909935,
+  "/usr/share/doc/zstd/CODE_OF_CONDUCT.md": 1792908432.9913666,
+  "/usr/share/doc/zstd/TESTING.md": 1792908432.9913812,
+  "/usr/share/doc/libxml2/README.md": 1792908432.9914382,
+  "/usr/share/doc/netplan/netplan.html": 1792908432.9915473,
+  "/usr/share/doc/gnupg/examples/qualified.txt": 1792908432.9923604,
+  "/usr/share/doc/gnupg/examples/trustlist.txt": 1792908432.9923892,
+  "/usr/share/doc/python3-jmespath/examples/jp.py": 1792908432.9932985,
+  "/usr/share/doc/libdb5.3t64/build_signature_amd64.txt": 1792908432.993421,
+  "/usr/share/doc/mount/mount.txt": 1792908432.9938939,
+  "/usr/share/doc/python3-zope.interface/README.rst": 1792908432.9943905,
+  "/usr/share/doc/cloud-init/status.txt": 1792908432.9944866,
+  "/usr/share/doc/cloud-init/userdata.txt": 1792908432.9945002,
+  "/usr/share/doc/cloud-init/var-lib-cloud.txt": 1792908432.9945138,
+  "/usr/share/doc/cloud-init/examples/part-handler.txt": 1792908432.9945817,
+  "/usr/share/doc/cloud-init/examples/cloud-config-apt.txt": 1792908432.994596,
+  "/usr/share/doc/cloud-init/examples/cloud-config-reporting.txt": 1792908432.9946105,
+  "/usr/share/doc/cloud-init/examples/cloud-config-final-message.txt": 1792908432.994624,
+  "/usr/share/doc/cloud-init/examples/cloud-config-ca-certs.txt": 1792908432.9946384,
+  "/usr/share/doc/cloud-init/examples/include-once.txt": 1792908432.994651,
+  "/usr/share/doc/cloud-init/examples/cloud-config-yum-repo.txt": 1792908432.9946644,
+  "/usr/share/doc/cloud-init/examples/cloud-config-mcollective.txt": 1792908432.994678,
+  "/usr/share/doc/cloud-init/examples/part-handler-v2.txt": 1792908432.994691,
+  "/usr/share/doc/cloud-init/examples/cloud-config-chef.txt": 1792908432.9947038,
+  "/usr/share/doc/cloud-init/examples/cloud-config-mount-points.txt": 1792908432.9947176,
+  "/usr/share/doc/cloud-init/examples/cloud-config-write-files.txt": 1792908432.994731,
+  "/usr/share/doc/cloud-init/examples/cloud-config-user-groups.txt": 1792908432.9947443,
+  "/usr/share/doc/cloud-init/examples/cloud-config-landscape.txt": 1792908432.9947572,
+  "/usr/share/doc/cloud-init/examples/user-script.txt": 1792908432.994771,
+  "/usr/share/doc/cloud-init/examples/include.txt": 1792908432.994784,
+  "/usr/share/doc/cloud-init/examples/cloud-config-datasources.txt": 1792908432.994797,
+  "/usr/share/doc/cloud-init/examples/cloud-config-ntp.txt": 1792908432.99481,
+  "/usr/share/doc/cloud-init/examples/cloud-config-seed-random.txt": 1792908432.9948235,
+  "/usr/share/doc/cloud-init/examples/cloud-config-install-packages.txt": 1792908432.9948368,
+  "/usr/share/doc/cloud-init/examples/cloud-config-ssh-keys.txt": 1792908432.9948502,
+  "/usr/share/doc/cloud-init/examples/cloud-config-add-apt-repos.txt": 1792908432.9948635,
+  "/usr/share/doc/cloud-init/examples/cloud-config-launch-index.txt": 1792908432.9948766,
+  "/usr/share/doc/cloud-init/examples/cloud-config-salt-minion.txt": 1792908432.9948988,
+  "/usr/share/doc/cloud-init/examples/cloud-config-rh_subscription.txt": 1792908432.9949121,
+  "/usr/share/doc/cloud-init/examples/cloud-config-rsyslog.txt": 1792908432.9949248,
+  "/usr/share/doc/cloud-init/examples/cloud-config-update-apt.txt": 1792908432.9949374,
+  "/usr/share/doc/cloud-init/examples/upstart-cloud-config.txt": 1792908432.99495,
+  "/usr/share/doc/cloud-init/examples/cloud-config-archive.txt": 1792908432.9949634,
+  "/usr/share/doc/cloud-init/examples/plain-ignored.txt": 1792908432.9949765,
+  "/usr/share/doc/cloud-init/examples/kernel-cmdline.txt": 1792908432.9949896,
+  "/usr/share/doc/cloud-init/examples/cloud-config-power-state.txt": 1792908432.9950023,
+  "/usr/share/doc/cloud-init/examples/cloud-config-phone-home.txt": 1792908432.9950151,
+  "/usr/share/doc/cloud-init/examples/cloud-config-run-cmds.txt": 1792908432.9950275,
+  "/usr/share/doc/cloud-init/examples/cloud-config-lxd.txt": 1792908432.9950402,
+  "/usr/share/doc/cloud-init/examples/cloud-config.txt": 1792908432.9950533,
+  "/usr/share/doc/cloud-init/examples/cloud-config-archive-launch-index.txt": 1792908432.9950671,
+  "/usr/share/doc/cloud-init/examples/cloud-config-gluster.txt": 1792908432.9950798,
+  "/usr/share/doc/cloud-init/examples/cloud-config-chef-oneiric.txt": 1792908432.9950933,
+  "/usr/share/doc/cloud-init/examples/cloud-config-vendor-data.txt": 1792908432.995106,
+  "/usr/share/doc/cloud-init/examples/cloud-config-resolv-conf.txt": 1792908432.9951186,
+  "/usr/share/doc/cloud-init/examples/cloud-config-update-packages.txt": 1792908432.9951317,
+  "/usr/share/doc/cloud-init/examples/cloud-config-puppet.txt": 1792908432.9951441,
+  "/usr/share/doc/cloud-init/examples/cloud-config-disk-setup.txt": 1792908432.9951568,
+  "/usr/share/doc/cloud-init/examples/cloud-config-growpart.txt": 1792908432.9951692,
+  "/usr/share/doc/cloud-init/examples/cloud-config-boot-cmds.txt": 1792908432.995182,
+  "/usr/share/doc/cloud-init/examples/upstart-rclocal.txt": 1792908432.9951954,
+  "/usr/share/doc/bc/bc.html": 1792908432.9953237,
+  "/usr/share/doc/bpfcc-tools/examples/hello_world.py": 1792908432.9956043,
+  "/usr/share/doc/bpfcc-tools/examples/networking/simulation.py": 1792908432.9956582,
+  "/usr/share/doc/bpfcc-tools/examples/networking/net_monitor.py": 1792908432.9956737,
+  "/usr/share/doc/bpfcc-tools/examples/networking/sockmap.py": 1792908432.9956877,
+  "/usr/share/doc/bpfcc-tools/examples/networking/tc_perf_event.py": 1792908432.9957016,
+  "/usr/share/doc/bpfcc-tools/examples/networking/simple_tc.py": 1792908432.9957156,
+  "/usr/share/doc/bpfcc-tools/examples/networking/neighbor_sharing/tc_neighbor_sharing.py": 1792908432.9957745,
+  "/usr/share/doc/bpfcc-tools/examples/networking/neighbor_sharing/simulation.py": 1792908432.995789,
+  "/usr/share/doc/bpfcc-tools/examples/networking/neighbor_sharing/README.txt": 1792908432.9958112,
+  "/usr/share/doc/bpfcc-tools/examples/networking/distributed_bridge/tunnel_mesh.py": 1792908432.9958477,
+  "/usr/share/doc/bpfcc-tools/examples/networking/distributed_bridge/simulation.py": 1792908432.9958615,
+  "/usr/share/doc/bpfcc-tools/examples/networking/distributed_bridge/tunnel.py": 1792908432.9958756,
+  "/usr/share/doc/bpfcc-tools/examples/networking/distributed_bridge/main.py": 1792908432.995902,
+  "/usr/share/doc/bpfcc-tools/examples/networking/http_filter/http-parse-complete.py": 1792908432.9959524,
+  "/usr/share/doc/bpfcc-tools/examples/networking/http_filter/http-parse-simple.py": 1792908432.995982,
+  "/usr/share/doc/bpfcc-tools/examples/networking/http_filter/README.md": 1792908432.9959958,
+  "/usr/share/doc/bpfcc-tools/examples/networking/vlan_learning/simulation.py": 1792908432.9960291,
+  "/usr/share/doc/bpfcc-tools/examples/networking/vlan_learning/vlan_learning.py": 1792908432.9960432,
+  "/usr/share/doc/bpfcc-tools/examples/networking/vlan_learning/README.txt": 1792908432.9960647,
+  "/usr/share/doc/bpfcc-tools/examples/networking/tunnel_monitor/monitor.py": 1792908432.9961011,
+  "/usr/share/doc/bpfcc-tools/examples/networking/tunnel_monitor/simulation.py": 1792908432.9961238,
+  "/usr/share/doc/bpfcc-tools/examples/networking/tunnel_monitor/main.py": 1792908432.9961376,
+  "/usr/share/doc/bpfcc-tools/examples/networking/tunnel_monitor/README.md": 1792908432.996151,
+  "/usr/share/doc/bpfcc-tools/examples/networking/xdp/xdp_redirect_cpu.py": 1792908432.9962125,
+  "/usr/share/doc/bpfcc-tools/examples/networking/xdp/xdp_redirect_map.py": 1792908432.996227,
+  "/usr/share/doc/bpfcc-tools/examples/networking/xdp/xdp_macswap_count.py": 1792908432.9962401,
+  "/usr/share/doc/bpfcc-tools/examples/networking/xdp/xdp_drop_count.py": 1792908432.9962592,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcpdrop_example.txt": 1792908432.996467,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcpstates_example.txt": 1792908432.9964824,
+  "/usr/share/doc/bpfcc-tools/examples/doc/filetop_example.txt": 1792908432.996497,
+  "/usr/share/doc/bpfcc-tools/examples/doc/cthreads_example.txt": 1792908432.9965107,
+  "/usr/share/doc/bpfcc-tools/examples/doc/rubyobjnew_example.txt": 1792908432.9965246,
+  "/usr/share/doc/bpfcc-tools/examples/doc/wakeuptime_example.txt": 1792908432.996538,
+  "/usr/share/doc/bpfcc-tools/examples/doc/kvmexit_example.txt": 1792908432.9965513,
+  "/usr/share/doc/bpfcc-tools/examples/doc/rubycalls_example.txt": 1792908432.9965637,
+  "/usr/share/doc/bpfcc-tools/examples/doc/pythoncalls_example.txt": 1792908432.9965763,
+  "/usr/share/doc/bpfcc-tools/examples/doc/btrfsslower_example.txt": 1792908432.9965894,
+  "/usr/share/doc/bpfcc-tools/examples/doc/biosnoop_example.txt": 1792908432.9966028,
+  "/usr/share/doc/bpfcc-tools/examples/doc/threadsnoop_example.txt": 1792908432.996625,
+  "/usr/share/doc/bpfcc-tools/examples/doc/perlcalls_example.txt": 1792908432.9966383,
+  "/usr/share/doc/bpfcc-tools/examples/doc/klockstat_example.txt": 1792908432.9966512,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tclstat_example.txt": 1792908432.9966638,
+  "/usr/share/doc/bpfcc-tools/examples/doc/btrfsdist_example.txt": 1792908432.9966772,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcpsynbl_example.txt": 1792908432.9966905,
+  "/usr/share/doc/bpfcc-tools/examples/doc/syncsnoop_example.txt": 1792908432.9967031,
+  "/usr/share/doc/bpfcc-tools/examples/doc/syscount_example.txt": 1792908432.996716,
+  "/usr/share/doc/bpfcc-tools/examples/doc/capable_example.txt": 1792908432.9967294,
+  "/usr/share/doc/bpfcc-tools/examples/doc/compactsnoop_example.txt": 1792908432.9967427,
+  "/usr/share/doc/bpfcc-tools/examples/doc/dcstat_example.txt": 1792908432.996756,
+  "/usr/share/doc/bpfcc-tools/examples/doc/killsnoop_example.txt": 1792908432.9967694,
+  "/usr/share/doc/bpfcc-tools/examples/doc/biopattern_example.txt": 1792908432.9967825,
+  "/usr/share/doc/bpfcc-tools/examples/doc/solisten_example.txt": 1792908432.9968019,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcpsubnet_example.txt": 1792908432.996815,
+  "/usr/share/doc/bpfcc-tools/examples/doc/exitsnoop_example.txt": 1792908432.996828,
+  "/usr/share/doc/bpfcc-tools/examples/doc/funccount_example.txt": 1792908432.996841,
+  "/usr/share/doc/bpfcc-tools/examples/doc/bindsnoop_example.txt": 1792908432.9968543,
+  "/usr/share/doc/bpfcc-tools/examples/doc/vfsstat_example.txt": 1792908432.9968677,
+  "/usr/share/doc/bpfcc-tools/examples/doc/hardirqs_example.txt": 1792908432.9968805,
+  "/usr/share/doc/bpfcc-tools/examples/doc/profile_example.txt": 1792908432.9969025,
+  "/usr/share/doc/bpfcc-tools/examples/doc/sofdsnoop_example.txt": 1792908432.9969153,
+  "/usr/share/doc/bpfcc-tools/examples/doc/slabratetop_example.txt": 1792908432.9969292,
+  "/usr/share/doc/bpfcc-tools/examples/doc/nodegc_example.txt": 1792908432.9969418,
+  "/usr/share/doc/bpfcc-tools/examples/doc/bitesize_example.txt": 1792908432.9969547,
+  "/usr/share/doc/bpfcc-tools/examples/doc/ppchcalls_example.txt": 1792908432.996967,
+  "/usr/share/doc/bpfcc-tools/examples/doc/funclatency_example.txt": 1792908432.9969802,
+  "/usr/share/doc/bpfcc-tools/examples/doc/dcsnoop_example.txt": 1792908432.9969938,
+  "/usr/share/doc/bpfcc-tools/examples/doc/reset-trace_example.txt": 1792908432.9970076,
+  "/usr/share/doc/bpfcc-tools/examples/doc/swapin.txt": 1792908432.9970217,
+  "/usr/share/doc/bpfcc-tools/examples/doc/funcslower_example.txt": 1792908432.9970345,
+  "/usr/share/doc/bpfcc-tools/examples/doc/dirtop_example.txt": 1792908432.9970477,
+  "/usr/share/doc/bpfcc-tools/examples/doc/funcinterval_example.txt": 1792908432.9970603,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcpconnect_example.txt": 1792908432.9970737,
+  "/usr/share/doc/bpfcc-tools/examples/doc/mdflush_example.txt": 1792908432.9970865,
+  "/usr/share/doc/bpfcc-tools/examples/doc/execsnoop_example.txt": 1792908432.9970999,
+  "/usr/share/doc/bpfcc-tools/examples/doc/drsnoop_example.txt": 1792908432.9971125,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcpretrans_example.txt": 1792908432.9971254,
+  "/usr/share/doc/bpfcc-tools/examples/doc/sslsniff_example.txt": 1792908432.9971383,
+  "/usr/share/doc/bpfcc-tools/examples/doc/zfsdist_example.txt": 1792908432.997151,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcprtt_example.txt": 1792908432.9971635,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tplist_example.txt": 1792908432.9971764,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcpaccept_example.txt": 1792908432.9971895,
+  "/usr/share/doc/bpfcc-tools/examples/doc/inject_example.txt": 1792908432.9972026,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcplife_example.txt": 1792908432.9972153,
+  "/usr/share/doc/bpfcc-tools/examples/doc/rubygc_example.txt": 1792908432.9972284,
+  "/usr/share/doc/bpfcc-tools/examples/doc/javastat_example.txt": 1792908432.9972413,
+  "/usr/share/doc/bpfcc-tools/examples/doc/javathreads_example.txt": 1792908432.9972632,
+  "/usr/share/doc/bpfcc-tools/examples/doc/phpflow_example.txt": 1792908432.9972758,
+  "/usr/share/doc/bpfcc-tools/examples/doc/llcstat_example.txt": 1792908432.997289,
+  "/usr/share/doc/bpfcc-tools/examples/doc/cobjnew_example.txt": 1792908432.9973018,
+  "/usr/share/doc/bpfcc-tools/examples/doc/opensnoop_example.txt": 1792908432.9973145,
+  "/usr/share/doc/bpfcc-tools/examples/doc/offcputime_example.txt": 1792908432.997327,
+  "/usr/share/doc/bpfcc-tools/examples/doc/softirqs_example.txt": 1792908432.9973404,
+  "/usr/share/doc/bpfcc-tools/examples/doc/trace_example.txt": 1792908432.9973536,
+  "/usr/share/doc/bpfcc-tools/examples/doc/rubyflow_example.txt": 1792908432.9973657,
+  "/usr/share/doc/bpfcc-tools/examples/doc/nodestat_example.txt": 1792908432.9973786,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcptop_example.txt": 1792908432.9973922,
+  "/usr/share/doc/bpfcc-tools/examples/doc/argdist_example.txt": 1792908432.9974048,
+  "/usr/share/doc/bpfcc-tools/examples/doc/biolatpcts_example.txt": 1792908432.997418,
+  "/usr/share/doc/bpfcc-tools/examples/doc/criticalstat_example.txt": 1792908432.9974308,
+  "/usr/share/doc/bpfcc-tools/examples/doc/gethostlatency_example.txt": 1792908432.9974442,
+  "/usr/share/doc/bpfcc-tools/examples/doc/pythonflow_example.txt": 1792908432.9974573,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcpconnlat_example.txt": 1792908432.9974704,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tclcalls_example.txt": 1792908432.997483,
+  "/usr/share/doc/bpfcc-tools/examples/doc/ext4slower_example.txt": 1792908432.9974954,
+  "/usr/share/doc/bpfcc-tools/examples/doc/javacalls_example.txt": 1792908432.997508,
+  "/usr/share/doc/bpfcc-tools/examples/doc/runqlen_example.txt": 1792908432.9975212,
+  "/usr/share/doc/bpfcc-tools/examples/doc/netqtop_example.txt": 1792908432.9975343,
+  "/usr/share/doc/bpfcc-tools/examples/doc/ttysnoop_example.txt": 1792908432.997547,
+  "/usr/share/doc/bpfcc-tools/examples/doc/vfscount_example.txt": 1792908432.99756,
+  "/usr/share/doc/bpfcc-tools/examples/doc/rubystat_example.txt": 1792908432.997573,
+  "/usr/share/doc/bpfcc-tools/examples/doc/mountsnoop_example.txt": 1792908432.9975863,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcptracer_example.txt": 1792908432.997599,
+  "/usr/share/doc/bpfcc-tools/examples/doc/deadlock_example.txt": 1792908432.9976118,
+  "/usr/share/doc/bpfcc-tools/examples/doc/filelife_example.txt": 1792908432.9976244,
+  "/usr/share/doc/bpfcc-tools/examples/doc/javaflow_example.txt": 1792908432.9976363,
+  "/usr/share/doc/bpfcc-tools/examples/doc/ext4dist_example.txt": 1792908432.9976532,
+  "/usr/share/doc/bpfcc-tools/examples/doc/biolatency_example.txt": 1792908432.9976747,
+  "/usr/share/doc/bpfcc-tools/examples/doc/cachetop_example.txt": 1792908432.9976938,
+  "/usr/share/doc/bpfcc-tools/examples/doc/cpudist_example.txt": 1792908432.997712,
+  "/usr/share/doc/bpfcc-tools/examples/doc/readahead_example.txt": 1792908432.997732,
+  "/usr/share/doc/bpfcc-tools/examples/doc/swapin_example.txt": 1792908432.9977505,
+  "/usr/share/doc/bpfcc-tools/examples/doc/pythonstat_example.txt": 1792908432.9977658,
+  "/usr/share/doc/bpfcc-tools/examples/doc/pidpersec_example.txt": 1792908432.9977791,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tclobjnew_example.txt": 1792908432.9977925,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tcpcong_example.txt": 1792908432.997805,
+  "/usr/share/doc/bpfcc-tools/examples/doc/oomkill_example.txt": 1792908432.9978187,
+  "/usr/share/doc/bpfcc-tools/examples/doc/cpuunclaimed_example.txt": 1792908432.9978316,
+  "/usr/share/doc/bpfcc-tools/examples/doc/statsnoop_example.txt": 1792908432.9978452,
+  "/usr/share/doc/bpfcc-tools/examples/doc/virtiostat_example.txt": 1792908432.9978583,
+  "/usr/share/doc/bpfcc-tools/examples/doc/javaobjnew_example.txt": 1792908432.9978714,
+  "/usr/share/doc/bpfcc-tools/examples/doc/bpflist_example.txt": 1792908432.9978843,
+  "/usr/share/doc/bpfcc-tools/examples/doc/perlflow_example.txt": 1792908432.9979074,
+  "/usr/share/doc/bpfcc-tools/examples/doc/fileslower_example.txt": 1792908432.9979205,
+  "/usr/share/doc/bpfcc-tools/examples/doc/stackcount_example.txt": 1792908432.9979334,
+  "/usr/share/doc/bpfcc-tools/examples/doc/perlstat_example.txt": 1792908432.9979458,
+  "/usr/share/doc/bpfcc-tools/examples/doc/pythongc_example.txt": 1792908432.9979596,
+  "/usr/share/doc/bpfcc-tools/examples/doc/runqlat_example.txt": 1792908432.9979732,
+  "/usr/share/doc/bpfcc-tools/examples/doc/shmsnoop_example.txt": 1792908432.9979863,
+  "/usr/share/doc/bpfcc-tools/examples/doc/bashreadline_example.txt": 1792908432.9979994,
+  "/usr/share/doc/bpfcc-tools/examples/doc/zfsslower_example.txt": 1792908432.9980128,
+  "/usr/share/doc/bpfcc-tools/examples/doc/phpstat_example.txt": 1792908432.9980254,
+  "/usr/share/doc/bpfcc-tools/examples/doc/nfsdist_example.txt": 1792908432.9980397,
+  "/usr/share/doc/bpfcc-tools/examples/doc/dbstat_example.txt": 1792908432.9980524,
+  "/usr/share/doc/bpfcc-tools/examples/doc/javagc_example.txt": 1792908432.9980655,
+  "/usr/share/doc/bpfcc-tools/examples/doc/tclflow_example.txt": 1792908432.9980783,
+  "/usr/share/doc/bpfcc-tools/examples/doc/offwaketime_example.txt": 1792908432.998091,
+  "/usr/share/doc/bpfcc-tools/examples/doc/runqslower_example.txt": 1792908432.9981036,
+  "/usr/share/doc/bpfcc-tools/examples/doc/biotop_example.txt": 1792908432.998116,
+  "/usr/share/doc/bpfcc-tools/examples/doc/phpcalls_example.txt": 1792908432.9981284,
+  "/usr/share/doc/bpfcc-tools/examples/doc/mysqld_qslower_example.txt": 1792908432.9981418,
+  "/usr/share/doc/bpfcc-tools/examples/doc/memleak_example.txt": 1792908432.998155,
+  "/usr/share/doc/bpfcc-tools/examples/doc/dbslower_example.txt": 1792908432.9981675,
+  "/usr/share/doc/bpfcc-tools/examples/doc/nfsslower_example.txt": 1792908432.9981804,
+  "/usr/share/doc/bpfcc-tools/examples/doc/rdmaucma_example.txt": 1792908432.9981935,
+  "/usr/share/doc/bpfcc-tools/examples/doc/xfsslower_example.txt": 1792908432.9982057,
+  "/usr/share/doc/bpfcc-tools/examples/doc/cachestat_example.txt": 1792908432.998219,
+  "/usr/share/doc/bpfcc-tools/examples/doc/xfsdist_example.txt": 1792908432.9982321,
+  "/usr/share/doc/bpfcc-tools/examples/doc/filegone_example.txt": 1792908432.9982448,
+  "/usr/share/doc/bpfcc-tools/examples/doc/lib/uthreads_example.txt": 1792908432.9983058,
+  "/usr/share/doc/bpfcc-tools/examples/doc/lib/uobjnew_example.txt": 1792908432.9983206,
+  "/usr/share/doc/bpfcc-tools/examples/doc/lib/ucalls_example.txt": 1792908432.9983337,
+  "/usr/share/doc/bpfcc-tools/examples/doc/lib/ustat_example.txt": 1792908432.998347,
+  "/usr/share/doc/bpfcc-tools/examples/doc/lib/uflow_example.txt": 1792908432.9983602,
+  "/usr/share/doc/bpfcc-tools/examples/doc/lib/ugc_example.txt": 1792908432.9983737,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/trace_fields.py": 1792908432.9984334,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/undump_example.txt": 1792908432.998448,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/mallocstacks.py": 1792908432.9984615,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/mysqld_query.py": 1792908432.998475,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/kvm_hypercall.txt": 1792908432.9984887,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/urandomread-explicit.py": 1792908432.9985023,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/urandomread.py": 1792908432.9985156,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/urandomread_example.txt": 1792908432.9985292,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/stacksnoop.py": 1792908432.9985425,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/strlen_hist_ifunc.py": 1792908432.9985557,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/sync_timing.py": 1792908432.9985695,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/vfsreadlat.py": 1792908432.9985824,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/kvm_hypercall.py": 1792908432.9985955,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/bitehist.py": 1792908432.998609,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/nodejs_http_server.py": 1792908432.9986234,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/bitehist_example.txt": 1792908432.998644,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/disksnoop_example.txt": 1792908432.9986575,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/dddos.py": 1792908432.9986706,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/task_switch.py": 1792908432.9986842,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/stacksnoop_example.txt": 1792908432.9986973,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/hello_perf_output.py": 1792908432.9987106,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/biolatpcts_example.txt": 1792908432.9987316,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/strlen_snoop.py": 1792908432.9987445,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/vfsreadlat_example.txt": 1792908432.9987578,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/nodejs_http_server_example.txt": 1792908432.9987714,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/biolatpcts.py": 1792908432.9987845,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/disksnoop.py": 1792908432.9987984,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/dddos_example.txt": 1792908432.9988115,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/undump.py": 1792908432.9988256,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/strlen_hist.py": 1792908432.9988382,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/stack_buildid_example.py": 1792908432.9988518,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/tcpv4connect_example.txt": 1792908432.998865,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/tcpv4connect.py": 1792908432.9988785,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/mysqld_query_example.txt": 1792908432.9989004,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/CMakeLists.txt": 1792908432.9989147,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/trace_perf_output.py": 1792908432.9989278,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/strlen_count.py": 1792908432.9989407,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/hello_perf_output_using_ns.py": 1792908432.9989543,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/nflatency.py": 1792908432.998968,
+  "/usr/share/doc/bpfcc-tools/examples/tracing/hello_fields.py": 1792908432.9989803,
+  "/usr/share/doc/gpg-agent/examples/trustlist.txt": 1792908433.0001001,
+  "/usr/share/doc/python3.12/pybench.log": 1792908433.000422,
+  "/usr/share/doc/libffi8/html/Type-Example.html": 1792908433.0019853,
+  "/usr/share/doc/libffi8/html/Size-and-Alignment.html": 1792908433.0020003,
+  "/usr/share/doc/libffi8/html/Closure-Example.html": 1792908433.0020144,
+  "/usr/share/doc/libffi8/html/Primitive-Types.html": 1792908433.002028,
+  "/usr/share/doc/libffi8/html/Introduction.html": 1792908433.0020416,
+  "/usr/share/doc/libffi8/html/The-Closure-API.html": 1792908433.002055,
+  "/usr/share/doc/libffi8/html/Structures.html": 1792908433.002069,
+  "/usr/share/doc/libffi8/html/Complex.html": 1792908433.0020828,
+  "/usr/share/doc/libffi8/html/Thread-Safety.html": 1792908433.002097,
+  "/usr/share/doc/libffi8/html/Index.html": 1792908433.002111,
+  "/usr/share/doc/libffi8/html/The-Basics.html": 1792908433.0021245,
+  "/usr/share/doc/libffi8/html/Simple-Example.html": 1792908433.002138,
+  "/usr/share/doc/libffi8/html/Arrays-Unions-Enums.html": 1792908433.0021515,
+  "/usr/share/doc/libffi8/html/Missing-Features.html": 1792908433.0021644,
+  "/usr/share/doc/libffi8/html/Multiple-ABIs.html": 1792908433.0021775,
+  "/usr/share/doc/libffi8/html/Using-libffi.html": 1792908433.0021904,
+  "/usr/share/doc/libffi8/html/Complex-Type-Example.html": 1792908433.0022037,
+  "/usr/share/doc/libffi8/html/Memory-Usage.html": 1792908433.002217,
+  "/usr/share/doc/libffi8/html/Types.html": 1792908433.0022306,
+  "/usr/share/doc/libffi8/html/index.html": 1792908433.0022435,
+  "/usr/share/doc/libjs-underscore/README.md": 1792908433.0026495,
+  "/usr/share/doc/libjs-underscore/index.html": 1792908433.00267,
+  "/usr/share/doc/publicsuffix/examples/test_psl.txt": 1792908433.0030472,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-1415.md": 1792909138.7957292,
+  "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-1515.md": 1792913689.4569166
+ },
+ "action_counts": {
+  "rest": 63,
+  "explore_file": 37,
+  "ask_brain": 166,
+  "explore_wider": 74,
+  "web_search": 81,
+  "refresh_site": 81,
+  "consolidate_memory": 120,
+  "reflect_memory": 139,
+  "visit_new_dir": 42,
+  "read_brain": 21,
+  "tidy_notes": 37,
+  "self_talk": 91,
+  "build_site": 2
+ },
+ "note_lines": 988,
+ "rounds": 954,
+ "web_built": true,
+ "web_refreshes": 81,
+ "brain_questions": [
+  "Q-20261025-1407",
+  "Q-20261025-1408",
+  "Q-20261025-1409",
+  "Q-20261025-1410",
+  "Q-20261025-1413",
+  "Q-20261025-1414",
+  "Q-20261025-1415",
+  "Q-20261025-1416",
+  "Q-20261025-1417",
+  "Q-20261025-1418",
+  "Q-20261025-1419",
+  "Q-20261025-1421",
+  "Q-20261025-1429",
+  "Q-20261025-1430",
+  "Q-20261025-1433",
+  "Q-20261025-1437",
+  "Q-20261025-1439",
+  "Q-20261025-1440",
+  "Q-20261025-1442",
+  "Q-20261025-1443",
+  "Q-20261025-1447",
+  "Q-20261025-1454",
+  "Q-20261025-1455",
+  "Q-20261025-1457",
+  "Q-20261025-1500",
+  "Q-20261025-1502",
+  "Q-20261025-1503",
+  "Q-20261025-1505",
+  "Q-20261025-1506",
+  "Q-20261025-1509",
+  "Q-20261025-1513",
+  "Q-20261025-1514",
+  "Q-20261025-1515",
+  "Q-20261025-1518",
+  "Q-20261025-1519",
+  "Q-20261025-1522",
+  "Q-20261025-1529",
+  "Q-20261025-1530",
+  "Q-20261025-1531",
+  "Q-20261025-1532",
+  "Q-20261025-1533",
+  "Q-20261025-1535",
+  "Q-20261025-1536",
+  "Q-20261025-1537",
+  "Q-20261025-1538",
+  "Q-20261025-1541",
+  "Q-20261025-1542",
+  "Q-20261025-1543",
+  "Q-20261025-1546",
+  "Q-20261025-1548"
+ ],
+ "brain_read": [
+  "FEED-20261025-1530",
+  "Q-20261025-1417moon",
+  "Q-20261025-1418moon",
+  "Q-20261025-1419moon",
+  "Q-20261025-1421moon",
+  "Q-20261025-1417",
+  "Q-20261025-1418",
+  "Q-20261025-1419",
+  "Q-20261025-1421",
+  "Q-20261025-1429",
+  "Q-20261025-1430",
+  "Q-20261025-1433",
+  "Q-20261025-1437",
+  "Q-20261025-1439",
+  "Q-20261025-1440",
+  "Q-20261025-1442",
+  "Q-20261025-1443",
+  "Q-20261025-1447",
+  "Q-20261025-1454",
+  "Q-20261025-1455",
+  "Q-20261025-1457",
+  "Q-20261025-1500",
+  "Q-20261025-1502",
+  "Q-20261025-1503",
+  "Q-20261025-1505",
+  "Q-20261025-1506",
+  "Q-20261025-1509",
+  "Q-20261025-1513"
+ ],
+ "last_ask_round": 950,
+ "template_uses": {
+  "seed-temporal": 16,
+  "seed-contrast": 14
+ },
+ "template_prune_round": 954,
+ "action_stats": {
+  "rest": {
+   "ok": 63,
+   "try": 63
+  },
+  "explore_file": {
+   "ok": 32,
+   "try": 37
+  },
+  "ask_brain": {
+   "ok": 50,
+   "try": 50
+  },
+  "explore_wider": {
+   "ok": 3,
+   "try": 74
+  },
+  "web_search": {
+   "ok": 81,
+   "try": 81
+  },
+  "refresh_site": {
+   "ok": 81,
+   "try": 81
+  },
+  "consolidate_memory": {
+   "ok": 120,
+   "try": 120
+  },
+  "reflect_memory": {
+   "ok": 139,
+   "try": 139
+  },
+  "visit_new_dir": {
+   "ok": 2,
+   "try": 42
+  },
+  "read_brain": {
+   "ok": 10,
+   "try": 10
+  },
+  "tidy_notes": {
+   "ok": 37,
+   "try": 37
+  },
+  "self_talk": {
+   "ok": 79,
+   "try": 91
+  },
+  "build_site": {
+   "ok": 2,
+   "try": 2
+  }
+ },
+ "open_asks": 17,
+ "last_open_ask_round": 918,
+ "open_streak": 1,
+ "mood_reward": {
+  "rest": {
+   "sat_sum": 1.6564377812536024,
+   "cur_sum": 0.13,
+   "n": 63
+  },
+  "explore_file": {
+   "sat_sum": 0.8486841553617043,
+   "cur_sum": 0.13000000000000006,
+   "n": 37
+  },
+  "ask_brain": {
+   "sat_sum": -6.870188601467657,
+   "cur_sum": 0.0796202531645569,
+   "n": 166
+  },
+  "explore_wider": {
+   "sat_sum": -1.9104746835443058,
+   "cur_sum": 0.12962025316455694,
+   "n": 74
+  },
+  "web_search": {
+   "sat_sum": 1.5944196521405303,
+   "cur_sum": 0.12962025316455694,
+   "n": 81
+  },
+  "refresh_site": {
+   "sat_sum": 1.7247705823133503,
+   "cur_sum": 0.10113924050632916,
+   "n": 81
+  },
+  "consolidate_memory": {
+   "sat_sum": -1.663750938169731,
+   "cur_sum": 0.0,
+   "n": 120
+  },
+  "reflect_memory": {
+   "sat_sum": 3.4173893787036356,
+   "cur_sum": 0.0,
+   "n": 139
+  },
+  "visit_new_dir": {
+   "sat_sum": -1.200000000000001,
+   "cur_sum": 0.0,
+   "n": 42
+  },
+  "read_brain": {
+   "sat_sum": 0.2899999999999998,
+   "cur_sum": 0.0,
+   "n": 21
+  },
+  "tidy_notes": {
+   "sat_sum": 0.9108726764037766,
+   "cur_sum": 0.0,
+   "n": 37
+  },
+  "self_talk": {
+   "sat_sum": 2.0018399970050917,
+   "cur_sum": 0.0,
+   "n": 91
+  },
+  "build_site": {
+   "sat_sum": 0.0,
+   "cur_sum": 0.0,
+   "n": 2
+  }
+ },
+ "competence": {
+  "rest": 1.0,
+  "explore_file": 1.0,
+  "ask_brain": 1.0,
+  "explore_wider": 1.0,
+  "web_search": 1.0,
+  "refresh_site": 1.0,
+  "consolidate_memory": 1.0,
+  "reflect_memory": 1.0,
+  "visit_new_dir": 1.0,
+  "read_brain": 1.0,
+  "tidy_notes": 1.0,
+  "build_site": 1.0,
+  "self_talk": 0.8681318681318682
+ },
+ "template_failures": {
+  "seed-temporal": 16,
+  "seed-contrast": 14
+ },
+ "tpl_pending": {},
+ "last_kw": "概率、发生、结果、事件、一件、改变、可能性、次数",
+ "energy": 0.964,
+ "concepts": {
+  "recursive": {
+   "n": 1,
+   "last": 4
+  },
+  "数字": {
+   "n": 12,
+   "last": 829
+  },
+  "四加一": {
+   "n": 9,
+   "last": 201
+  },
+  "五加一": {
+   "n": 11,
+   "last": 531
+  },
+  "一加四": {
+   "n": 39,
+   "last": 802
+  },
+  "一加一加一加一加一加一": {
+   "n": 18,
+   "last": 802
+  },
+  "五个": {
+   "n": 4,
+   "last": 279
+  },
+  "等于": {
+   "n": 7,
+   "last": 802
+  },
+  "起来": {
+   "n": 10,
+   "last": 916
+  },
+  "出来": {
+   "n": 10,
+   "last": 916
+  },
+  "二加一": {
+   "n": 7,
+   "last": 469
+  },
+  "三加一": {
+   "n": 14,
+   "last": 802
+  },
+  "世界": {
+   "n": 5,
+   "last": 752
+  },
+  "数量": {
+   "n": 4,
+   "last": 802
+  },
+  "https": {
+   "n": 8,
+   "last": 752
+  },
+  "名字": {
+   "n": 5,
+   "last": 279
+  },
+  "后继": {
+   "n": 5,
+   "last": 829
+  },
+  "文件": {
+   "n": 4,
+   "last": 279
+  },
+  "苹果树": {
+   "n": 11,
+   "last": 798
+  },
+  "ensp": {
+   "n": 7,
+   "last": 752
+  },
+  "结果": {
+   "n": 5,
+   "last": 861
+  },
+  "人工生命": {
+   "n": 3,
+   "last": 654
+  },
+  "小家伙": {
+   "n": 2,
+   "last": 279
+  },
+  "反面": {
+   "n": 9,
+   "last": 916
+  },
+  "moon": {
+   "n": 2,
+   "last": 279
+  },
+  "爱奇艺": {
+   "n": 3,
+   "last": 279
+  },
+  "姐姐": {
+   "n": 5,
+   "last": 648
+  },
+  "代表": {
+   "n": 4,
+   "last": 374
+  },
+  "新词": {
+   "n": 7,
+   "last": 648
+  },
+  "意思": {
+   "n": 4,
+   "last": 374
+  },
+  "只有": {
+   "n": 3,
+   "last": 279
+  },
+  "需要": {
+   "n": 9,
+   "last": 829
+  },
+  "引出": {
+   "n": 9,
+   "last": 829
+  },
+  "种子": {
+   "n": 2,
+   "last": 279
+  },
+  "太阳辐射": {
+   "n": 3,
+   "last": 279
+  },
+  "循环": {
+   "n": 3,
+   "last": 321
+  },
+  "进化": {
+   "n": 2,
+   "last": 369
+  },
+  "三个": {
+   "n": 5,
+   "last": 802
+  },
+  "变成": {
+   "n": 3,
+   "last": 374
+  },
+  "符号": {
+   "n": 2,
+   "last": 750
+  },
+  "三加三": {
+   "n": 3,
+   "last": 648
+  },
+  "VERDICT": {
+   "n": 5,
+   "last": 648
+  },
+  "完全正确": {
+   "n": 4,
+   "last": 609
+  },
+  "一共": {
+   "n": 4,
+   "last": 798
+  },
+  "六个": {
+   "n": 9,
+   "last": 648
+  },
+  "压缩": {
+   "n": 3,
+   "last": 916
+  },
+  "减法": {
+   "n": 2,
+   "last": 469
+  },
+  "之后": {
+   "n": 3,
+   "last": 469
+  },
+  "消散": {
+   "n": 2,
+   "last": 469
+  },
+  "涌现": {
+   "n": 4,
+   "last": 492
+  },
+  "生命": {
+   "n": 4,
+   "last": 654
+  },
+  "百度": {
+   "n": 4,
+   "last": 752
+  },
+  "百科": {
+   "n": 4,
+   "last": 752
+  },
+  "网络": {
+   "n": 3,
+   "last": 493
+  },
+  "不用": {
+   "n": 5,
+   "last": 829
+  },
+  "往后走": {
+   "n": 4,
+   "last": 829
+  },
+  "加法器": {
+   "n": 12,
+   "last": 802
+  },
+  "孤岛": {
+   "n": 2,
+   "last": 567
+  },
+  "一条": {
+   "n": 5,
+   "last": 829
+  },
+  "节点": {
+   "n": 3,
+   "last": 567
+  },
+  "一颗": {
+   "n": 5,
+   "last": 916
+  },
+  "产生": {
+   "n": 3,
+   "last": 567
+  },
+  "通常": {
+   "n": 9,
+   "last": 829
+  },
+  "暂时": {
+   "n": 1,
+   "last": 567
+  },
+  "之前": {
+   "n": 6,
+   "last": 829
+  },
+  "数据压缩": {
+   "n": 1,
+   "last": 609
+  },
+  "一次": {
+   "n": 3,
+   "last": 648
+  },
+  "改进": {
+   "n": 3,
+   "last": 648
+  },
+  "信息量": {
+   "n": 3,
+   "last": 648
+  },
+  "接着": {
+   "n": 5,
+   "last": 916
+  },
+  "artificial": {
+   "n": 1,
+   "last": 654
+  },
+  "惩罚": {
+   "n": 2,
+   "last": 742
+  },
+  "别人": {
+   "n": 2,
+   "last": 742
+  },
+  "其实": {
+   "n": 2,
+   "last": 742
+  },
+  "下次": {
+   "n": 3,
+   "last": 742
+  },
+  "这件": {
+   "n": 3,
+   "last": 742
+  },
+  "达到": {
+   "n": 1,
+   "last": 742
+  },
+  "奖励": {
+   "n": 4,
+   "last": 742
+  },
+  "事情": {
+   "n": 3,
+   "last": 742
+  },
+  "秘密": {
+   "n": 5,
+   "last": 916
+  },
+  "语言": {
+   "n": 3,
+   "last": 750
+  },
+  "人工智能": {
+   "n": 1,
+   "last": 750
+  },
+  "baike": {
+   "n": 3,
+   "last": 752
+  },
+  "baidu": {
+   "n": 3,
+   "last": 752
+  },
+  "item": {
+   "n": 3,
+   "last": 752
+  },
+  "四个": {
+   "n": 4,
+   "last": 802
+  },
+  "二是": {
+   "n": 4,
+   "last": 802
+  },
+  "前驱": {
+   "n": 2,
+   "last": 829
+  },
+  "出现": {
+   "n": 4,
+   "last": 829
+  },
+  "两样": {
+   "n": 3,
+   "last": 829
+  },
+  "后面": {
+   "n": 3,
+   "last": 829
+  },
+  "数数": {
+   "n": 3,
+   "last": 829
+  },
+  "一堆": {
+   "n": 3,
+   "last": 829
+  },
+  "一件": {
+   "n": 4,
+   "last": 916
+  },
+  "概率": {
+   "n": 1,
+   "last": 861
+  },
+  "分得开": {
+   "n": 2,
+   "last": 916
+  },
+  "石子": {
+   "n": 4,
+   "last": 916
+  },
+  "展开": {
+   "n": 2,
+   "last": 916
+  },
+  "规律": {
+   "n": 3,
+   "last": 916
+  }
+ },
+ "relations": {
+  "五加一|四加一": {
+   "w": 4,
+   "n": 2,
+   "last_touch": 201
+  },
+  "一加四|五加一": {
+   "w": 8,
+   "n": 3,
+   "last_touch": 484,
+   "type": "similar"
+  },
+  "一加四|四加一": {
+   "w": 4,
+   "n": 3,
+   "last_touch": 488,
+   "type": "similar"
+  },
+  "一加一加一加一加一加一|一加四": {
+   "w": 49,
+   "n": 30,
+   "last_touch": 853
+  },
+  "一加一加一加一加一加一|五加一": {
+   "w": 8,
+   "n": 1,
+   "last_touch": 847,
+   "type": "similar"
+  },
+  "出来|等于": {
+   "w": 2,
+   "n": 2,
+   "last_touch": 279
+  },
+  "五个|等于": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 279,
+   "type": "similar"
+  },
+  "五个|出来": {
+   "w": 2,
+   "n": 2,
+   "last_touch": 279,
+   "type": "similar"
+  },
+  "出来|起来": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 796
+  },
+  "等于|起来": {
+   "w": 4,
+   "n": 4,
+   "last_touch": 802,
+   "type": "similar"
+  },
+  "五个|起来": {
+   "w": 4,
+   "n": 2,
+   "last_touch": 755,
+   "type": "similar"
+  },
+  "数量|等于": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 255
+  },
+  "数量|起来": {
+   "w": 3,
+   "n": 1,
+   "last_touch": 774
+  },
+  "世界|起来": {
+   "w": 7,
+   "n": 1,
+   "last_touch": 796
+  },
+  "一加一加一加一加一加一|二加一": {
+   "w": 7,
+   "n": 3,
+   "last_touch": 842
+  },
+  "三加一|二加一": {
+   "w": 3,
+   "n": 1,
+   "last_touch": 842
+  },
+  "三加一|四加一": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 201
+  },
+  "一加一加一加一加一加一|四加一": {
+   "w": 3,
+   "n": 1,
+   "last_touch": 488
+  },
+  "后继|数字": {
+   "w": 4,
+   "n": 2,
+   "last_touch": 499,
+   "type": "similar"
+  },
+  "数字|等于": {
+   "w": 4,
+   "n": 1,
+   "last_touch": 255
+  },
+  "ensp|https": {
+   "w": 4,
+   "n": 4,
+   "last_touch": 752,
+   "type": "similar"
+  },
+  "ensp|数字": {
+   "w": 3,
+   "n": 1,
+   "last_touch": 499
+  },
+  "https|数字": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 267
+  },
+  "小家伙|爱奇艺": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 279,
+   "type": "contrast"
+  },
+  "反面|爱奇艺": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 279,
+   "type": "contrast"
+  },
+  "moon|爱奇艺": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 279,
+   "type": "contrast"
+  },
+  "代表|意思": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 434,
+   "type": "similar"
+  },
+  "ensp|进化": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 369
+  },
+  "符号|起来": {
+   "w": 6,
+   "n": 1,
+   "last_touch": 762
+  },
+  "代表|符号": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 434,
+   "type": "similar"
+  },
+  "意思|起来": {
+   "w": 3,
+   "n": 0,
+   "last_touch": 777,
+   "type": "dream"
+  },
+  "五加一|六个": {
+   "w": 5,
+   "n": 2,
+   "last_touch": 677
+  },
+  "一加一加一加一加一加一|六个": {
+   "w": 3,
+   "n": 1,
+   "last_touch": 677
+  },
+  "三加三|六个": {
+   "w": 6,
+   "n": 3,
+   "last_touch": 648
+  },
+  "三加一|三加三": {
+   "w": 6,
+   "n": 6,
+   "last_touch": 648
+  },
+  "消散|涌现": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 469,
+   "type": "contrast"
+  },
+  "https|百度": {
+   "w": 2,
+   "n": 2,
+   "last_touch": 752
+  },
+  "加法器|后继": {
+   "w": 4,
+   "n": 2,
+   "last_touch": 469,
+   "type": "similar"
+  },
+  "加法器|数字": {
+   "w": 4,
+   "n": 3,
+   "last_touch": 469,
+   "type": "similar"
+  },
+  "减法|加法器": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 469,
+   "type": "contrast"
+  },
+  "孤岛|节点": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 567,
+   "type": "contrast"
+  },
+  "之前|引出": {
+   "w": 2,
+   "n": 2,
+   "last_touch": 829,
+   "type": "temporal"
+  },
+  "ensp|世界": {
+   "w": 2,
+   "n": 2,
+   "last_touch": 752
+  },
+  "https|世界": {
+   "w": 2,
+   "n": 2,
+   "last_touch": 752,
+   "type": "similar"
+  },
+  "人工生命|生命": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 654
+  },
+  "奖励|惩罚": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 742,
+   "type": "contrast"
+  },
+  "别人|奖励": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 742,
+   "type": "contrast"
+  },
+  "其实|奖励": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 742,
+   "type": "contrast"
+  },
+  "反面|惩罚": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742,
+   "type": "contrast"
+  },
+  "下次|奖励": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742,
+   "type": "contrast"
+  },
+  "反面|奖励": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742,
+   "type": "contrast"
+  },
+  "下次|惩罚": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742,
+   "type": "contrast"
+  },
+  "下次|反面": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742,
+   "type": "contrast"
+  },
+  "奖励|通常": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 742,
+   "type": "temporal"
+  },
+  "奖励|达到": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 742,
+   "type": "temporal"
+  },
+  "奖励|引出": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 742,
+   "type": "temporal"
+  },
+  "之前|奖励": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742,
+   "type": "temporal"
+  },
+  "之前|通常": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742,
+   "type": "temporal"
+  },
+  "奖励|接着": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742
+  },
+  "不用|奖励": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742
+  },
+  "事情|奖励": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742
+  },
+  "不用|接着": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742
+  },
+  "不用|事情": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742,
+   "type": "similar"
+  },
+  "事情|接着": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 742
+  },
+  "人工智能|语言": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 750
+  },
+  "语言|通常": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 750
+  },
+  "人工智能|通常": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 750
+  },
+  "ensp|百度": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 752
+  },
+  "世界|百度": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 752
+  },
+  "一共|三个": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 798
+  },
+  "四个|起来": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 802
+  },
+  "四个|等于": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 802
+  },
+  "三个|四个": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 802
+  },
+  "三个|起来": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 802
+  },
+  "三个|等于": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 802
+  },
+  "出来|数量": {
+   "w": 1,
+   "n": 0,
+   "last_touch": 802,
+   "type": "similar"
+  },
+  "一加一加一加一加一加一|二是": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 802
+  },
+  "一加一加一加一加一加一|三加一": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 802
+  },
+  "一加一加一加一加一加一|四个": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 802
+  },
+  "前驱|后继": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 829,
+   "type": "contrast"
+  },
+  "反面|后继": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 829,
+   "type": "contrast"
+  },
+  "前驱|反面": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 829,
+   "type": "contrast"
+  },
+  "后继|通常": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 829,
+   "type": "temporal"
+  },
+  "后继|引出": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 829,
+   "type": "temporal"
+  },
+  "之前|后继": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 829,
+   "type": "temporal"
+  },
+  "出现|后继": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 829,
+   "type": "temporal"
+  },
+  "之前|出现": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 829,
+   "type": "temporal"
+  },
+  "出现|引出": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 829,
+   "type": "temporal"
+  },
+  "引出|数字": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 829,
+   "type": "temporal"
+  },
+  "一颗|数字": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 829,
+   "type": "temporal"
+  },
+  "一颗|引出": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 829,
+   "type": "temporal"
+  },
+  "一件|结果": {
+   "w": 5,
+   "n": 1,
+   "last_touch": 910
+  },
+  "一件|概率": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 902
+  },
+  "概率|结果": {
+   "w": 8,
+   "n": 1,
+   "last_touch": 924
+  },
+  "石子|秘密": {
+   "w": 3,
+   "n": 2,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "分得开|石子": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "一颗|石子": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "反面|秘密": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "一颗|反面": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "反面|石子": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "一颗|秘密": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "接着|石子": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916
+  },
+  "压缩|展开": {
+   "w": 2,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "压缩|规律": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "出来|压缩": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "压缩|反面": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "出来|反面": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "反面|规律": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  },
+  "出来|规律": {
+   "w": 1,
+   "n": 1,
+   "last_touch": 916,
+   "type": "contrast"
+  }
+ },
+ "rules": {
+  "等于∧起来→数字": {
+   "premises": [
+    "等于",
+    "起来"
+   ],
+   "conclusion": "数字",
+   "support": 1,
+   "confidence": 0.5,
+   "status": "pending",
+   "first": 802
+  }
+ },
+ "infer_log": [
+  {
+   "qid": "Q-20261025-1421",
+   "round": 132,
+   "premises": [
+    "一加一加一加一加一"
+   ],
+   "result": "五",
+   "type": "transform",
+   "verdict": "真"
+  },
+  {
+   "qid": "Q-20261025-1429",
+   "round": 208,
+   "premises": [
+    "三加三"
+   ],
+   "result": "六",
+   "type": "transform",
+   "verdict": "真"
+  },
+  {
+   "qid": "Q-20261025-1433",
+   "round": 241,
+   "premises": [
+    "后继",
+    "加法"
+   ],
+   "result": "数字",
+   "verdict": "真"
+  },
+  {
+   "qid": "Q-20261025-1447",
+   "round": 371,
+   "premises": [
+    "进化",
+    "ensp"
+   ],
+   "result": "https",
+   "verdict": "假"
+  },
+  {
+   "qid": "Q-20261025-1529",
+   "round": 751,
+   "premises": [
+    "人工智能",
+    "语言"
+   ],
+   "result": "通常"
+  },
+  {
+   "qid": "Q-20261025-1532",
+   "round": 778,
+   "premises": [
+    "世界",
+    "起来"
+   ],
+   "result": "ensp"
+  },
+  {
+   "qid": "Q-20261025-1537",
+   "round": 821,
+   "premises": [
+    "三加二"
+   ],
+   "result": "五",
+   "type": "transform"
+  },
+  {
+   "qid": "Q-20261025-1542",
+   "round": 863,
+   "premises": [
+    "概率",
+    "一件"
+   ],
+   "result": "结果"
+  }
+ ],
+ "last_infer_round": 863,
+ "consolidate_round": 952,
+ "reflect_log": [
+  {
+   "round": 263,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 272,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 2,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 276,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 284,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 290,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 300,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 310,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 317,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 325,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 333,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 340,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 352,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 353,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 354,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 360,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 364,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 373,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 381,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 390,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 398,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 404,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 409,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 415,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 425,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 433,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 442,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 445,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 455,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 458,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 462,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 465,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 472,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 479,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 486,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 494,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 496,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 506,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 516,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 519,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 526,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 533,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 536,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 546,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 553,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 562,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 566,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 573,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 580,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 587,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 588,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 595,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 602,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 605,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 612,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 615,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 622,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 631,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 641,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 649,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 659,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 669,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 672,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 680,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 685,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 692,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 2,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 699,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 702,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 713,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 723,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 731,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 740,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 747,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 756,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 765,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 766,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 773,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 783,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 793,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 797,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 806,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 813,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 816,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 824,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 831,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 839,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 846,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 854,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 864,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 867,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 871,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 1,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 882,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 892,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 900,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 907,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 913,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 920,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 928,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 937,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 944,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  },
+  {
+   "round": 949,
+   "what": "回想2条；最强边：一加一加一加一加一加一|一加四；确认规则0条",
+   "built": {
+    "causal": 0,
+    "contrast": 0,
+    "similar": 0,
+    "temporal": 0
+   }
+  }
+ ],
+ "last_reflect_round": -999,
+ "urge": {
+  "reflect_memory": 5.0,
+  "consolidate_memory": 2.0
+ },
+ "pred_log": [
+  {
+   "round": 2,
+   "file": "web-20261025-1135.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": []
+  },
+  {
+   "round": 61,
+   "file": "温度与天气的关系.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 68,
+   "file": "云服务器运维笔记.txt",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 73,
+   "file": "数字与加法初探.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 81,
+   "file": "候鸟迁徙.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 89,
+   "file": "web-20261024-2140.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": []
+  },
+  {
+   "round": 103,
+   "file": "认数字.md",
+   "expect": [
+    "数字"
+   ],
+   "hit": [
+    "数字"
+   ],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 130,
+   "file": "数字加法进阶二.md",
+   "expect": [
+    "数字"
+   ],
+   "hit": [],
+   "miss": [
+    "数字"
+   ],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 201,
+   "file": "数字加法进阶.md",
+   "expect": [
+    "数字"
+   ],
+   "hit": [],
+   "miss": [
+    "数字"
+   ],
+   "surprise": [
+    "等于",
+    "起来"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 203,
+   "file": "web-20261024-2337.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": []
+  },
+  {
+   "round": 224,
+   "file": "加法是什么.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "苹果"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 233,
+   "file": "后继与数数.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "等于",
+    "加法"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 247,
+   "file": "index.html",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "数字",
+    "加法"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 257,
+   "file": "一是什么.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "苹果"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 267,
+   "file": "web-20261024-1640.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "加法",
+    "https",
+    "数字"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 274,
+   "file": "人工生命与涌现.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 292,
+   "file": "关系的本质与网络思维.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 321,
+   "file": "进化与自我改进.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 368,
+   "file": "信号与语言.txt",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 369,
+   "file": "web-20261023-1321.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "进化",
+    "ensp",
+    "https"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 374,
+   "file": "认符号.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "代表",
+    "起来"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 436,
+   "file": "压缩与熵.txt",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 444,
+   "file": "好奇心与内在动机.txt",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "需要"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 492,
+   "file": "数字生命实验记录.json",
+   "expect": [
+    "数字"
+   ],
+   "hit": [],
+   "miss": [
+    "数字"
+   ],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 493,
+   "file": "web-20261024-1135.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "后继",
+    "https",
+    "ensp"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 531,
+   "file": "加法器.md",
+   "expect": [
+    "加法"
+   ],
+   "hit": [],
+   "miss": [
+    "加法"
+   ],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 609,
+   "file": "数据压缩原理.txt",
+   "expect": [
+    "压缩"
+   ],
+   "hit": [
+    "压缩"
+   ],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 654,
+   "file": "artificial-词源与人工生命.md",
+   "expect": [
+    "生命",
+    "人工生命"
+   ],
+   "hit": [
+    "生命",
+    "人工生命"
+   ],
+   "miss": [],
+   "surprise": [],
+   "low_value": false
+  },
+  {
+   "round": 750,
+   "file": "人工智能简史.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "通常"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 752,
+   "file": "web-20261023-1957.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "世界",
+    "ensp",
+    "https"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 802,
+   "file": "数字与加法初探-中文数字版.md",
+   "expect": [
+    "数字"
+   ],
+   "hit": [],
+   "miss": [
+    "数字"
+   ],
+   "surprise": [
+    "等于",
+    "起来",
+    "三个"
+   ],
+   "low_value": false
+  },
+  {
+   "round": 861,
+   "file": "概率入门.md",
+   "expect": [],
+   "hit": [],
+   "miss": [],
+   "surprise": [
+    "结果"
+   ],
+   "low_value": false
+  }
+ ],
+ "hierarchy": {
+  "生命": [
+   "人工生命"
+  ],
+  "压缩": [
+   "数据压缩"
+  ]
+ },
+ "transforms": {
+  "四加一→五": {
+   "operands": [
+    "四",
+    "一"
+   ],
+   "result": "五",
+   "support": 2,
+   "last": 201,
+   "rechecked": true
+  },
+  "五加一→六": {
+   "operands": [
+    "五",
+    "一"
+   ],
+   "result": "六",
+   "support": 2,
+   "last": 233,
+   "rechecked": true
+  },
+  "一加四→五": {
+   "operands": [
+    "一",
+    "四"
+   ],
+   "result": "五",
+   "support": 1,
+   "last": 130,
+   "rechecked": true
+  },
+  "一加一加一加一加一→五": {
+   "operands": [
+    "一",
+    "一",
+    "一",
+    "一",
+    "一"
+   ],
+   "result": "五",
+   "support": 1,
+   "last": 130,
+   "rechecked": true
+  },
+  "一加一加一加一加一加一→六": {
+   "operands": [
+    "一",
+    "一",
+    "一",
+    "一",
+    "一",
+    "一"
+   ],
+   "result": "六",
+   "support": 1,
+   "last": 130,
+   "rechecked": true
+  },
+  "一加一→二": {
+   "operands": [
+    "一",
+    "一"
+   ],
+   "result": "二",
+   "support": 4,
+   "last": 802
+  },
+  "二加一→三": {
+   "operands": [
+    "二",
+    "一"
+   ],
+   "result": "三",
+   "support": 1,
+   "last": 201
+  },
+  "三加一→四": {
+   "operands": [
+    "三",
+    "一"
+   ],
+   "result": "四",
+   "support": 1,
+   "last": 201
+  },
+  "一加二→三": {
+   "operands": [
+    "一",
+    "二"
+   ],
+   "result": "三",
+   "support": 1,
+   "last": 201
+  },
+  "一加一加一加一→四": {
+   "operands": [
+    "一",
+    "一",
+    "一",
+    "一"
+   ],
+   "result": "四",
+   "support": 2,
+   "last": 802
+  },
+  "三加三→六": {
+   "operands": [
+    "三",
+    "三"
+   ],
+   "result": "六",
+   "support": 4,
+   "last": 648,
+   "source": "composed"
+  },
+  "一加一加一→三": {
+   "operands": [
+    "一",
+    "一",
+    "一"
+   ],
+   "result": "三",
+   "support": 1,
+   "last": 802
+  }
+ },
+ "lp": {
+  "一加": {
+   "err_history": [
+    0.0,
+    0.25,
+    0.143,
+    0.375
+   ],
+   "lp": -0.134,
+   "last_round": 802
+  },
+  "减法": {
+   "err_history": [
+    0.0
+   ],
+   "lp": 0.0,
+   "last_round": 203
+  },
+  "加法": {
+   "err_history": [
+    0.125,
+    0.375
+   ],
+   "lp": -0.25,
+   "last_round": 267
+  },
+  "后继": {
+   "err_history": [
+    0.25,
+    0.375
+   ],
+   "lp": -0.125,
+   "last_round": 493
+  },
+  "数字": {
+   "err_history": [
+    0.25
+   ],
+   "lp": 0.0,
+   "last_round": 247
+  },
+  "涌现": {
+   "err_history": [
+    0.0
+   ],
+   "lp": 0.0,
+   "last_round": 274
+  },
+  "节点": {
+   "err_history": [
+    0.0
+   ],
+   "lp": 0.0,
+   "last_round": 292
+  },
+  "改进": {
+   "err_history": [
+    0.0
+   ],
+   "lp": 0.0,
+   "last_round": 321
+  },
+  "信号": {
+   "err_history": [
+    0.0
+   ],
+   "lp": 0.0,
+   "last_round": 368
+  },
+  "进化": {
+   "err_history": [
+    0.375
+   ],
+   "lp": 0.0,
+   "last_round": 369
+  },
+  "符号": {
+   "err_history": [
+    0.25
+   ],
+   "lp": 0.0,
+   "last_round": 374
+  },
+  "信息量": {
+   "err_history": [
+    0.0
+   ],
+   "lp": 0.0,
+   "last_round": 436
+  },
+  "奖励": {
+   "err_history": [
+    0.125
+   ],
+   "lp": 0.0,
+   "last_round": 444
+  },
+  "PASS": {
+   "err_history": [
+    0.0
+   ],
+   "lp": 0.0,
+   "last_round": 492
+  },
+  "石子": {
+   "err_history": [
+    0.0
+   ],
+   "lp": 0.0,
+   "last_round": 531
+  },
+  "压缩": {
+   "err_history": [
+    0.0
+   ],
+   "lp": 0.0,
+   "last_round": 609
+  },
+  "技艺": {
+   "err_history": [
+    0.0
+   ],
+   "lp": 0.0,
+   "last_round": 654
+  },
+  "人工智能": {
+   "err_history": [
+    0.125
+   ],
+   "lp": 0.0,
+   "last_round": 750
+  },
+  "世界": {
+   "err_history": [
+    0.375
+   ],
+   "lp": 0.0,
+   "last_round": 752
+  },
+  "概率": {
+   "err_history": [
+    0.125
+   ],
+   "lp": 0.0,
+   "last_round": 861
+  }
+ },
+ "mistakes": [
+  {
+   "round": 648,
+   "premises": [
+    "进化",
+    "ensp"
+   ],
+   "pattern": [
+    "ensp",
+    "进化"
+   ],
+   "result": "https"
+  }
+ ],
+ "pred_layers": [],
+ "self_talk_log": [
+  {
+   "round": 675,
+   "path": [
+    "一加一加一加一加一加一",
+    "一加四"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.008944271909999161,
+   "bet": [
+    "六个",
+    "一加四"
+   ]
+  },
+  {
+   "round": 677,
+   "path": [
+    "一加一加一加一加一加一",
+    "六个",
+    "五加一"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 0.01495518208621869,
+   "bet": [
+    "三加一",
+    "五加一"
+   ]
+  },
+  {
+   "round": 689,
+   "pair": [
+    "三加一",
+    "三加三"
+   ],
+   "type": "experiment",
+   "causal_suspicion": true
+  },
+  {
+   "round": 697,
+   "path": [
+    "一加一加一加一加一加一",
+    "一加四"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.008944271909999161
+  },
+  {
+   "round": 712,
+   "path": [
+    "一加一加一加一加一加一",
+    "五加一"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.016434106194131763,
+   "bet": [
+    "三加一",
+    "五加一"
+   ]
+  },
+  {
+   "round": 727,
+   "pair": [
+    "一加四",
+    "五加一"
+   ],
+   "type": "experiment",
+   "causal_suspicion": false
+  },
+  {
+   "round": 734,
+   "path": [
+    "一加一加一加一加一加一",
+    "一加四"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.008944271909999161,
+   "bet": [
+    "六个",
+    "一加四"
+   ]
+  },
+  {
+   "round": 755,
+   "path": [
+    "世界",
+    "起来",
+    "五个"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 0.004838054496661664,
+   "bet": [
+    "五个",
+    "数量"
+   ]
+  },
+  {
+   "round": 762,
+   "path": [
+    "世界",
+    "起来",
+    "符号"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 0.000591124893926184,
+   "bet": [
+    "出来",
+    "符号"
+   ]
+  },
+  {
+   "round": 774,
+   "path": [
+    "世界",
+    "起来",
+    "数量"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 0.0003270414182235869,
+   "bet": [
+    "数量",
+    "出来"
+   ]
+  },
+  {
+   "round": 777,
+   "path": [
+    "世界",
+    "起来",
+    "意思"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 0.00048230809979047637,
+   "bet": [
+    "符号",
+    "意思"
+   ]
+  },
+  {
+   "round": 796,
+   "path": [
+    "世界",
+    "起来",
+    "出来"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 0.0008590754292187889
+  },
+  {
+   "round": 804,
+   "pair": [
+    "一加一加一加一加一加一",
+    "二加一"
+   ],
+   "type": "experiment",
+   "causal_suspicion": true
+  },
+  {
+   "round": 819,
+   "path": [
+    "一加一加一加一加一加一",
+    "五加一"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.020580361196830342,
+   "bet": [
+    "三加一",
+    "五加一"
+   ]
+  },
+  {
+   "round": 822,
+   "pair": [
+    "一加四",
+    "五加一"
+   ],
+   "type": "experiment",
+   "causal_suspicion": false
+  },
+  {
+   "round": 826,
+   "pair": [
+    "符号",
+    "起来"
+   ],
+   "type": "experiment",
+   "causal_suspicion": false
+  },
+  {
+   "round": 830,
+   "path": [
+    "一加一加一加一加一加一",
+    "一加四"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.008944271909999161,
+   "bet": [
+    "一加四",
+    "六个"
+   ]
+  },
+  {
+   "round": 841,
+   "path": [
+    "一加一加一加一加一加一",
+    "一加四"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.008944271909999161
+  },
+  {
+   "round": 842,
+   "path": [
+    "一加一加一加一加一加一",
+    "二加一",
+    "三加一"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 0.0213769261382865,
+   "bet": [
+    "三加一",
+    "五加一"
+   ]
+  },
+  {
+   "round": 847,
+   "path": [
+    "一加一加一加一加一加一",
+    "五加一"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.00766971316282428
+  },
+  {
+   "round": 853,
+   "path": [
+    "一加一加一加一加一加一",
+    "一加四"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.008944271909999161
+  },
+  {
+   "round": 868,
+   "pair": [
+    "符号",
+    "起来"
+   ],
+   "type": "experiment",
+   "causal_suspicion": false
+  },
+  {
+   "round": 869,
+   "path": [
+    "概率",
+    "结果",
+    "一件"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 2.4492187500000015e-06
+  },
+  {
+   "round": 884,
+   "path": [
+    "概率",
+    "结果",
+    "一件"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 9.796875000000006e-06
+  },
+  {
+   "round": 891,
+   "path": [
+    "概率",
+    "结果",
+    "一件"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 2.2042968750000002e-05
+  },
+  {
+   "round": 899,
+   "path": [
+    "概率",
+    "结果"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.004919349550499539
+  },
+  {
+   "round": 902,
+   "path": [
+    "概率",
+    "一件"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.0012745587471748806
+  },
+  {
+   "round": 908,
+   "path": [
+    "概率",
+    "结果"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.006149186938124423
+  },
+  {
+   "round": 910,
+   "path": [
+    "概率",
+    "结果",
+    "一件"
+   ],
+   "type": "thought",
+   "kind": "edge",
+   "score": 5.878125000000002e-05
+  },
+  {
+   "round": 924,
+   "path": [
+    "概率",
+    "结果"
+   ],
+   "type": "thought",
+   "kind": "abstract",
+   "score": 0.008608861713374192
+  }
+ ],
+ "word_cands": {
+  "第一步": {
+   "n": 2,
+   "srcs": [
+    "FEED-20261025-1530"
+   ],
+   "first": 10,
+   "last": 10
+  },
+  "驱动力": {
+   "n": 2,
+   "srcs": [
+    "温度与天气的关系.md"
+   ],
+   "first": 61,
+   "last": 61
+  },
+  "相加": {
+   "n": 2,
+   "srcs": [
+    "数字与加法初探.md",
+    "web-20261024-1640.md"
+   ],
+   "first": 73,
+   "last": 267
+  },
+  "直接": {
+   "n": 2,
+   "srcs": [
+    "数字加法进阶二.md",
+    "数字加法进阶.md"
+   ],
+   "first": 130,
+   "last": 201
+  },
+  "继续": {
+   "n": 2,
+   "srcs": [
+    "数字加法进阶二.md",
+    "数字加法进阶.md"
+   ],
+   "first": 130,
+   "last": 201
+  },
+  "可数": {
+   "n": 2,
+   "srcs": [
+    "数字加法进阶二.md",
+    "数字加法进阶.md"
+   ],
+   "first": 130,
+   "last": 201
+  },
+  "问得": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1417moon",
+    "Q-20261025-1417"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "勇气": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1417moon",
+    "Q-20261025-1417"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "先教": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1417moon",
+    "Q-20261025-1417"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "一家": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1417moon",
+    "Q-20261025-1417"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "公司": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1417moon",
+    "Q-20261025-1417"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "叫辉": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1417moon",
+    "Q-20261025-1417"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "一样": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1417moon",
+    "Q-20261025-1417"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "整个": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1418moon",
+    "Q-20261025-1418"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "小东西": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1418moon",
+    "Q-20261025-1418"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "门牌号": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1418moon",
+    "Q-20261025-1418"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "很小": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1418moon",
+    "Q-20261025-1418"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "房间": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1418moon",
+    "Q-20261025-1418"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "旗子": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1418moon",
+    "Q-20261025-1418"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "一块": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1418moon",
+    "Q-20261025-1418"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "国家": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1418moon",
+    "Q-20261025-1418"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "一棵": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1419moon",
+    "Q-20261025-1419"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "泥土": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1419moon",
+    "Q-20261025-1419"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "顺序": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1419moon",
+    "Q-20261025-1419"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "发现": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1421moon",
+    "Q-20261025-1421"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "数给": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1421moon",
+    "Q-20261025-1421"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "归纳": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1421moon",
+    "Q-20261025-1421"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "这条": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1421moon",
+    "Q-20261025-1421"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "变换": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1421moon",
+    "Q-20261025-1421"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "值得": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1421moon",
+    "Q-20261025-1421"
+   ],
+   "first": 196,
+   "last": 279
+  },
+  "运算": {
+   "n": 2,
+   "srcs": [
+    "web-20261024-2337.md",
+    "web-20261024-1640.md"
+   ],
+   "first": 203,
+   "last": 267
+  },
+  "探索": {
+   "n": 2,
+   "srcs": [
+    "index.html",
+    "好奇心与内在动机.txt"
+   ],
+   "first": 247,
+   "last": 444
+  },
+  "agent": {
+   "n": 2,
+   "srcs": [
+    "index.html",
+    "好奇心与内在动机.txt"
+   ],
+   "first": 247,
+   "last": 444
+  },
+  "计算器": {
+   "n": 2,
+   "srcs": [
+    "web-20261024-1640.md",
+    "好奇心与内在动机.txt"
+   ],
+   "first": 267,
+   "last": 444
+  },
+  "数学": {
+   "n": 2,
+   "srcs": [
+    "web-20261024-1640.md",
+    "web-20261024-1135.md"
+   ],
+   "first": 267,
+   "last": 493
+  },
+  "连接": {
+   "n": 2,
+   "srcs": [
+    "关系的本质与网络思维.md",
+    "Q-20261025-1440"
+   ],
+   "first": 292,
+   "last": 567
+  },
+  "网页": {
+   "n": 2,
+   "srcs": [
+    "web-20261023-1321.md",
+    "Q-20261025-1447"
+   ],
+   "first": 369,
+   "last": 648
+  },
+  "一起": {
+   "n": 2,
+   "srcs": [
+    "认符号.md",
+    "Q-20261025-1433"
+   ],
+   "first": 374,
+   "last": 469
+  },
+  "只要": {
+   "n": 2,
+   "srcs": [
+    "认符号.md",
+    "加法器.md"
+   ],
+   "first": 374,
+   "last": 531
+  },
+  "预测": {
+   "n": 2,
+   "srcs": [
+    "压缩与熵.txt",
+    "好奇心与内在动机.txt"
+   ],
+   "first": 436,
+   "last": 444
+  },
+  "内在": {
+   "n": 2,
+   "srcs": [
+    "好奇心与内在动机.txt",
+    "Q-20261025-1500"
+   ],
+   "first": 444,
+   "last": 742
+  },
+  "动机": {
+   "n": 2,
+   "srcs": [
+    "好奇心与内在动机.txt",
+    "Q-20261025-1500"
+   ],
+   "first": 444,
+   "last": 742
+  },
+  "回到": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1430",
+    "Q-20261025-1437"
+   ],
+   "first": 469,
+   "last": 469
+  },
+  "正好": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1430",
+    "Q-20261025-1433"
+   ],
+   "first": 469,
+   "last": 469
+  },
+  "互相": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1430",
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 469,
+   "last": 654
+  },
+  "样子": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1437",
+    "Q-20261025-1442"
+   ],
+   "first": 469,
+   "last": 567
+  },
+  "比喻": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1437",
+    "Q-20261025-1439"
+   ],
+   "first": 469,
+   "last": 567
+  },
+  "珠子": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1439",
+    "Q-20261025-1440"
+   ],
+   "first": 567,
+   "last": 567
+  },
+  "技艺": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "制造": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "定义": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "区别": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "而是": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "Langton": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "形态": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "蝴蝶": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "歧义": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "正确": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "中文": {
+   "n": 1,
+   "srcs": [
+    "artificial-词源与人工生命.md"
+   ],
+   "first": 654,
+   "last": 654
+  },
+  "做得好": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1455"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "收走": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1455"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "注意": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1455"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "一对": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1455"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "双胞胎": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1455"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "控制": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1455"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "手段": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1455"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "真正": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1455"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "尺子": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1457"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "做事": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1457"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "没人": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1457"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "先有": {
+   "n": 2,
+   "srcs": [
+    "Q-20261025-1457",
+    "Q-20261025-1503"
+   ],
+   "first": 742,
+   "last": 829
+  },
+  "一把": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1457"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "事先": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1457"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "说好": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1457"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "做成": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1457"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "什么样": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1457"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "画画": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1500"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "孩子": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1500"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "理由": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1500"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "放在": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1500"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "里面": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1500"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "inner": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1500"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "motivation": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1500"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "爱读": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1500"
+   ],
+   "first": 742,
+   "last": 742
+  },
+  "深度": {
+   "n": 1,
+   "srcs": [
+    "人工智能简史.md"
+   ],
+   "first": 750,
+   "last": 750
+  },
+  "模型": {
+   "n": 1,
+   "srcs": [
+    "人工智能简史.md"
+   ],
+   "first": 750,
+   "last": 750
+  },
+  "简史": {
+   "n": 1,
+   "srcs": [
+    "人工智能简史.md"
+   ],
+   "first": 750,
+   "last": 750
+  },
+  "起点": {
+   "n": 2,
+   "srcs": [
+    "人工智能简史.md",
+    "Q-20261025-1503"
+   ],
+   "first": 750,
+   "last": 829
+  },
+  "追溯到": {
+   "n": 1,
+   "srcs": [
+    "人工智能简史.md"
+   ],
+   "first": 750,
+   "last": 750
+  },
+  "达特茅斯": {
+   "n": 1,
+   "srcs": [
+    "人工智能简史.md"
+   ],
+   "first": 750,
+   "last": 750
+  },
+  "会议": {
+   "n": 1,
+   "srcs": [
+    "人工智能简史.md"
+   ],
+   "first": 750,
+   "last": 750
+  },
+  "此后": {
+   "n": 1,
+   "srcs": [
+    "人工智能简史.md"
+   ],
+   "first": 750,
+   "last": 750
+  },
+  "经历": {
+   "n": 1,
+   "srcs": [
+    "人工智能简史.md"
+   ],
+   "first": 750,
+   "last": 750
+  },
+  "多次": {
+   "n": 1,
+   "srcs": [
+    "人工智能简史.md"
+   ],
+   "first": 750,
+   "last": 750
+  },
+  "起伏": {
+   "n": 1,
+   "srcs": [
+    "人工智能简史.md"
+   ],
+   "first": 750,
+   "last": 750
+  },
+  "quot": {
+   "n": 1,
+   "srcs": [
+    "web-20261023-1957.md"
+   ],
+   "first": 752,
+   "last": 752
+  },
+  "世界地图": {
+   "n": 2,
+   "srcs": [
+    "web-20261023-1957.md",
+    "数字与加法初探-中文数字版.md"
+   ],
+   "first": 752,
+   "last": 802
+  },
+  "汉语": {
+   "n": 1,
+   "srcs": [
+    "web-20261023-1957.md"
+   ],
+   "first": 752,
+   "last": 752
+  },
+  "卫星": {
+   "n": 1,
+   "srcs": [
+    "web-20261023-1957.md"
+   ],
+   "first": 752,
+   "last": 752
+  },
+  "时空": {
+   "n": 1,
+   "srcs": [
+    "web-20261023-1957.md"
+   ],
+   "first": 752,
+   "last": 752
+  },
+  "词语": {
+   "n": 1,
+   "srcs": [
+    "web-20261023-1957.md"
+   ],
+   "first": 752,
+   "last": 752
+  },
+  "范畴": {
+   "n": 1,
+   "srcs": [
+    "web-20261023-1957.md"
+   ],
+   "first": 752,
+   "last": 752
+  },
+  "三是": {
+   "n": 1,
+   "srcs": [
+    "/home/qingwu/selfdrive_b/brain/outbox/FEED-20261025-1515.md"
+   ],
+   "first": 798,
+   "last": 798
+  },
+  "表示": {
+   "n": 1,
+   "srcs": [
+    "数字与加法初探-中文数字版.md"
+   ],
+   "first": 802,
+   "last": 802
+  },
+  "被数": {
+   "n": 1,
+   "srcs": [
+    "数字与加法初探-中文数字版.md"
+   ],
+   "first": 802,
+   "last": 802
+  },
+  "记法": {
+   "n": 1,
+   "srcs": [
+    "数字与加法初探-中文数字版.md"
+   ],
+   "first": 802,
+   "last": 802
+  },
+  "仔细": {
+   "n": 1,
+   "srcs": [
+    "数字与加法初探-中文数字版.md"
+   ],
+   "first": 802,
+   "last": 802
+  },
+  "楼梯": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "往前": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "方向": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "往上走": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "一格": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "往回": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "下一格": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "特别": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "数要": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "小心": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "零是": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1502"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "规矩": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1503"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "所有": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1503"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "一步": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1503"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "总得": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1503"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "才能": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1503"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "一只": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1505"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "一座": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1505"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "大地": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1505"
+   ],
+   "first": 829,
+   "last": 829
+  },
+  "发生": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "事件": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "改变": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "可能性": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "次数": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "稳定": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "硬币": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "影响": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "条件": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "信号": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "长期": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "不确定性": {
+   "n": 1,
+   "srcs": [
+    "概率入门.md"
+   ],
+   "first": 861,
+   "last": 861
+  },
+  "朋友": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1506"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "硬邦邦": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1506"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "两颗": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1506"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "三颗": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1506"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "抓不住": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1506"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "连成一片": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1506"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "指缝": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1506"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "溜走": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1506"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "绳子": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "有个": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "打结": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "亲戚": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "结绳记事": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "数羊": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "麻烦": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "袋子": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "远古": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "想了个": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "升级": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "办法": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1509"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "试试": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1513"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "叠起来": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1513"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "被子": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1513"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "铺开": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1513"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "压紧": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1513"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "弹簧": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1513"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "松开": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1513"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "变回": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1513"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "原来": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1513"
+   ],
+   "first": 916,
+   "last": 916
+  },
+  "大小": {
+   "n": 1,
+   "srcs": [
+    "Q-20261025-1513"
+   ],
+   "first": 916,
+   "last": 916
+  }
+ },
+ "edge_preds": [
+  {
+   "a": "一加一加一加一加一加一",
+   "b": "五加一",
+   "round": 139,
+   "deadline": 199,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 200
+  },
+  {
+   "a": "一加一加一加一加一加一",
+   "b": "四加一",
+   "round": 152,
+   "deadline": 212,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 219
+  },
+  {
+   "a": "一加四",
+   "b": "六",
+   "round": 170,
+   "deadline": 290,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 232
+  },
+  {
+   "a": "一加四",
+   "b": "六",
+   "round": 179,
+   "deadline": 299,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 248
+  },
+  {
+   "a": "四加一",
+   "b": "一加一加一加一加一加一",
+   "round": 204,
+   "deadline": 264,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 273
+  },
+  {
+   "a": "数量",
+   "b": "五个",
+   "round": 249,
+   "deadline": 309,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 318
+  },
+  {
+   "a": "出来",
+   "b": "数量",
+   "round": 255,
+   "deadline": 315,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 318
+  },
+  {
+   "a": "三加一",
+   "b": "一加一加一加一加一加一",
+   "round": 277,
+   "deadline": 337,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 344
+  },
+  {
+   "a": "五加一",
+   "b": "三加一",
+   "round": 296,
+   "deadline": 356,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 366
+  },
+  {
+   "a": "之前",
+   "b": "苹果",
+   "round": 332,
+   "deadline": 452,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 396
+  },
+  {
+   "a": "起来",
+   "b": "意思",
+   "round": 350,
+   "deadline": 470,
+   "status": "hit",
+   "origin": "dream",
+   "settled_round": 374
+  },
+  {
+   "a": "世界",
+   "b": "出来",
+   "round": 379,
+   "deadline": 439,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 443
+  },
+  {
+   "a": "世界",
+   "b": "后继",
+   "round": 392,
+   "deadline": 512,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 460
+  },
+  {
+   "a": "等于",
+   "b": "意思",
+   "round": 394,
+   "deadline": 454,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 460
+  },
+  {
+   "a": "五个",
+   "b": "数量",
+   "round": 422,
+   "deadline": 482,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 487
+  },
+  {
+   "a": "等于",
+   "b": "意思",
+   "round": 434,
+   "deadline": 494,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 495
+  },
+  {
+   "a": "数量",
+   "b": "出来",
+   "round": 435,
+   "deadline": 495,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 500
+  },
+  {
+   "a": "符号",
+   "b": "出来",
+   "round": 466,
+   "deadline": 586,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 528
+  },
+  {
+   "a": "五加一",
+   "b": "三加一",
+   "round": 484,
+   "deadline": 544,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 550
+  },
+  {
+   "a": "一加一加一加一加一加一",
+   "b": "三加一",
+   "round": 488,
+   "deadline": 548,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 550
+  },
+  {
+   "a": "ensp",
+   "b": "后继",
+   "round": 499,
+   "deadline": 559,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 561
+  },
+  {
+   "a": "百科",
+   "b": "VERDICT",
+   "round": 501,
+   "deadline": 621,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 568
+  },
+  {
+   "a": "符号",
+   "b": "出来",
+   "round": 505,
+   "deadline": 565,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 568
+  },
+  {
+   "a": "减法",
+   "b": "后继",
+   "round": 511,
+   "deadline": 571,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 575
+  },
+  {
+   "a": "六个",
+   "b": "一加四",
+   "round": 549,
+   "deadline": 609,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 613
+  },
+  {
+   "a": "一加四",
+   "b": "六个",
+   "round": 554,
+   "deadline": 614,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 620
+  },
+  {
+   "a": "完全正确",
+   "b": "数量",
+   "round": 557,
+   "deadline": 677,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 620
+  },
+  {
+   "a": "五加一",
+   "b": "三加一",
+   "round": 558,
+   "deadline": 618,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 620
+  },
+  {
+   "a": "三加一",
+   "b": "五加一",
+   "round": 608,
+   "deadline": 668,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 678
+  },
+  {
+   "a": "数字",
+   "b": "百度",
+   "round": 630,
+   "deadline": 750,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 691
+  },
+  {
+   "a": "六个",
+   "b": "一加四",
+   "round": 655,
+   "deadline": 715,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 720
+  },
+  {
+   "a": "六个",
+   "b": "一加四",
+   "round": 675,
+   "deadline": 735,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 741
+  },
+  {
+   "a": "三加一",
+   "b": "五加一",
+   "round": 677,
+   "deadline": 737,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 741
+  },
+  {
+   "a": "三加一",
+   "b": "五加一",
+   "round": 712,
+   "deadline": 772,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 779
+  },
+  {
+   "a": "六个",
+   "b": "一加四",
+   "round": 734,
+   "deadline": 794,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 795
+  },
+  {
+   "a": "下次",
+   "b": "节点",
+   "round": 748,
+   "deadline": 868,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 814
+  },
+  {
+   "a": "五个",
+   "b": "数量",
+   "round": 755,
+   "deadline": 815,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 818
+  },
+  {
+   "a": "出来",
+   "b": "符号",
+   "round": 762,
+   "deadline": 822,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 828
+  },
+  {
+   "a": "数量",
+   "b": "出来",
+   "round": 774,
+   "deadline": 834,
+   "status": "hit",
+   "origin": "thought",
+   "settled_round": 802
+  },
+  {
+   "a": "符号",
+   "b": "意思",
+   "round": 777,
+   "deadline": 837,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 850
+  },
+  {
+   "a": "五个",
+   "b": "三个",
+   "round": 807,
+   "deadline": 927,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 874
+  },
+  {
+   "a": "三加一",
+   "b": "五加一",
+   "round": 819,
+   "deadline": 879,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 883
+  },
+  {
+   "a": "一加四",
+   "b": "六个",
+   "round": 830,
+   "deadline": 890,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 894
+  },
+  {
+   "a": "一加四",
+   "b": "二是",
+   "round": 833,
+   "deadline": 953,
+   "status": "miss",
+   "origin": "dream",
+   "settled_round": 894
+  },
+  {
+   "a": "三加一",
+   "b": "五加一",
+   "round": 842,
+   "deadline": 902,
+   "status": "miss",
+   "origin": "thought",
+   "settled_round": 909
+  },
+  {
+   "a": "反面",
+   "b": "moon",
+   "round": 951,
+   "deadline": 1071,
+   "status": "pending",
+   "origin": "dream"
+  }
+ ],
+ "compiled_rules": {},
+ "skill_multipliers": {},
+ "rule_metrics": {},
+ "asked_texts": [
+  "我最近读的《进化》让我联想到《ensp》，在我的记忆里两者都和《https》相连。我推断《进化》和《ensp》一起出现时，可能会涉及《https》——这是我推理出的未知联系。请判断这个推理对不对（请在回答开头写 [VERDICT:真] 或 [VERDICT:假] 或 [VERDICT:存疑]）。",
+  "我想学点新东西：请讲一件我记忆库里没有的新知识，最好和我最近读的《信息量》有关，或能帮我理解它的反面或盲区。",
+  "《奖励》的反面或对立面是什么？什么情况下它会不成立？",
+  "要出现《奖励》，之前通常需要什么条件？它之后又会引出什么？（说说先后）",
+  "我想学点新东西：请讲一件我记忆库里没有的新知识，最好和我最近读的《奖励》有关，或能帮我理解它的反面或盲区。",
+  "《后继》的反面或对立面是什么？什么情况下它会不成立？",
+  "要出现《后继》，之前通常需要什么条件？它之后又会引出什么？（说说先后）",
+  "要出现《石子》，之前通常需要什么条件？它之后又会引出什么？（说说先后）",
+  "《石子》的反面或对立面是什么？什么情况下它会不成立？",
+  "我想学点新东西：请讲一件我记忆库里没有的新知识，最好和我最近读的《石子》有关，或能帮我理解它的反面或盲区。",
+  "《压缩》的反面或对立面是什么？什么情况下它会不成立？",
+  "我想学点新东西：请讲一件我记忆库里没有的新知识，最好和我最近读的《压缩》有关，或能帮我理解它的反面或盲区。",
+  "要出现《压缩》，之前通常需要什么条件？它之后又会引出什么？（说说先后）",
+  "《技艺》的反面或对立面是什么？什么情况下它会不成立？",
+  "要出现《技艺》，之前通常需要什么条件？它之后又会引出什么？（说说先后）",
+  "我想学点新东西：请讲一件我记忆库里没有的新知识，最好和我最近读的《技艺》有关，或能帮我理解它的反面或盲区。",
+  "我最近读的《人工智能》让我联想到《语言》，在我的记忆里两者都和《通常》相连。我推断《人工智能》和《语言》一起出现时，可能会涉及《通常》——这是我推理出的未知联系。请判断这个推理对不对（请在回答开头写 [VERDICT:真] 或 [VERDICT:假] 或 [VERDICT:存疑]）。",
+  "《世界》的反面或对立面是什么？什么情况下它会不成立？",
+  "要出现《世界》，之前通常需要什么条件？它之后又会引出什么？（说说先后）",
+  "我最近读的《世界》让我联想到《起来》，在我的记忆里两者都和《ensp》相连。我推断《世界》和《起来》一起出现时，可能会涉及《ensp》——这是我推理出的未知联系。请判断这个推理对不对（请在回答开头写 [VERDICT:真] 或 [VERDICT:假] 或 [VERDICT:存疑]）。",
+  "我想学点新东西：请讲一件我记忆库里没有的新知识，最好和我最近读的《世界》有关，或能帮我理解它的反面或盲区。",
+  "要出现《苹果》，之前通常需要什么条件？它之后又会引出什么？（说说先后）",
+  "要出现《一加》，之前通常需要什么条件？它之后又会引出什么？（说说先后）",
+  "我用记忆里的加法变换做了一次组合推导：三=一加二、二=一加一，合起来是一加一加一加一加一，所以我推出『三加二等于五』——这是我推理出的未知联系。请判断这个推理对不对（请在回答开头写 [VERDICT:真] 或 [VERDICT:假] 或 [VERDICT:存疑]）。",
+  "《一加》的反面或对立面是什么？什么情况下它会不成立？",
+  "我想学点新东西：请讲一件我记忆库里没有的新知识，最好和我最近读的《一加》有关，或能帮我理解它的反面或盲区。",
+  "我最近读的《概率》让我联想到《一件》，在我的记忆里两者都和《结果》相连。我推断《概率》和《一件》一起出现时，可能会涉及《结果》——这是我推理出的未知联系。请判断这个推理对不对（请在回答开头写 [VERDICT:真] 或 [VERDICT:假] 或 [VERDICT:存疑]）。",
+  "《概率》的反面或对立面是什么？什么情况下它会不成立？",
+  "要出现《概率》，之前通常需要什么条件？它之后又会引出什么？（说说先后）",
+  "我想学点新东西：请讲一件我记忆库里没有的新知识，最好和我最近读的《概率》有关，或能帮我理解它的反面或盲区。"
+ ],
+ "asks_total": 113,
+ "dup_asks": 63,
+ "recent_reads": [
+  "web",
+  "wider",
+  "arch",
+  "arch",
+  "arch",
+  "arch",
+  "web",
+  "arch",
+  "wider",
+  "arch",
+  "arch",
+  "web",
+  "arch",
+  "arch",
+  "arch",
+  "arch",
+  "web",
+  "arch",
+  "arch",
+  "arch",
+  "arch",
+  "web",
+  "arch",
+  "arch",
+  "arch",
+  "arch",
+  "web",
+  "arch",
+  "arch",
+  "arch",
+  "arch",
+  "web",
+  "wider",
+  "arch",
+  "arch"
+ ],
+ "q_rel_tags": {
+  "Q-20261025-1407": {
+   "type": "temporal",
+   "topic": "汉语"
+  },
+  "Q-20261025-1409": {
+   "type": "contrast",
+   "topic": "console"
+  },
+  "Q-20261025-1410": {
+   "type": "temporal",
+   "topic": "console"
+  },
+  "Q-20261025-1413": {
+   "type": "contrast",
+   "topic": "天气"
+  },
+  "Q-20261025-1414": {
+   "type": "temporal",
+   "topic": "定时"
+  },
+  "Q-20261025-1415": {
+   "type": "temporal",
+   "topic": "四个"
+  },
+  "Q-20261025-1416": {
+   "type": "temporal",
+   "topic": "爱奇艺"
+  },
+  "Q-20261025-1515": {
+   "type": "temporal",
+   "topic": "压缩"
+  },
+  "Q-20261025-1518": {
+   "type": "contrast",
+   "topic": "技艺"
+  },
+  "Q-20261025-1519": {
+   "type": "temporal",
+   "topic": "技艺"
+  },
+  "Q-20261025-1530": {
+   "type": "contrast",
+   "topic": "世界"
+  },
+  "Q-20261025-1531": {
+   "type": "temporal",
+   "topic": "世界"
+  },
+  "Q-20261025-1535": {
+   "type": "temporal",
+   "topic": "苹果"
+  },
+  "Q-20261025-1536": {
+   "type": "temporal",
+   "topic": "一加"
+  },
+  "Q-20261025-1538": {
+   "type": "contrast",
+   "topic": "一加"
+  },
+  "Q-20261025-1543": {
+   "type": "contrast",
+   "topic": "概率"
+  },
+  "Q-20261025-1546": {
+   "type": "temporal",
+   "topic": "概率"
+  }
+ },
+ "last_dup_pain_round": 950,
+ "last_search_topics": [
+  "二是",
+  "概率",
+  "结果",
+  "一件",
+  "概率入门"
+ ],
+ "recent_replay": [
+  "摘要：2015年11月3日&ensp;&#0183;&ensp;六个坚持即必须坚持人民至上，坚持自信自立，坚持守正创新，坚持问题导向，坚持系统观念，坚持胸怀天下。 …",
+  "3. “人工”组成一个字怎么读？_百度知道",
+  "- 记忆重放：来源：https://baike.baidu.com/item",
+  "1. WinRAR - 压缩软件 老牌压缩软件知名产品 经典装机软件之一",
+  "- 关键词：改进、进化、变异、选择、保留、效果、反馈、产生",
+  "摘要：意思 翻译 英语 idea, opinion, meaning, wish, desire, interest, fun, token of appreciation, affection etc, CL:個|个 [ge4], to give as a …",
+  "- 遗产碎片合并：『三』并入『三加一』（剩余概念 90 个）",
+  "- 辉月回想：## 读到：认数字.md",
+  "- 辉月回想：## 网络搜索 [web-20261025-1407] 主题：web-20261025-1135",
+  "- 记忆重放：- 关键词：一加、苹果、一是、单独、记着、二是、变成"
+ ],
+ "q_self_guess": {
+  "Q-20261025-1514": {
+   "guess": "数据压缩",
+   "round": 617,
+   "topic": "压缩"
+  },
+  "Q-20261025-1515": {
+   "guess": "数据压缩",
+   "round": 623,
+   "topic": "压缩"
+  },
+  "Q-20261025-1529": {
+   "guess": "语言",
+   "round": 751,
+   "topic": "人工智能"
+  },
+  "Q-20261025-1530": {
+   "guess": "起来",
+   "round": 757,
+   "topic": "世界"
+  },
+  "Q-20261025-1531": {
+   "guess": "起来",
+   "round": 764,
+   "topic": "世界"
+  },
+  "Q-20261025-1532": {
+   "guess": "起来",
+   "round": 778,
+   "topic": "世界"
+  },
+  "Q-20261025-1533": {
+   "guess": "起来",
+   "round": 786,
+   "topic": "世界"
+  },
+  "Q-20261025-1542": {
+   "guess": "一件",
+   "round": 863,
+   "topic": "概率"
+  },
+  "Q-20261025-1543": {
+   "guess": "结果",
+   "round": 879,
+   "topic": "概率"
+  },
+  "Q-20261025-1546": {
+   "guess": "结果",
+   "round": 903,
+   "topic": "概率"
+  },
+  "Q-20261025-1548": {
+   "guess": "结果",
+   "round": 918,
+   "topic": "概率"
+  }
+ },
+ "selfqa": {
+  "hit": 2,
+  "miss": 3
+ },
+ "sa_winner_log": [
+  {
+   "round": 204,
+   "path": [
+    "一加四",
+    "◆一加四",
+    "一加一加一加一加一加一"
+   ],
+   "score": 0.0123,
+   "kind": "abstract"
+  },
+  {
+   "round": 249,
+   "path": [
+    "数字",
+    "等于",
+    "五个"
+   ],
+   "score": 0.0,
+   "kind": "edge"
+  },
+  {
+   "round": 255,
+   "path": [
+    "数字",
+    "等于",
+    "数量"
+   ],
+   "score": 0.0,
+   "kind": "edge"
+  },
+  {
+   "round": 277,
+   "path": [
+    "一加四",
+    "◆一加四",
+    "一加一加一加一加一加一"
+   ],
+   "score": 0.0114,
+   "kind": "abstract"
+  },
+  {
+   "round": 296,
+   "path": [
+    "一加四",
+    "◆一加四",
+    "五加一"
+   ],
+   "score": 0.0095,
+   "kind": "abstract"
+  },
+  {
+   "round": 323,
+   "path": [
+    "一加四",
+    "◆一加四",
+    "一加一加一加一加一加一"
+   ],
+   "score": 0.0112,
+   "kind": "abstract"
+  },
+  {
+   "round": 379,
+   "path": [
+    "符号",
+    "起来",
+    "世界"
+   ],
+   "score": 0.0,
+   "kind": "edge"
+  },
+  {
+   "round": 394,
+   "path": [
+    "符号",
+    "起来",
+    "意思"
+   ],
+   "score": 0.0,
+   "kind": "edge"
+  },
+  {
+   "round": 422,
+   "path": [
+    "符号",
+    "起来",
+    "五个"
+   ],
+   "score": 0.0001,
+   "kind": "edge"
+  },
+  {
+   "round": 434,
+   "path": [
+    "符号",
+    "代表",
+    "意思"
+   ],
+   "score": 0.0,
+   "kind": "edge"
+  },
+  {
+   "round": 435,
+   "path": [
+    "符号",
+    "起来",
+    "数量"
+   ],
+   "score": 0.0001,
+   "kind": "edge"
+  },
+  {
+   "round": 484,
+   "path": [
+    "一加四",
+    "◆一加四",
+    "五加一"
+   ],
+   "score": 0.0571,
+   "kind": "abstract"
+  },
+  {
+   "round": 488,
+   "path": [
+    "一加四",
+    "四加一",
+    "一加一加一加一加一加一"
+   ],
+   "score": 0.0022,
+   "kind": "edge"
+  },
+  {
+   "round": 499,
+   "path": [
+    "后继",
+    "数字",
+    "ensp"
+   ],
+   "score": 0.0001,
+   "kind": "edge"
+  },
+  {
+   "round": 505,
+   "path": [
+    "后继",
+    "◆起来",
+    "符号"
+   ],
+   "score": 0.24,
+   "kind": "abstract"
+  },
+  {
+   "round": 511,
+   "path": [
+    "后继",
+    "◆起来",
+    "减法"
+   ],
+   "score": 0.24,
+   "kind": "abstract"
+  },
+  {
+   "round": 530,
+   "path": [
+    "后继",
+    "◆起来",
+    "ensp"
+   ],
+   "score": 0.24,
+   "kind": "abstract"
+  },
+  {
+   "round": 537,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "五加一"
+   ],
+   "score": 0.0509,
+   "kind": "abstract"
+  },
+  {
+   "round": 549,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0181,
+   "kind": "abstract"
+  },
+  {
+   "round": 554,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0089,
+   "kind": "abstract"
+  },
+  {
+   "round": 558,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "五加一"
+   ],
+   "score": 0.0033,
+   "kind": "abstract"
+  },
+  {
+   "round": 559,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0089,
+   "kind": "abstract"
+  },
+  {
+   "round": 572,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0089,
+   "kind": "abstract"
+  },
+  {
+   "round": 582,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0089,
+   "kind": "abstract"
+  },
+  {
+   "round": 608,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "五加一"
+   ],
+   "score": 0.0044,
+   "kind": "abstract"
+  },
+  {
+   "round": 655,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0158,
+   "kind": "abstract"
+  },
+  {
+   "round": 675,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0089,
+   "kind": "abstract"
+  },
+  {
+   "round": 677,
+   "path": [
+    "一加一加一加一加一加一",
+    "六个",
+    "五加一"
+   ],
+   "score": 0.015,
+   "kind": "edge"
+  },
+  {
+   "round": 697,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0089,
+   "kind": "abstract"
+  },
+  {
+   "round": 712,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "五加一"
+   ],
+   "score": 0.0164,
+   "kind": "abstract"
+  },
+  {
+   "round": 734,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0089,
+   "kind": "abstract"
+  },
+  {
+   "round": 755,
+   "path": [
+    "世界",
+    "起来",
+    "五个"
+   ],
+   "score": 0.0048,
+   "kind": "edge"
+  },
+  {
+   "round": 762,
+   "path": [
+    "世界",
+    "起来",
+    "符号"
+   ],
+   "score": 0.0006,
+   "kind": "edge"
+  },
+  {
+   "round": 774,
+   "path": [
+    "世界",
+    "起来",
+    "数量"
+   ],
+   "score": 0.0003,
+   "kind": "edge"
+  },
+  {
+   "round": 777,
+   "path": [
+    "世界",
+    "起来",
+    "意思"
+   ],
+   "score": 0.0005,
+   "kind": "edge"
+  },
+  {
+   "round": 796,
+   "path": [
+    "世界",
+    "起来",
+    "出来"
+   ],
+   "score": 0.0009,
+   "kind": "edge"
+  },
+  {
+   "round": 819,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "五加一"
+   ],
+   "score": 0.0206,
+   "kind": "abstract"
+  },
+  {
+   "round": 830,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0089,
+   "kind": "abstract"
+  },
+  {
+   "round": 841,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0089,
+   "kind": "abstract"
+  },
+  {
+   "round": 842,
+   "path": [
+    "一加一加一加一加一加一",
+    "二加一",
+    "三加一"
+   ],
+   "score": 0.0214,
+   "kind": "edge"
+  },
+  {
+   "round": 847,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "五加一"
+   ],
+   "score": 0.0077,
+   "kind": "abstract"
+  },
+  {
+   "round": 853,
+   "path": [
+    "一加一加一加一加一加一",
+    "◆一加四",
+    "一加四"
+   ],
+   "score": 0.0089,
+   "kind": "abstract"
+  },
+  {
+   "round": 869,
+   "path": [
+    "概率",
+    "结果",
+    "一件"
+   ],
+   "score": 0.0,
+   "kind": "edge"
+  },
+  {
+   "round": 884,
+   "path": [
+    "概率",
+    "结果",
+    "一件"
+   ],
+   "score": 0.0,
+   "kind": "edge"
+  },
+  {
+   "round": 891,
+   "path": [
+    "概率",
+    "结果",
+    "一件"
+   ],
+   "score": 0.0,
+   "kind": "edge"
+  },
+  {
+   "round": 899,
+   "path": [
+    "概率",
+    "◆结果",
+    "结果"
+   ],
+   "score": 0.0049,
+   "kind": "abstract"
+  },
+  {
+   "round": 902,
+   "path": [
+    "概率",
+    "◆结果",
+    "一件"
+   ],
+   "score": 0.0013,
+   "kind": "abstract"
+  },
+  {
+   "round": 908,
+   "path": [
+    "概率",
+    "◆结果",
+    "结果"
+   ],
+   "score": 0.0061,
+   "kind": "abstract"
+  },
+  {
+   "round": 910,
+   "path": [
+    "概率",
+    "结果",
+    "一件"
+   ],
+   "score": 0.0001,
+   "kind": "edge"
+  },
+  {
+   "round": 924,
+   "path": [
+    "概率",
+    "◆结果",
+    "结果"
+   ],
+   "score": 0.0086,
+   "kind": "abstract"
+  }
+ ],
+ "recent_active": [
+  {
+   "c": "温度",
+   "round": 61
+  },
+  {
+   "c": "服务器",
+   "round": 68
+  },
+  {
+   "c": "候鸟",
+   "round": 81
+  },
+  {
+   "c": "苹果",
+   "round": 224
+  },
+  {
+   "c": "一是",
+   "round": 257
+  },
+  {
+   "c": "名字",
+   "round": 279
+  },
+  {
+   "c": "爱奇艺",
+   "round": 279
+  },
+  {
+   "c": "种子",
+   "round": 279
+  },
+  {
+   "c": "本质",
+   "round": 292
+  },
+  {
+   "c": "信号",
+   "round": 368
+  },
+  {
+   "c": "进化",
+   "round": 369
+  },
+  {
+   "c": "完全正确",
+   "round": 380
+  },
+  {
+   "c": "代表",
+   "round": 434
+  },
+  {
+   "c": "好奇心",
+   "round": 444
+  },
+  {
+   "c": "需要",
+   "round": 444
+  },
+  {
+   "c": "加法",
+   "round": 469
+  },
+  {
+   "c": "消散",
+   "round": 469
+  },
+  {
+   "c": "四加一",
+   "round": 488
+  },
+  {
+   "c": "涌现",
+   "round": 492
+  },
+  {
+   "c": "百科",
+   "round": 493
+  },
+  {
+   "c": "减法",
+   "round": 511
+  },
+  {
+   "c": "加法器",
+   "round": 531
+  },
+  {
+   "c": "孤岛",
+   "round": 567
+  },
+  {
+   "c": "比喻",
+   "round": 567
+  },
+  {
+   "c": "节点",
+   "round": 567
+  },
+  {
+   "c": "样子",
+   "round": 567
+  },
+  {
+   "c": "数据压缩",
+   "round": 609
+  },
+  {
+   "c": "一次",
+   "round": 648
+  },
+  {
+   "c": "改进",
+   "round": 648
+  },
+  {
+   "c": "VERDICT",
+   "round": 648
+  },
+  {
+   "c": "信息量",
+   "round": 648
+  },
+  {
+   "c": "一条",
+   "round": 648
+  },
+  {
+   "c": "新词",
+   "round": 648
+  },
+  {
+   "c": "生命",
+   "round": 654
+  },
+  {
+   "c": "人工生命",
+   "round": 654
+  },
+  {
+   "c": "六个",
+   "round": 677
+  },
+  {
+   "c": "惩罚",
+   "round": 742
+  },
+  {
+   "c": "下次",
+   "round": 742
+  },
+  {
+   "c": "奖励",
+   "round": 742
+  },
+  {
+   "c": "不用",
+   "round": 742
+  },
+  {
+   "c": "事情",
+   "round": 742
+  },
+  {
+   "c": "人工智能",
+   "round": 750
+  },
+  {
+   "c": "语言",
+   "round": 750
+  },
+  {
+   "c": "通常",
+   "round": 750
+  },
+  {
+   "c": "ensp",
+   "round": 752
+  },
+  {
+   "c": "https",
+   "round": 752
+  },
+  {
+   "c": "百度",
+   "round": 752
+  },
+  {
+   "c": "五个",
+   "round": 755
+  },
+  {
+   "c": "符号",
+   "round": 762
+  },
+  {
+   "c": "数量",
+   "round": 774
+  },
+  {
+   "c": "意思",
+   "round": 777
+  },
+  {
+   "c": "世界",
+   "round": 796
+  },
+  {
+   "c": "一共",
+   "round": 798
+  },
+  {
+   "c": "等于",
+   "round": 802
+  },
+  {
+   "c": "起来",
+   "round": 802
+  },
+  {
+   "c": "三个",
+   "round": 802
+  },
+  {
+   "c": "四个",
+   "round": 802
+  },
+  {
+   "c": "前驱",
+   "round": 829
+  },
+  {
+   "c": "后继",
+   "round": 829
+  },
+  {
+   "c": "出现",
+   "round": 829
+  },
+  {
+   "c": "之前",
+   "round": 829
+  },
+  {
+   "c": "数字",
+   "round": 829
+  },
+  {
+   "c": "引出",
+   "round": 829
+  },
+  {
+   "c": "二加一",
+   "round": 842
+  },
+  {
+   "c": "三加一",
+   "round": 842
+  },
+  {
+   "c": "五加一",
+   "round": 847
+  },
+  {
+   "c": "一加一加一加一加一加一",
+   "round": 853
+  },
+  {
+   "c": "一加四",
+   "round": 853
+  },
+  {
+   "c": "一件",
+   "round": 910
+  },
+  {
+   "c": "一颗",
+   "round": 916
+  },
+  {
+   "c": "秘密",
+   "round": 916
+  },
+  {
+   "c": "石子",
+   "round": 916
+  },
+  {
+   "c": "接着",
+   "round": 916
+  },
+  {
+   "c": "规律",
+   "round": 916
+  },
+  {
+   "c": "压缩",
+   "round": 916
+  },
+  {
+   "c": "出来",
+   "round": 916
+  },
+  {
+   "c": "反面",
+   "round": 916
+  },
+  {
+   "c": "概率",
+   "round": 924
+  },
+  {
+   "c": "结果",
+   "round": 924
+  }
+ ],
+ "dream_log": [
+  {
+   "round": 124,
+   "path": [
+    "温度"
+   ],
+   "bet": null
+  },
+  {
+   "round": 129,
+   "path": [
+    "数字"
+   ],
+   "bet": null
+  },
+  {
+   "round": 170,
+   "path": [
+    "一加四",
+    "四加一",
+    "五加一",
+    "六"
+   ],
+   "bet": [
+    "一加四",
+    "六"
+   ]
+  },
+  {
+   "round": 179,
+   "path": [
+    "一加四",
+    "五加一",
+    "一加一加一加一加一加一",
+    "六"
+   ],
+   "bet": [
+    "一加四",
+    "六"
+   ]
+  },
+  {
+   "round": 185,
+   "path": [
+    "五加一",
+    "一加四",
+    "四加一",
+    "五加一"
+   ],
+   "bet": null
+  },
+  {
+   "round": 192,
+   "path": [
+    "一加一加一加一加一加一",
+    "一加四",
+    "四加一",
+    "五加一"
+   ],
+   "bet": null
+  },
+  {
+   "round": 198,
+   "path": [
+    "五个",
+    "等于",
+    "起来",
+    "出来"
+   ],
+   "bet": null
+  },
+  {
+   "round": 216,
+   "path": [
+    "一加四",
+    "三加一",
+    "三",
+    "二加一"
+   ],
+   "bet": null
+  },
+  {
+   "round": 237,
+   "path": [
+    "加法",
+    "后继",
+    "数字",
+    "加法"
+   ],
+   "bet": null
+  },
+  {
+   "round": 270,
+   "path": [
+    "数量",
+    "世界",
+    "等于",
+    "数量"
+   ],
+   "bet": null
+  },
+  {
+   "round": 332,
+   "path": [
+    "之前",
+    "需要",
+    "引出",
+    "苹果"
+   ],
+   "bet": [
+    "之前",
+    "苹果"
+   ]
+  },
+  {
+   "round": 337,
+   "path": [
+    "出来",
+    "新词",
+    "意思",
+    "代表"
+   ],
+   "bet": null
+  },
+  {
+   "round": 342,
+   "path": [
+    "温度"
+   ],
+   "bet": null
+  },
+  {
+   "round": 350,
+   "path": [
+    "起来",
+    "五个",
+    "出来",
+    "意思"
+   ],
+   "bet": [
+    "起来",
+    "意思"
+   ]
+  },
+  {
+   "round": 377,
+   "path": [
+    "代表",
+    "三个",
+    "符号",
+    "起来"
+   ],
+   "bet": null
+  },
+  {
+   "round": 392,
+   "path": [
+    "世界",
+    "数量",
+    "等于",
+    "后继"
+   ],
+   "bet": [
+    "世界",
+    "后继"
+   ]
+  },
+  {
+   "round": 432,
+   "path": [
+    "起来",
+    "数量",
+    "等于",
+    "世界"
+   ],
+   "bet": null
+  },
+  {
+   "round": 466,
+   "path": [
+    "符号",
+    "起来",
+    "代表",
+    "出来"
+   ],
+   "bet": [
+    "符号",
+    "出来"
+   ]
+  },
+  {
+   "round": 471,
+   "path": [
+    "数字",
+    "后继",
+    "VERDICT",
+    "加法"
+   ],
+   "bet": null
+  },
+  {
+   "round": 489,
+   "path": [
+    "一加四",
+    "三加一",
+    "二加一",
+    "一加二"
+   ],
+   "bet": null
+  },
+  {
+   "round": 501,
+   "path": [
+    "百科",
+    "百度",
+    "后继",
+    "VERDICT"
+   ],
+   "bet": [
+    "百科",
+    "VERDICT"
+   ]
+  },
+  {
+   "round": 523,
+   "path": [
+    "之前"
+   ],
+   "bet": null
+  },
+  {
+   "round": 557,
+   "path": [
+    "完全正确",
+    "VERDICT",
+    "起来",
+    "数量"
+   ],
+   "bet": [
+    "完全正确",
+    "数量"
+   ]
+  },
+  {
+   "round": 606,
+   "path": [
+    "加法"
+   ],
+   "bet": null
+  },
+  {
+   "round": 619,
+   "path": [
+    "数据压缩",
+    "压缩"
+   ],
+   "bet": null
+  },
+  {
+   "round": 630,
+   "path": [
+    "数字",
+    "https",
+    "后继",
+    "百度"
+   ],
+   "bet": [
+    "数字",
+    "百度"
+   ]
+  },
+  {
+   "round": 688,
+   "path": [
+    "新词",
+    "接着",
+    "信息量",
+    "一条"
+   ],
+   "bet": null
+  },
+  {
+   "round": 703,
+   "path": [
+    "一加一加一加一加一加一",
+    "六个",
+    "五加一",
+    "四加一"
+   ],
+   "bet": null
+  },
+  {
+   "round": 748,
+   "path": [
+    "下次",
+    "惩罚",
+    "反面",
+    "节点"
+   ],
+   "bet": [
+    "下次",
+    "节点"
+   ]
+  },
+  {
+   "round": 768,
+   "path": [
+    "五个",
+    "等于",
+    "出来",
+    "五个"
+   ],
+   "bet": null
+  },
+  {
+   "round": 807,
+   "path": [
+    "五个",
+    "出来",
+    "等于",
+    "三个"
+   ],
+   "bet": [
+    "五个",
+    "三个"
+   ]
+  },
+  {
+   "round": 833,
+   "path": [
+    "一加四",
+    "一加一加一加一加一加一",
+    "二是"
+   ],
+   "bet": [
+    "一加四",
+    "二是"
+   ]
+  },
+  {
+   "round": 914,
+   "path": [
+    "结果",
+    "概率",
+    "一件",
+    "结果"
+   ],
+   "bet": null
+  },
+  {
+   "round": 917,
+   "path": [
+    "一颗",
+    "数字",
+    "引出",
+    "一颗"
+   ],
+   "bet": null
+  },
+  {
+   "round": 951,
+   "path": [
+    "反面",
+    "爱奇艺",
+    "moon"
+   ],
+   "bet": [
+    "反面",
+    "moon"
+   ]
+  }
+ ],
+ "abstract": {
+  "一加四": {
+   "members": [
+    "一加一加一加一加一",
+    "一加一加一加一加一加一",
+    "一加四",
+    "五加一"
+   ],
+   "born": 137,
+   "support": 4,
+   "ground": 0
+  },
+  "等于": {
+   "members": [
+    "五个",
+    "数字",
+    "等于",
+    "起来"
+   ],
+   "born": 282,
+   "support": 4,
+   "ground": 1
+  },
+  "起来": {
+   "members": [
+    "ensp",
+    "五个",
+    "后继",
+    "数字",
+    "符号",
+    "等于",
+    "起来"
+   ],
+   "born": 500,
+   "support": 7,
+   "ground": 1
+  },
+  "一加一加一加一加一加一": {
+   "members": [
+    "一加一加一加一加一加一",
+    "一加四",
+    "三加一",
+    "三加三",
+    "二加一",
+    "五加一",
+    "六个",
+    "四加一"
+   ],
+   "born": 568,
+   "support": 8,
+   "ground": 0
+  },
+  "奖励": {
+   "members": [
+    "奖励",
+    "惩罚",
+    "通常"
+   ],
+   "born": 749,
+   "support": 3,
+   "ground": 0
+  },
+  "结果": {
+   "members": [
+    "一件",
+    "概率",
+    "结果"
+   ],
+   "born": 894,
+   "support": 3,
+   "ground": 0
+  }
+ },
+ "replay_queue": [],
+ "last_meta_round": 901,
+ "concept_cards": {
+  "加法": {
+   "ground": {
+    "probes": [
+     "COMPOSE"
+    ],
+    "exemplars": []
+   },
+   "affordances": [
+    "遇到两个量要合并",
+    "变换组合/复检通道触发"
+   ],
+   "frame": {
+    "slots": [
+     "A",
+     "B",
+     "→R"
+    ],
+    "fills_from": "transforms"
+   },
+   "links": {
+    "inverse": [
+     "减法"
+    ],
+    "part_of": [
+     "算术"
+    ]
+   },
+   "laws": [
+    "L001"
+   ],
+   "history": [],
+   "stats": {
+    "typicality": 1.0,
+    "activation": 0.0,
+    "base_rate": 2
+   }
+  },
+  "能量": {
+   "ground": {
+    "probes": [
+     "ASK"
+    ],
+    "exemplars": []
+   },
+   "affordances": [
+    "energy < 0.35",
+    "要选耗能动作之前"
+   ],
+   "frame": {
+    "slots": [
+     "当前",
+     "消耗",
+     "→缺口"
+    ],
+    "fills_from": "state.energy"
+   },
+   "links": {},
+   "laws": [],
+   "history": [],
+   "stats": {
+    "typicality": 0.5,
+    "activation": 0.0,
+    "base_rate": 0
+   }
+  },
+  "回答": {
+   "ground": {
+    "probes": [],
+    "exemplars": []
+   },
+   "affordances": [],
+   "frame": {},
+   "links": {},
+   "laws": [],
+   "history": [
+    {
+     "round": 741,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 742,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 823,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 824,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 825,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 826,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 827,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 828,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 829,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 914,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 915,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    },
+    {
+     "round": 916,
+     "event": "activated",
+     "detail": "未读回答 3 条"
+    }
+   ],
+   "stats": {
+    "typicality": 0.001,
+    "activation": 0.1,
+    "base_rate": 54
+   }
+  }
+ },
+ "laws": {
+  "L001": {
+   "form": "count(merge(A,B)) = add(count(A),count(B))",
+   "concepts": [
+    "加法"
+   ],
+   "confidence": 0.56,
+   "support": 3,
+   "falsifiers": [],
+   "status": "hypothesis",
+   "source": "自己观察（历史变换验证）"
+  }
+ },
+ "started_at": "2026-10-25T14:06:51",
+ "round_events": []
+}

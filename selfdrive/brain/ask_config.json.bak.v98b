@@ -1,0 +1,16 @@
+{
+  "open_ask": {
+    "starved_force": true,
+    "starved_prob": 1.0,
+    "hungry_force": false,
+    "hungry_prob": 0.5,
+    "random_prob": 0.2,
+    "cooldown_rounds": 36,
+    "max_consecutive": 2
+  },
+  "web_search": {
+    "enabled": true,
+    "cooldown_rounds": 40,
+    "top_k": 5
+  }
+}
