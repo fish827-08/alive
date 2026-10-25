@@ -2,6 +2,7 @@
 """可关闭的 LLM 提案桥：严格 JSON、调用预算、失败降级、无执行权限。"""
 import hashlib
 import json
+import threading
 import re
 import time
 import urllib.request
@@ -105,6 +106,82 @@ def think(st, focus):
                         "task": "think"}, focus[:20])
     return lines
 
+
+
+
+_think_lock = threading.Lock()
+
+
+def think_async(st, focus):
+    """v9.23.2 异步思考：把焦点丢给后台线程，本轮不阻塞（轮次照常走）；
+    LLM 把话说完后结果存入 st["think_inbox"]（锁保护），主循环每轮开头
+    harvest_think 收割入账——"每个流程走完自动接续"。
+    返回 True=已派发思考中；False=冷却/预算/未启用。"""
+    if not think_available(st):
+        return False
+    budget = st.setdefault("think_budget", {})
+    budget["calls"] = budget.get("calls", 0) + 1
+    st["last_think_round"] = st["rounds"]
+    prompt = f"它正在想：{focus[:config.LLM_MAX_PROMPT_CHARS]}"
+    snap_round = st["rounds"]
+
+    def _worker():
+        try:
+            body = json.dumps({
+                "model": config.LLM_MODEL,
+                "messages": [
+                    {"role": "system", "content": config.LLM_THINK_PROMPT + " /no_think"},
+                    {"role": "user", "content": prompt},
+                ],
+                "stream": False,
+                "options": {"temperature": 0.8, "num_predict": 800},
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                config.OLLAMA_URL.rstrip("/") + "/api/chat", data=body,
+                headers={"Content-Type": "application/json"}, method="POST")
+            with urllib.request.urlopen(req, timeout=config.LLM_TIMEOUT) as response:
+                data = json.loads(response.read().decode("utf-8", errors="strict"))
+            content = data.get("message", {}).get("content", "")
+            raw = _strip_think(content if isinstance(content, str) else "")
+            junk = re.compile("^[0-9\-•\.\*\s]+")
+            lines = [junk.sub("", line).strip()
+                     for line in raw.splitlines() if line.strip()]
+            lines = [line[:config.LLM_PROPOSAL_MAX_CHARS] for line in lines
+                     if len(line) >= 6][:3]
+            if lines:
+                with _think_lock:
+                    st.setdefault("think_inbox", []).append(
+                        {"focus": focus, "lines": lines, "round": snap_round,
+                         "model": config.LLM_MODEL})
+                    del st["think_inbox"][:-20]
+        except Exception:
+            b = st.setdefault("think_budget", {})
+            b["fails"] = b.get("fails", 0) + 1
+            b["fail_round"] = st["rounds"]
+
+    threading.Thread(target=_worker, daemon=True, name=f"think-{snap_round}").start()
+    return True
+
+
+def harvest_think(st):
+    """主循环每轮开头调用：收割后台完成的思考（把话说完的接续点）。
+    收割的联想按提案同等待遇入账（unverified，等阅读验证）。"""
+    with _think_lock:
+        pending = list(st.get("think_inbox", []))
+        st["think_inbox"] = []
+    if not pending:
+        return 0
+    n = 0
+    for item in pending:
+        for line in item.get("lines", []):
+            save_proposals(st, {"proposals": [line], "model": item.get("model", ""),
+                                "task": "think"}, item.get("focus", ""))
+            n += 1
+        from .state import log_event
+        append_note(st, f"- 语言区思考完成（第 {item['round']} 轮焦点《{item['focus']}》）："
+                        f"{item['lines'][0][:60]}……（提案待验证）")
+        log_event(st, "think_done", f"语言区思考完成：焦点《{item['focus']}》→ {len(item['lines'])} 条联想入账")
+    return n
 
 def _strip_think(text):
     if "<think>" in text and "</think>" not in text:

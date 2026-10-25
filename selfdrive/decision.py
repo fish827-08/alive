@@ -215,8 +215,52 @@ def choose_action(st, e, web_built):
     return action, candidates
 
 
+
+
+def _weights_snapshot(st, e, web_built):
+    """辅动作抽签用的权重快照：完整走一遍 legacy 门控（含 [RULE]/概念卡/自调参乘子）。"""
+    return legacy_weights(st, e, web_built)
+
 def pick_action(st, e, web_built):
     return choose_action(st, e, web_built)[0]
+
+
+# v9.23.2 一轮多技能：主动作之外按权重补选辅动作；互斥对不同轮
+MUTEX_PAIRS = {
+    ("ask_brain", "read_brain"),      # 有未读时抑制提问，逻辑互斥
+    ("explore_file", "rest"),         # 走和睡矛盾
+    ("build_site", "refresh_site"),   # 同站点二选一
+    ("self_talk", "sibling_letter"),  # 内部言语与对外通信不混轮
+    ("web_search", "read_brain"),
+}
+
+
+def pick_actions(st, e, web_built, extra=None):
+    """一轮多技能：返回 [主动作, *辅动作]。辅动作按剩余权重抽，避开互斥与重复。"""
+    import random as _r
+    main = pick_action(st, e, web_built)
+    extra = config.MULTI_SKILL_COUNT if extra is None else extra
+    picks = [main]
+    stats = st.get("action_stats", {})
+    for _ in range(extra):
+        w2 = {a: v for a, v in _current_weights(st, e, web_built).items()
+              if a not in picks
+              and not any((a, p) in MUTEX_PAIRS or (p, a) in MUTEX_PAIRS for p in picks)}
+        # 辅动作沿用主循环的失败抑制（简单版：零成功老动作不再辅选）
+        for a in list(w2):
+            s = stats.get(a, {"ok": 0, "try": 0})
+            if s.get("try", 0) >= 15 and s.get("ok", 0) == 0:
+                w2.pop(a)
+        if not w2 or sum(w2.values()) <= 0:
+            break
+        picks.append(_r.choices(list(w2), weights=list(w2.values()), k=1)[0])
+    return picks
+
+
+def _current_weights(st, e, web_built):
+    """重建权重表（供辅动作抽签）：直接复用 pick_action 的完整门控。"""
+    import random as _r2
+    return _weights_snapshot(st, e, web_built)
 
 
 def explore_starved(st):

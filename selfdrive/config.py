@@ -220,6 +220,7 @@ LLM_FAILURE_SILENCE = 50      # 连续失败后的静默轮数
 LLM_THINK_COOLDOWN = 2        # 思考通道冷却（轮）——几乎每次自言自语都过语言区
 LLM_THINK_DAILY_MAX = 1500    # 思考通道日预算（独立于提案通道）
 LLM_THINK_PROMPT_VERSION = "think-lines-v1"
+MULTI_SKILL_COUNT = 2         # v9.23.2 一轮多技能：主动作之外补选辅动作数
 LLM_THINK_PROMPT = (
     "你是某个小生命大脑里的语言区。它正在想下面这件事——帮它联想："
     "给 2-3 条下一步可以想到的方向、可能的解释、或值得怀疑的点，每条一行，简短。"

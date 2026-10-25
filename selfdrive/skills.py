@@ -1313,9 +1313,9 @@ def do_self_talk(st):
         from . import llm_bridge
         if llm_bridge.think_available(st):
             focus = (st.get("last_kw") or "").split("、")[0] or "涌现"
-            lines = llm_bridge.think(st, f"《{focus}》——我正在想它和谁有关、它能推出什么")
-            if lines:
-                append_note(st, "- 语言区联想：" + "；".join(lines[:2]))
+            # v9.23.2 异步：把焦点丢给语言区后台把话说完，本轮不阻塞
+            if llm_bridge.think_async(st, f"《{focus}》——我正在想它和谁有关、它能推出什么"):
+                append_note(st, f"- 语言区思考中：《{focus}》——话在后台说，说完了下轮接上")
     except Exception:
         pass
     roll = random.random()

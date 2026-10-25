@@ -17,7 +17,7 @@ except ImportError:
 
 from . import config, outcomes, rules_compiler, skills, templates, working_memory
 from .config import LOGS, NOVELTY_WEB_SCALE, ONCE
-from .decision import choose_action
+from .decision import choose_action, evaluate_candidates, pick_actions
 from .emotions import apply_energy, update_emotions
 from .state import clamp, load_state, log_event, save_state
 
@@ -43,6 +43,12 @@ def run_round(st):
     st["round_events"] = []          # ③④：本轮事件标签（每轮清空）
     st.pop("card_boost", None)       # v9.20：清上轮概念卡乘子（每轮重新处境匹配）
     templates.check_template_retirement(st)
+    # v9.23.2 收割语言区后台完成的思考（把话说完的接续点）
+    try:
+        from . import llm_bridge
+        llm_bridge.harvest_think(st)
+    except Exception:
+        pass
     # v9.20 处境匹配：affordance 点亮概念卡 → 卡乘子进 pick_action（使用即学习）
     try:
         from . import conceptcard
@@ -52,7 +58,11 @@ def run_round(st):
     files, dirs = skills.scan_workspace()
     novelty = skills.novelty_score(files, st)
     working_memory.build(st)
-    action, candidates = choose_action(st, st["emotions"], st["web_built"])
+    from .decision import pick_actions
+    picks = pick_actions(st, st["emotions"], st["web_built"])
+    action = picks[0]
+    side_picks = picks[1:]           # v9.23.2 辅动作：同一轮内轻量并行执行
+    candidates = evaluate_candidates(st, {a: 1.0 for a in picks})
     working_memory.attach_decision(st, action, candidates)
     outcomes.begin(st, action, candidates)
     save_state(st)                    # 行动前预期必须先落盘，崩溃后才能识别未结算行动
@@ -113,6 +123,22 @@ def run_round(st):
         s["try"] += 1
         if ok:
             s["ok"] += 1
+    # v9.23.2 辅动作：同轮轻量执行（计数+日志；生理/情绪结算只归主动作）
+    for side in side_picks:
+        try:
+            sfn = handlers[side]
+            sargs = args_map.get(side, (st,))
+            sok, sdetail = sfn(*sargs)
+            st["action_counts"][side] = st["action_counts"].get(side, 0) + 1
+            ss = st.setdefault("action_stats", {}).setdefault(side, {"ok": 0, "try": 0})
+            sidle = (side == "read_brain" and not sok) or (side == "ask_brain" and not sok)
+            if not sidle:
+                ss["try"] += 1
+                if sok:
+                    ss["ok"] += 1
+            log_event(st, side, f"[辅] {sdetail}")
+        except Exception as exc:
+            log_event(st, "error", f"辅动作 {side} 异常：{exc.__class__.__name__}")
     apply_energy(st, action, ok)
 
     # 能力里程碑（v9.5）
