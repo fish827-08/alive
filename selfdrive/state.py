@@ -103,6 +103,7 @@ def default_state():
         "decision_mode": config.DECISION_MODE,
         # ---- 阶段 2：研究任务队列 / 定向查询 / 来源与配置账本 ----
         "research": {
+            "schema_version": 2,    # 与 research.RESEARCH_SCHEMA_VERSION 对应；旧状态由 ensure_state 迁移
             "tasks": {},            # {task_id: {kind, question, reason, target, priority, status...}}
             "queries": {},          # {query_id: {task_id, purpose, text, status, sources...}}
             "recent_queries": [],   # 去重窗口 [{query_id, text, normalized, round, outcome}]

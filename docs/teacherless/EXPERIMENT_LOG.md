@@ -253,9 +253,45 @@ SELFDRIVE_MODE=standard py -u agent_v9.py --once
 - 边界：仍不做正文提取、证据门禁、来源可信度、定律晋升与留出评估；
   不能据此宣称学习发生。
 
+## 2026-10-26 / Phase 2.1 复审修正（预算扫描、旧状态迁移）
+
+- 阶段：2.1（仍不扩展功能，不进入阶段 3）
+- 触发：owner 复审 `38ff309` 指出两项边界问题。
+- 修正：
+  1. **预算不阻断扫描**：`ensure_tasks()` 在新建被 `_creation_block_reason()`
+     拒绝后不再 `break`，而是记录一次 `task_creation_blocked` 并继续扫描；
+     排在后面的既有任务仍可 `_refresh_task()` / 原地升级。创建上限只约束新建，
+     不再因候选排序延迟高价值信号。
+  2. **旧状态迁移（方案 A）**：`state.research.schema_version < 2` 时，
+     `ensure_state()` 执行显式迁移：阶段 2.0 含 `kind` 的关系任务 ID 归一到
+     关系键（`relation|A|B`）；查询与来源索引的 `task_id` 同步改写；旧来源
+     索引 `content_sha256` 更名为 `title_excerpt_sha256`。同一关系的新旧任务
+     碰撞时合并，旧尝试归档 `attempt_history`，查询/来源关联保留。迁移写
+     `task_id_migrated` / `source_fields_migrated`，历史 JSONL 不重写。
+     选择迁移而非“强制全新实验”，是为了让阶段 2.0 状态中的候选材料可继续
+     被阶段 3 消费，同时不把旧关联混入未记录的新基线。
+- 自动化测试：
+  - `py -m compileall -q selfdrive agent_v9.py tests`：通过。
+  - `py -m unittest discover -s tests`：**138 项全部通过**
+    （阶段 1.1 为 99 项，阶段 2/2.1 为 39 项）。
+  - 新增 3 项回归：本轮新建额度耗尽后既有弱关系任务仍被预测落空升级；
+    旧关系任务 ID/查询/来源/旧字段迁移且幂等；新旧关系任务碰撞合并且
+    历史尝试与关联不丢。
+- 隔离冒烟 v6：`runs/teacherless_smoke_20261026_v6/`（本地临时目录，不提交）。
+  - `from_zero`，代码版本 `9.24.2`，指纹
+    `b3a2968d30fa20ec725f532ad52cdbac820003cfac077cdf61be65df51fba015`，3 轮。
+  - `status`：`clean=true`、`code_drift=false`、`seed_problems=[]`、
+    `code_migrations=[]`、`violations={}`；8 项教师/LLM 痕迹全 0。
+  - `state.research.schema_version=2`，任务/查询/来源均为 0，`stats` 全 0；
+    `research.jsonl` 仅 `config_recorded`（`research-config-v2`）；
+    3 轮后 1 个未晋升概念（`index`，n=1）、0 命题/关系/预测。
+  - 该冒烟为全新状态，不验证旧状态迁移；迁移由合成状态单测覆盖。
+- 边界：仍不做正文提取、证据门禁、来源可信度、定律晋升与留出评估；
+  不能据此宣称学习发生。
+
 ## 下一门槛
 
-1. owner 复查 Phase 2.1 修正提交，确认是否进入阶段 3。
+1. owner 复查 Phase 2.1 复审修正提交，确认是否进入阶段 3。
 2. 阶段 3 前必须先确定：
    - 候选材料如何进入证据门禁（正文提取、来源可信度、同源去重、支持/反驳计数）；
    - 命题/关系边更新的可撤销记录与回滚方式；

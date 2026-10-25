@@ -25,6 +25,7 @@ from .state import append_jsonl
 
 FORMAT = "alive-research-state/1"
 SOURCE_FORMAT = "alive-research-source/2"
+RESEARCH_SCHEMA_VERSION = 2   # 2.1：关系任务 ID 按关系键唯一 + title_excerpt_sha256
 
 KIND_BASE = {
     "prediction_miss": 0.80,
@@ -101,6 +102,9 @@ def ensure_state(st):
                 "query_failures", "duplicates_blocked", "sources_recorded",
                 "rewrites_planned"):
         stats.setdefault(key, 0)
+    if _int(r.get("schema_version"), 1) < RESEARCH_SCHEMA_VERSION:
+        _migrate_legacy_state(st, r)
+        r["schema_version"] = RESEARCH_SCHEMA_VERSION
     return r
 
 
@@ -203,6 +207,96 @@ def _task_key(kind, target):
     if target.get("type") == "concept":
         return f"{kind}|concept|{target.get('concept')}"
     return f"{kind}|exploration|{target.get('topic')}|{target.get('bucket', 0)}"
+
+
+def _merge_relation_task(primary, other):
+    """迁移时合并同一关系的两条旧任务，历史尝试与关联不丢。"""
+    attempts = list(other.get("attempts") or [])
+    if attempts:
+        history = primary.setdefault("attempt_history", [])
+        history.append({
+            "kind": other.get("kind"),
+            "round": other.get("updated_round", 0),
+            "attempts": attempts,
+            "rewrites": other.get("rewrites", 0),
+            "result_count": other.get("result_count", 0),
+        })
+        del history[:-5]
+    kind_history = (list(primary.get("kind_history") or [])
+                    + list(other.get("kind_history") or []))
+    if kind_history:
+        primary["kind_history"] = kind_history[-5:]
+    primary["query_ids"] = list(dict.fromkeys(
+        list(primary.get("query_ids") or []) + list(other.get("query_ids") or [])))
+    primary["source_ids"] = list(dict.fromkeys(
+        list(primary.get("source_ids") or []) + list(other.get("source_ids") or [])))
+    primary["result_count"] = max(
+        _int(primary.get("result_count"), 0) + _int(other.get("result_count"), 0),
+        len(primary["source_ids"]))
+    primary["priority"] = max(float(primary.get("priority") or 0.0),
+                              float(other.get("priority") or 0.0))
+    primary["updated_round"] = max(_int(primary.get("updated_round"), 0),
+                                   _int(other.get("updated_round"), 0))
+    primary["last_seen_round"] = max(_int(primary.get("last_seen_round"), 0),
+                                     _int(other.get("last_seen_round"), 0))
+    created = [x for x in (primary.get("created_round"),
+                           other.get("created_round")) if isinstance(x, int)]
+    if created:
+        primary["created_round"] = min(created)
+    if other.get("verification") == "pending_verification":
+        primary["verification"] = "pending_verification"
+
+
+def _migrate_legacy_state(st, r):
+    """2.0 状态兼容：关系任务 ID 归一到关系键，旧来源字段更名。
+
+    查询与来源索引中的 task_id 同步改写；历史 JSONL 不重写（append-only）。
+    """
+    renamed = 0
+    for entry in r.get("sources") or []:
+        if not isinstance(entry, dict):
+            continue
+        legacy = entry.pop("content_sha256", None)
+        if legacy is not None:
+            renamed += 1
+            if not entry.get("title_excerpt_sha256"):
+                entry["title_excerpt_sha256"] = legacy
+    if renamed:
+        _log(st, "source_fields_migrated", count=renamed,
+             field="title_excerpt_sha256")
+    groups = {}
+    for task_id, task in list(r["tasks"].items()):
+        target = task.get("target") if isinstance(task, dict) else None
+        if not isinstance(target, dict) or target.get("type") != "relation":
+            continue
+        new_id = _stable_id("RT", _task_key(task.get("kind"), target))
+        groups.setdefault(new_id, []).append(task_id)
+    for new_id, ids in groups.items():
+        if ids == [new_id]:
+            continue
+        tasks = [r["tasks"][task_id] for task_id in ids]
+        primary = max(tasks, key=lambda t: (KIND_BASE.get(t.get("kind"), 0.0),
+                                            _int(t.get("updated_round"), 0)))
+        for task in tasks:
+            if task is not primary:
+                _merge_relation_task(primary, task)
+        old_ids = [task_id for task_id in ids if task_id != new_id]
+        for task_id in ids:
+            r["tasks"].pop(task_id, None)
+        primary["id"] = new_id
+        r["tasks"][new_id] = primary
+        for old_id in old_ids:
+            for query in r["queries"].values():
+                if query.get("task_id") == old_id:
+                    query["task_id"] = new_id
+            for entry in r.get("sources") or []:
+                if isinstance(entry, dict) and entry.get("task_id") == old_id:
+                    entry["task_id"] = new_id
+        _log(st, "task_id_migrated", old_ids=old_ids, new_id=new_id,
+             relation=(primary.get("target") or {}).get("relation"),
+             kind=primary.get("kind"), merged=len(ids) > 1,
+             query_ids=len(primary.get("query_ids") or []),
+             source_ids=len(primary.get("source_ids") or []))
 
 
 def _prediction_candidates(st):
@@ -387,13 +481,14 @@ def _creation_block_reason(st, r):
     return None
 
 
-def _create_task(st, r, candidate):
+def _create_task(st, r, candidate, log_blocked=True):
     # 所有入口（含探索回退）共用同一组硬上限
     blocked = _creation_block_reason(st, r)
     if blocked:
-        _log(st, "task_creation_blocked", kind=candidate["kind"],
-             target=candidate["target"], reason=blocked,
-             round_new=_new_tasks_this_round(st, r))
+        if log_blocked:
+            _log(st, "task_creation_blocked", kind=candidate["kind"],
+                 target=candidate["target"], reason=blocked,
+                 round_new=_new_tasks_this_round(st, r))
         return None
     task_id = _stable_id("RT", _task_key(candidate["kind"], candidate["target"]))
     task = {
@@ -515,6 +610,7 @@ def ensure_tasks(st):
     _prune_tasks(st, r)
     tasks = r["tasks"]
 
+    creation_blocked = False
     for candidate in sorted(_task_candidates(st),
                             key=lambda c: (-c["priority"], c["kind"])):
         task_id = _stable_id("RT", _task_key(candidate["kind"], candidate["target"]))
@@ -522,8 +618,10 @@ def ensure_tasks(st):
         if existing is not None:
             _refresh_task(st, existing, candidate)
             continue
-        if _create_task(st, r, candidate) is None:
-            break
+        # 预算只约束新建：被拒后继续扫描，后面的既有任务仍可刷新/升级
+        if _create_task(st, r, candidate,
+                        log_blocked=not creation_blocked) is None:
+            creation_blocked = True
     _prune_tasks(st, r)
     return tasks
 

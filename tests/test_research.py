@@ -270,6 +270,145 @@ class TaskCompetitionAndLimitTests(ResearchSandbox):
         self.assertIn('"reason": "open_cap"',
                       (self.logs / "research.jsonl").read_text(encoding="utf-8"))
 
+    def test_round_cap_does_not_skip_later_relation_upgrade(self):
+        st = self.fresh()
+        st["rounds"] = 99
+        st["relations"] = {"光|影": {"w": 1, "n": 1, "last_touch": 1}}
+        research.ensure_tasks(st)
+        task = self.tasks_of(st)[0]
+        task_id = task["id"]
+        self.assertEqual(task["kind"], "relation_unverified")
+
+        st["rounds"] = 100
+        st["recent_active"] = [{"c": "加法", "round": 99}]
+        st["last_kw"] = "加法"
+        st["claims"] = {
+            f"C{i}": {"id": f"C{i}", "expression": "加法满足交换律",
+                      "status": "hypothesis", "independent_support": 0,
+                      "independent_counter": 0}
+            for i in range(4)
+        }
+        self.add_miss(st, "光", "影")
+        ordered = sorted(research._task_candidates(st),
+                         key=lambda c: (-c["priority"], c["kind"]))
+        # 前 3 条高优命题占满本轮新建额度，第 4 条同样会触发 round_cap
+        self.assertEqual([c["kind"] for c in ordered[:4]],
+                         ["claim_evidence_gap"] * 4)
+        research.ensure_tasks(st)
+        self.assertEqual(task["id"], task_id)
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertEqual(task["status"], "open")
+        self.assertEqual(len(self.tasks_of(st, "claim_evidence_gap")), 3)
+        self.assertEqual(len(self.tasks_of(st)), 4)
+
+
+class LegacyStateMigrationTests(ResearchSandbox):
+    def legacy_state(self):
+        st = self.fresh()
+        r = st["research"]
+        r.pop("schema_version", None)
+        old_key = "relation_unverified|relation|影|光"
+        old_id = research._stable_id("RT", old_key)
+        query_id = "RQ:legacy"
+        source_id = "RS:legacy"
+        task = {
+            "id": old_id, "kind": "relation_unverified",
+            "kind_label": "关系未验证",
+            "question": "《影》和《光》是什么关系？",
+            "reason": "弱关系未验证",
+            "target": {"type": "relation", "relation": "影|光",
+                       "concepts": ["影", "光"], "w": 1, "n": 1},
+            "priority": 0.6, "status": "materials_found",
+            "verification": "pending_verification",
+            "created_round": 90, "updated_round": 95, "last_seen_round": 95,
+            "attempts": [{"round": 94, "query_id": query_id,
+                          "success": True, "result_count": 1}],
+            "query_ids": [query_id],
+            "source_ids": [source_id], "result_count": 1, "rewrites": 0,
+        }
+        r["tasks"][old_id] = task
+        r["queries"][query_id] = {
+            "id": query_id, "task_id": old_id, "purpose": "relation",
+            "text": "光和影有什么关系", "normalized": "光和影有什么关系",
+            "status": "success", "sources": [source_id],
+        }
+        r["sources"].append({
+            "id": source_id, "task_id": old_id, "query_id": query_id,
+            "url": "https://example.org/legacy", "title": "光影",
+            "content_sha256": "abc123", "serp_sha256": "def456",
+            "verification": "unverified",
+        })
+        new_id = research._stable_id(
+            "RT", research._task_key(
+                "relation_unverified",
+                {"type": "relation", "relation": "光|影"}))
+        return st, r, old_id, new_id, query_id, source_id
+
+    def test_legacy_relation_ids_and_source_fields_are_migrated(self):
+        st, _r, old_id, new_id, query_id, source_id = self.legacy_state()
+        state.save_state(st)
+        st = state.load_state()
+        r = st["research"]
+        self.assertNotIn("schema_version", r)
+        research.ensure_state(st)
+        self.assertNotIn(old_id, r["tasks"])
+        task = r["tasks"][new_id]
+        self.assertEqual(task["id"], new_id)
+        self.assertEqual(task["target"]["relation"], "影|光")
+        self.assertEqual(r["queries"][query_id]["task_id"], new_id)
+        self.assertEqual(r["sources"][0]["task_id"], new_id)
+        self.assertEqual(r["sources"][0]["title_excerpt_sha256"], "abc123")
+        self.assertNotIn("content_sha256", r["sources"][0])
+        self.assertEqual(r["schema_version"], research.RESEARCH_SCHEMA_VERSION)
+
+        research.ensure_state(st)
+        self.assertEqual(len(r["tasks"]), 1)
+        self.assertEqual(len(r["sources"]), 1)
+
+        self.add_miss(st, "光", "影")
+        research.ensure_tasks(st)
+        self.assertEqual(len(r["tasks"]), 1)
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertIn("预测落空", task["reason"])
+        self.assertEqual(task["query_ids"], [query_id])
+        self.assertEqual(task["source_ids"], [source_id])
+
+    def test_legacy_and_new_relation_tasks_merge_without_losing_links(self):
+        st, r, old_id, new_id, query_id, source_id = self.legacy_state()
+        new_task = {
+            "id": new_id, "kind": "prediction_miss",
+            "kind_label": "预测落空",
+            "question": "《光》和《影》之间缺少什么中间概念？",
+            "reason": "预测落空",
+            "target": {"type": "relation", "relation": "光|影",
+                       "concepts": ["光", "影"]},
+            "priority": 0.8, "status": "open", "verification": "unverified",
+            "created_round": 97, "updated_round": 97, "last_seen_round": 97,
+            "attempts": [{"round": 97, "query_id": "RQ:new", "success": False}],
+            "query_ids": ["RQ:new"], "source_ids": [], "result_count": 0,
+            "rewrites": 0,
+        }
+        r["tasks"][new_id] = new_task
+        r["queries"]["RQ:new"] = {
+            "id": "RQ:new", "task_id": new_id, "purpose": "bridge",
+            "text": "光和影之间有什么联系", "normalized": "光和影之间有什么联系",
+            "status": "failed", "sources": [],
+        }
+        research.ensure_state(st)
+        self.assertEqual(len(r["tasks"]), 1)
+        task = r["tasks"][new_id]
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertIn(query_id, task["query_ids"])
+        self.assertIn("RQ:new", task["query_ids"])
+        self.assertEqual(task["source_ids"], [source_id])
+        self.assertEqual(task["attempt_history"][-1]["kind"],
+                         "relation_unverified")
+        self.assertEqual(task["attempt_history"][-1]["attempts"],
+                         [{"round": 94, "query_id": query_id,
+                           "success": True, "result_count": 1}])
+        self.assertEqual(r["queries"][query_id]["task_id"], new_id)
+        self.assertEqual(r["sources"][0]["task_id"], new_id)
+
 
 class QueryPlanningTests(ResearchSandbox):
     def test_same_goal_gets_distinct_purposes_and_specific_text(self):

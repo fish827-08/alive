@@ -27,7 +27,7 @@
 | **moon** | 云端 `/home/qingwu/moon` | 1400+ | 无（路线 A） | 教师制·幼儿式（日常问答与纠错） |
 | **火星** | 本机 `D:\火星` | 从零 | qwen3:1.7b（路线 B） | 教师制·幼儿式 + LLM 提案 |
 
-## 架构（v9.24.1，模块化）
+## 架构（v9.24.2，模块化）
 
 ```
 selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是启动器）
@@ -160,6 +160,8 @@ SELFDRIVE_MODE=teacherless python3 -m selfdrive.teacherless accept-code \
 `task_id`/`query_id`/`selection_reason`，可回答“为什么搜这句”。同一关系先有弱关系
 任务、后出现预测落空时，任务原地升级为 `prediction_miss`，旧尝试归档、查询/来源保留，
 不会因旧任务占位而丢掉更强信号；探索回退与常规创建共用三组任务硬上限。
+新建额度用尽只阻止继续新建，不会跳过后续既有任务的刷新/升级；阶段 2.0 的旧任务 ID
+与来源字段在首次加载时显式迁移，查询/来源关联保留。
 
 搜索结果只保存为**候选材料**：登记真实 URL、标题/摘要、SERP URL/哈希、获取时间、
 任务/查询 ID 与当时的配置哈希，硬编码 `source_type=web_runtime`、
@@ -172,7 +174,7 @@ Teacherless 模式下 `kb_remember()` 直接返回 `False`，候选材料不会�
 普通模式仍可能写入本地共享记忆库，阶段 3 不能把共享库召回自动视为已验证证据。
 
 ```bash
-py -m unittest discover -s tests        # 135 项（阶段 2/2.1 新增 36 项）
+py -m unittest discover -s tests        # 138 项（阶段 2/2.1 新增 39 项）
 ```
 
 详见 [docs/teacherless/PHASE2_RESEARCH.md](docs/teacherless/PHASE2_RESEARCH.md)。
@@ -206,7 +208,7 @@ py -m unittest discover -s tests        # 135 项（阶段 2/2.1 新增 36 项�
    验证闭环与留出评估
 
 实验 4 的判据是"无教师、无 LLM 条件下在未参与训练的任务上是否变强"，
-不是轮次、概念数或日志体积。阶段 1.1/2 的冒烟与测试（135 项通过、隔离运行零违规、
+不是轮次、概念数或日志体积。阶段 1.1/2 的冒烟与测试（138 项通过、隔离运行零违规、
 来源账本可回溯）只能证明通道关闭、状态未污染、种子与代码版本一致、搜索材料有出处，
 不能证明学习发生；阶段 2 的 `materials_found` 明确不等于“已验证”。
 
