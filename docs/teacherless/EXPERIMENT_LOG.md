@@ -48,9 +48,9 @@ py -m unittest discover -s tests
 - 测试结果：
   - 编译通过。
   - `Ran 80 tests ... OK`。
-  - 其中 Teacherless 专项 42 项，覆盖初始化拒绝、种子策略、基线增长、
-    污染标记、被禁通道事件、5 个技能零调用、LLM 强开仍零调用、共享库禁用、
-    工作记忆/决策/模板/概念卡门禁、standard 模式回归。
+  - 其中 Teacherless 专项 42 项（阶段 1 当时；阶段 1.1 后为 61 项，见下），
+    覆盖初始化拒绝、种子策略、基线增长、污染标记、被禁通道事件、5 个技能零调用、
+    LLM 强开仍零调用、共享库禁用、工作记忆/决策/模板/概念卡门禁、standard 模式回归。
 - 解释：这是**代码级隔离证据**，不是学习能力证据。
 
 ---
@@ -113,11 +113,53 @@ SELFDRIVE_MODE=standard py -u agent_v9.py --once
 
 ---
 
+## 2026-10-25 / Phase 1.1：审查修正（代码版本、L001 溯源、种子账本）
+
+- 触发：owner 对提交 `47dafa2` 的审查，要求先完成两个 P1 与种子清单校验规则，
+  再进入阶段 2。
+- 代码修改：
+  - `teacherless.py`：`verify_clean_start`/`assert_state_clean` 硬校验 `code_sha256`；
+    `status.clean` 纳入代码漂移与种子问题；新增 `accept_code_change` 与
+    `accept-code --reason`，迁移记录保留 from/to/版本/时间/原因；manifest 加载时
+    重算 `seed_items_sha256`；外部种子强制 `path` 并登记 `sha256`/`bytes`/
+    `file_count`/`imported_at`，可选 `import: true` 复制进 archive；`seed_problems`
+    在启动与 status 复核种子文件。
+  - `conceptcard.py`：L001 改为 `support=0`、`source=base_code_prior`、
+    `confidence_basis=declared_prior_uncalibrated`；0.4 仅为声明初值。
+  - `main.py`：启动审计记录固定代码指纹。
+  - `README.md` / `docs/teacherless/*`：同步 `from_zero` 含义、种子规则、
+    代码迁移流程与阶段边界。
+- 自动化测试：
+  - `py -m compileall -q selfdrive agent_v9.py tests`：通过。
+  - `py -m unittest discover -s tests`：**99 项全部通过**。
+  - `tests/test_teacherless.py`：**61 项**，新增代码漂移、迁移审计、种子路径/哈希/
+    大小/导入、manifest 篡改、L001 先验等用例。
+- 隔离冒烟 v3：`runs/teacherless_smoke_20261025_v3/`（本地临时目录，不提交）。
+  - `from_zero` 初始化；`code_sha256_initial == code_sha256`；`code_migrations=[]`。
+  - 3 轮；`status`：`clean=true`、`code_drift=false`、`seed_problems=[]`；
+    8 项教师/LLM 痕迹全 0；无污染标记与被禁通道事件。
+  - `concepts=0`、`claims=0`、`relations=0`；`brain_questions/brain_read=0`；
+    `llm_proposals=0`；`available_skills=11`。
+  - L001：`support=0`、`source=base_code_prior`、`confidence=0.4`、
+    `confidence_basis=declared_prior_uncalibrated`。
+- 代码漂移冒烟（v3 副本）：
+  - manifest 指纹改全 0 后启动：`RuntimeError`，exit=1，state 仍为 `rounds=3`。
+  - `accept-code --reason "..."`：写入迁移记录；随后 `status` 为
+    `clean=true`、`code_drift=false`、`code_migrations=1`。
+- 异常：第 3 轮 `build_site` 触发既有 Windows `[WinError 2]`（找不到 `python3`），
+  不影响隔离结论。
+- 解释：本阶段只证明隔离、代码版本固定、种子可核验与迁移可审计；
+  **不证明学习**。训练资料与留出任务仍为 0。
+
 ## 下一门槛
 
-1. owner 检查阶段 0/1 报告与代码，确认是否进入阶段 2。
+1. owner 检查 Phase 1.1 修正（代码版本硬门禁、L001 溯源、种子账本）与文档，
+   确认是否进入阶段 2。
 2. 进入阶段 2 前必须先确定：
    - 正式实验的种子策略（`from_zero` / `declared` / `teacher_history_seeded`）；
-   - 外部训练资料的文件哈希与来源登记方式；
-   - 研究任务、证据、留出任务的 schema。
-3. 在留出任务评估建立之前，任何“学会/进化”表述都不成立。
+   - 外部训练资料通过 `seed_entries` 登记（path/哈希/大小/导入方式）；
+   - 研究任务、证据、留出任务的 schema；
+   - 运行期网络资料的 URL/获取时间/原文/哈希/独立来源记录方式。
+3. 正式开跑前冻结代码版本；升级只能 `accept-code` 留下迁移记录，
+   重大算法变更新建实验。
+4. 在留出任务评估建立之前，任何“学会/进化”表述都不成立。

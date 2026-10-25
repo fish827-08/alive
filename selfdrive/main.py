@@ -207,8 +207,7 @@ def main():
                           detail=(f"experiment={manifest['experiment_id']} "
                                   f"seed_policy={manifest['seed_policy']} "
                                   f"rounds={st.get('rounds', 0)} "
-                                  f"code_drift="
-                                  f"{teacherless.code_fingerprint() != manifest.get('code_sha256')}"))
+                                  f"code={str(manifest.get('code_sha256', ''))[:12]}"))
     elif st.get("teacherless"):
         teacherless.assert_mode_matches_state(st)
     templates.ensure_asked_texts(st)          # 查重窗口回填（升级兼容）

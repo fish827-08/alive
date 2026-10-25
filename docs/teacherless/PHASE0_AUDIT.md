@@ -1,9 +1,10 @@
-# Phase 0 代码审计与 Phase 1 隔离基线报告
+# Phase 0 代码审计与 Phase 1 / 1.1 隔离基线报告
 
 - 日期：2026-10-25
 - 范围：仓库 `D:\Project\alive` 的真实代码与测试
-- 结论：阶段 1 的“教师/LLM 零调用 + 独立初始化 + 种子账本”已实现并通过测试与两轮冒烟；
-  阶段 2 及以后未实现，不得把本报告当作“自主学习能力已提升”的证据。
+- 结论：阶段 1.1 的“教师/LLM 零调用 + 独立初始化 + 种子账本 + 代码版本固定”
+  已实现并通过测试与隔离冒烟；阶段 2 及以后未实现，不得把本报告当作
+  “自主学习能力已提升”的证据。
 
 ## 1. 审计结论摘要
 
@@ -109,7 +110,7 @@ agent_v9.py
 | `semantics/ae.json`、`memory.jsonl` | 旧文本指纹，可能来自教师回答 | 初始化拒绝已有 `semantics/` 载荷 | 初始化后人工复制 semantics 不会被自动识别；正式实验前应使用全新目录 |
 | 共享向量库 | 教师历史与其它 agent 的记忆共用服务 | 读写都禁用 | 无 |
 | `ask_config.json` 的 `self_tuned` 段 | `self_tune` 持久化调参 | 初始化拒绝已有 brain 载荷；运行期允许自调 | 自调是本实验自己的行为，不是教师；但会改变后续行为，评估时需记录 |
-| 代码本身 | 内置模板、概念卡、L001、权重、情绪默认值 | 作为 `base_code` 先验写入 manifest；记录代码指纹 | 启动后修改代码不会改变已记录指纹；`status` 报告 `code_drift`，正式实验应重新初始化 |
+| 代码本身 | 内置模板、概念卡、L001、权重、情绪默认值 | 作为 `base_code` 先验写入 manifest；记录代码指纹 | Phase 1.1 起启动与每轮硬校验指纹；漂移即停止，升级须 `accept-code` 迁移记录 |
 | 网页自食缓存 | 旧 `workspace/web/web-*.md` | 初始化拒绝已有 workspace 载荷 | 运行期自己产生的 web 缓存允许，但当前搜索仍是无目标的关键词搜索（Phase 2 才做定向规划） |
 
 ## 6. 可复用模块清单
@@ -131,7 +132,7 @@ agent_v9.py
 | `llm_bridge.py` | 可关闭 LLM 提案桥 | Teacherless 下全禁 | M2 仅在明确对照实验中开启 |
 | `semantics.py` | 本地自编码器/记忆指纹 | 保留独立 `semantics/` | 不跨实验共享 |
 
-## 7. Phase 1 实际实现
+## 7. Phase 1 / 1.1 实际实现
 
 ### 7.1 新模块 `selfdrive/teacherless.py`
 
@@ -139,18 +140,22 @@ agent_v9.py
 
 - `is_enabled()`：读取 `config.TEACHERLESS`。
 - `init_experiment()`：在独立目录建立 manifest 与目录骨架；拒绝已有知识载荷；
-  拒绝重复初始化；记录种子来源。
-- `load_manifest()`：manifest 损坏或格式不合法时拒绝静默重建。
-- `verify_clean_start()`：启动前要求 manifest；state 必须属于同一实验；
-  `from_zero` 还要求无污染笔记/outbox 与被禁通道事件。
+  拒绝重复初始化；外部种子强制记录路径、SHA-256、大小与导入时间，可复制进 archive。
+- `load_manifest()`：manifest 损坏、格式不合法或 `seed_items_sha256` 与清单不符时
+  拒绝加载。
+- `verify_clean_start()`：启动前要求 manifest 与当前代码指纹一致；种子文件必须
+  可复核；state 必须属于同一实验；`from_zero` 还要求无污染笔记/outbox 与被禁通道事件。
 - `stamp_state()`：把 `experiment_id`、`seed_policy`、种子哈希、基线计数写入 state。
-- `assert_state_clean()`：基线之后任何教师/LLM 计数增长都报错。
+- `assert_state_clean()`：每轮核对代码指纹与基线之后的新增教师/LLM 计数。
 - `assert_mode_matches_state()`：standard 模式拒绝启动 Teacherless 状态。
 - `artifact_counts()`：统计 8 类历史痕迹。
 - `contamination_markers()` / `log_channel_counts()`：扫描笔记标记与事件日志。
+- `seed_problems()`：复核外部种子文件仍存在，内容哈希/大小/文件数未变。
+- `accept_code_change()`：显式接受代码升级，在 manifest 追加迁移记录，禁止静默覆盖。
 - `audit()`：追加 `logs/teacherless_audit.jsonl`。
-- `status()`：输出 manifest、基线、当前计数、违规、污染标记、代码漂移。
-- CLI：`python -m selfdrive.teacherless init|status`。
+- `status()`：输出 manifest、基线、当前计数、违规、污染标记、代码漂移、
+  种子复核问题；`clean` 同时要求无代码漂移、无种子问题。
+- CLI：`python -m selfdrive.teacherless init|status|accept-code`。
 
 manifest 关键字段：
 
@@ -161,11 +166,16 @@ manifest 关键字段：
   "mode": "teacherless",
   "code_version": "9.23",
   "code_sha256": "...",
+  "code_sha256_initial": "...",
+  "code_migrations": [],
   "seed_policy": "from_zero | declared | teacher_history_seeded",
+  "seed_policy_note": "from_zero = 未继承历史状态/预装语料，但含代码级先验",
   "clean_from_zero": true,
   "seed_items": [
     {"source_type": "base_code", "kind": "runtime_code", "paths": ["..."], "sha256": "..."},
-    {"source_type": "base_code", "kind": "builtin_priors", "description": "内置模板/概念卡/L001/权重/情绪默认值"}
+    {"source_type": "base_code", "kind": "builtin_priors", "description": "内置模板/概念卡/L001/权重/情绪默认值"},
+    {"source_type": "training_material", "path": "...", "sha256": "...",
+     "bytes": 123, "file_count": 1, "imported_at": "...", "imported": false}
   ],
   "seed_items_sha256": "...",
   "channels_disabled": ["ask_brain", "explore_wider", "llm_consult", "read_brain", "sibling_letter", "shared_kb"],
@@ -223,6 +233,17 @@ manifest 关键字段：
 - `tests/test_state_memory_decision.py`（修正 v9.23.2 后失效的 `pick_actions` 替身目标）
 - `README.md`
 
+Phase 1.1 追加修改：
+
+- `selfdrive/teacherless.py`：代码指纹硬校验、`accept-code` 迁移、种子路径/哈希/大小
+  校验、种子文件复核、manifest 种子清单哈希校验、`status.clean` 纳入漂移与种子问题。
+- `selfdrive/conceptcard.py`：L001 从“自己观察（历史变换验证）、support=1”改为
+  `source=base_code_prior`、`support=0`、`confidence_basis=declared_prior_uncalibrated`；
+  0.4 只是声明初值，不是实验校准概率。
+- `selfdrive/main.py`：启动审计记录固定代码指纹，不再计算已不可能发生的漂移。
+- `tests/test_teacherless.py`：新增代码版本、种子账本、L001 先验测试。
+- `README.md` / `docs/teacherless/*`：同步 `from_zero` 含义、种子与版本校验规则。
+
 未修改：仓库根目录的 `state.json`、`brain/`、`logs/`、`workspace/`、`moon/`、
 `docs/` 既有设计稿（除新增 teacherless 文档）。未新增第三方依赖。
 
@@ -231,12 +252,18 @@ manifest 关键字段：
 ### 8.1 自动化测试
 
 - `py -m compileall -q selfdrive agent_v9.py tests`：通过。
-- `py -m unittest discover -s tests`：**80 项全部通过**。
-- 其中 `tests/test_teacherless.py`：**42 项**，覆盖：
+- `py -m unittest discover -s tests`：**99 项全部通过**。
+- 其中 `tests/test_teacherless.py`：**61 项**，覆盖：
   - 干净目录初始化、重复初始化拒绝、state/inbox/notes/logs/semantics 载荷拒绝；
   - `from_zero` / `declared` / `teacher_history_seeded` 三种种子策略；
   - manifest 缺失、实验 ID 不一致、种子哈希不一致、基线增长、污染笔记、
     被禁通道事件、standard 模式误启动；
+  - 代码指纹漂移时启动/每轮校验拒绝，`status.clean=false`；
+  - `accept-code` 记录 from/to 指纹与原因、写审计、无漂移/无原因拒绝；
+  - 外部种子缺 path/路径不存在/base_code 冒充均拒绝；
+  - 文件与目录种子的 SHA-256/大小/文件数登记，导入副本与源文件变化的不同语义；
+  - 种子被改动/删除、manifest 种子清单被篡改时拒绝启动或 `clean=false`；
+  - L001 的 `support=0`、`source=base_code_prior`、未校准初值标注；
   - 5 个禁用技能的“零文件、零网络、零调用”；
   - LLM 环境变量强开仍为 0 调用；
   - 共享向量库禁用；
@@ -249,12 +276,12 @@ manifest 关键字段：
 
 ### 8.2 对照总提示词第十四节“必须提供的测试”
 
-| # | 要求 | Phase 1 状态 |
+| # | 要求 | Phase 1 / 1.1 状态 |
 |---|---|---|
 | 1 | 教师入口禁用 | 已测：`test_ask_brain_writes_nothing`、`test_read_brain_reads_no_teacher_answer` |
 | 2 | LLM 禁用 | 已测：`test_llm_gates_even_if_env_enabled`、`test_llm_consult_never_calls_model` |
 | 3 | 教师历史数据隔离 | 已测：初始化拒绝旧载荷、marker/基线校验、继承 `think_inbox` 丢弃 |
-| 4 | 知识来源追踪 | 已实现：manifest `seed_items` + 代码指纹 + state marker；外部种子文件的实际哈希尚未实现 |
+| 4 | 知识来源追踪 | 已实现：manifest `seed_items`（代码先验 + 外部种子路径/哈希/大小/导入时间）+ 代码指纹/迁移记录 + state marker；运行期网络资料的证据登记仍属 Phase 2 |
 | 5 | 同源证据去重 | 未实现（Phase 2 `evidence_store`） |
 | 6 | 宽泛搜索/重复查询抑制 | 未实现（Phase 2 `search_planner`） |
 | 7 | 无结果/超时/解析失败 | 未实现专项测试；现有 `web_search` 有异常回退，但 Phase 1 未验证 |
@@ -266,10 +293,15 @@ manifest 关键字段：
 | 13 | 策略修改失败可回滚 | 未实现（Phase 4） |
 | 14 | 原版辉月/moon/火星状态不被修改 | 本轮通过“只改代码/文档/测试 + 冒烟在 runs/”保证；尚无自动哈希校验测试 |
 
-**阶段 1 验收口径：只对第 1–4、14 项负责。** 第 5–8、12–13 项属于后续阶段；
+**阶段 1 / 1.1 验收口径：只对第 1–4、14 项负责。** 第 5–8、12–13 项属于后续阶段；
 第 9–11 项是既有能力，不是本轮新增成果。
 
 ## 9. 隔离冒烟证据
+
+### 9.1 Phase 1（v2，历史证据）
+
+> v2 是阶段 1 的隔离证据。Phase 1.1 修改了代码，v2 的 manifest 指纹已漂移，
+> 按新规则不能再启动；1.1 证据见 9.2。
 
 目录：`runs/teacherless_smoke_20261025_v2/`（`.gitignore` 已忽略 `runs/`）
 
@@ -314,13 +346,67 @@ SELFDRIVE_MODE=teacherless SELFDRIVE_LLM=1 SELFDRIVE_SIBLING=moon py -u agent_v9
 `refresh_site` 在早先的同构冒烟中曾在 Windows 上报 `[WinError 2]`（找不到 `python3`），
 属于既有平台问题，不构成教师/LLM 泄漏。
 
+### 9.2 Phase 1.1（v3，代码版本与种子账本）
+
+目录：`runs/teacherless_smoke_20261025_v3/`（本地临时目录，不提交）。
+代码包复制自当前 `selfdrive/*.py`、`agent_v9.py`、`semantics.py`，未引入训练资料。
+
+初始化：
+
+```bash
+SELFDRIVE_MODE=teacherless py -m selfdrive.teacherless init \
+  --experiment TL-SMOKE-20261025-V3
+```
+
+结果：`seed_policy=from_zero`、`code_sha256_initial == code_sha256`、
+`code_migrations=[]`、`seed_policy_note` 明示代码级先验；`seed_items` 含
+runtime_code / builtin_priors 两项。
+
+运行（同样把 LLM/兄弟环境变量开到最大）：
+
+```bash
+SELFDRIVE_MODE=teacherless SELFDRIVE_LLM=1 SELFDRIVE_SIBLING=moon \
+  py -u agent_v9.py --once
+```
+
+共 3 轮（第 3 轮是冒烟操作流程中额外跑的）：
+
+- 主动作：`explore_file`、`tidy_notes`、`build_site`；辅动作含 `self_talk`/`self_tune`/`rest`。
+- `logs/events.jsonl` 6 条事件；5 个禁用通道事件数均为 0。
+- 最终 `teacherless status`：
+  - `code_drift=false`、`clean=true`、`seed_problems=[]`；
+  - `artifact_counts` / `baseline_counts` 8 项全 0；
+  - `violations={}`、`marker_problems=[]`、`contamination_markers={}`、
+    `blocked_channel_log_counts={}`；
+  - `state_rounds=3`；`teacherless` marker 与 manifest 的 experiment ID/种子哈希一致。
+- `state.json`：`concepts=0`、`claims=0`、`relations=0`；
+  `brain_questions=0`、`brain_read=0`、`llm_proposals=0`；
+  `available_skills=11`（16 减 5）。
+- L001 先验：`support=0`、`source=base_code_prior`、`confidence=0.4`、
+  `confidence_basis=declared_prior_uncalibrated`。
+- 第 3 轮 `build_site` 触发 Windows `[WinError 2]`（服务启动找不到 `python3`），
+  属于既有平台问题，不是教师/LLM 泄漏。
+
+代码漂移硬停冒烟（在 v3 的副本上做，不改动 v3 本身）：
+
+1. 把 manifest `code_sha256` 改为全 0，模拟代码版本漂移。
+2. `py -u agent_v9.py --once` → `RuntimeError`，exit=1；state 仍为 `rounds=3`，
+   说明启动前拒绝且没有写状态。
+3. `py -m selfdrive.teacherless accept-code --reason "冒烟验证：显式接受代码升级"`
+   → 成功写入 `from_sha256/to_sha256/reason`；
+4. `status` → `code_drift=false`、`clean=true`、`code_migrations` 长度 1。
+
+**仍然不能宣称学习进步**：训练资料为 0，留出任务为 0；本冒烟只证明隔离、
+代码版本固定与迁移记录可审计。
+
 ## 10. 已知限制与未实现
 
 1. **无训练口粮的 from_zero 基线**：当前冒烟没有任何 archive 资料，因此不能展示学习。
    Phase 1 只证明“能隔离运行”。
-2. **外部种子文件只记录元数据**：`init_experiment(seed_entries=...)` 可以声明
-   `training_material` / `teacher_history` 等来源，但没有把实际文件哈希写进 manifest。
-   正式喂资料前需要补“声明 + 哈希 + 落盘”流程（Phase 2 门槛）。
+2. **外部种子登记已实现，但导入入口只有 Python API**：`init_experiment(seed_entries=...)`
+   现在强制要求真实 `path`，并记录 `sha256`/`bytes`/`file_count`/`imported_at`；
+   `import: true` 会复制进 `workspace/archive/`。CLI 尚未提供 `--seed` 参数，
+   运行期网络资料的证据登记仍属于 Phase 2。
 3. **没有研究任务、定向搜索、证据库、验证器注册表、世界模型、策略优化器**。
    总提示词中的 `research.py`、`search_planner.py`、`evidence_store.py` 等尚未创建。
 4. **没有留出任务评估**：无法回答“它是否学会”，只能回答“它是否零调用教师/LLM”。
@@ -328,25 +414,90 @@ SELFDRIVE_MODE=teacherless SELFDRIVE_LLM=1 SELFDRIVE_SIBLING=moon py -u agent_v9
    去重、来源核验；冒烟中直接禁用。
 6. **semantics 目录的初始化后人工复制无法自动识别**：初始化拒绝旧载荷是主防线；
    正式实验必须使用全新目录，不能手工搬运。
-7. **代码漂移只报告不阻断**：`status` 有 `code_drift`，启动审计记录该值；开发期允许
-   代码变化，正式实验应在代码冻结后重新初始化。
+7. **代码漂移已改为硬停**：`verify_clean_start`/`assert_state_clean` 都核对指纹，
+   `status.clean` 纳入漂移与种子问题；升级必须 `accept-code` 留下迁移记录。
+   仍允许同一实验原地接受小改动——重大算法变更应新建实验，这一点靠操作纪律而非代码强制。
 8. **`build_site` / `refresh_site` 的 Windows 兼容性**：`refresh_site` 调用 `python3`，
    Windows 无该命令时失败；不影响隔离，但影响行动成功率统计。
-9. **长跑未验证**：只跑了 `--once` 两轮，没有验证 180 秒常驻循环、崩溃恢复、
+9. **长跑未验证**：只跑了 `--once` 3 轮，没有验证 180 秒常驻循环、崩溃恢复、
    跨日预算与日志轮转。
 10. **原版学生状态没有自动哈希校验测试**：本轮靠操作边界保证未修改；
     后续可加只读哈希快照测试，但不能把 2MB 实时 state 纳入普通单测。
+11. **种子只能证明“文件未变”，不能证明来源真实性**：`path`+`sha256` 防的是
+    初始化后被改动，不是来源本身可信；`teacher_history` / `training_material`
+    仍是声明标签。来源分级、独立性与交叉核验属于 Phase 2 证据库。
 
 ## 11. Phase 2 进入门槛
 
 只有满足以下条件才进入阶段 2：
 
-1. owner 检查并认可本报告的阶段 1 范围与证据口径。
+1. owner 检查并认可本报告的阶段 1.1 范围与证据口径。
 2. 明确第一个正式实验的种子策略：
    - `from_zero`：全新目录、无任何训练资料，只验证隔离与自发行为；
-   - `declared`：允许公开训练资料，但必须先实现文件哈希与来源登记；
+   - `declared`：允许公开训练资料，必须通过 `seed_entries` 登记路径/哈希/大小，
+     需要导入时显式 `import: true`；
    - `teacher_history_seeded`：只能作为“停止教学后的自主延续”对照，不得称为从零。
 3. 先定义研究任务 schema、证据 schema 和留出任务，再写搜索规划器；
    不得先堆搜索代码再补评估。
 4. 为 `web_search` 加请求预算、超时、重复查询抑制和来源记录，并补失败路径测试。
 5. 任何“学习提升”声明必须来自留出任务或受控实验，不能用轮次/概念数/情绪值代替。
+6. 正式开始前冻结代码版本；之后每次升级都要有 `code_migrations` 记录，
+   重大算法变更新建实验。
+
+## 12. Phase 1.1 审查修正记录
+
+针对 owner 2026-10-25 的审查，完成以下修正：
+
+### 12.1 P1：代码指纹漂移必须阻断
+
+- `verify_clean_start()` 启动前核对 `code_sha256`，漂移即 `RuntimeError`。
+- `assert_state_clean()` 每轮结束再核对；运行中改代码也会停止。
+- `status.clean` 纳入 `code_drift` 与 `seed_problems`，不会再出现
+  `code_drift=true` 而 `clean=true`。
+- 新增 `accept-code --reason`：把 `from_sha256`、`to_sha256`、版本、时间、原因
+  追加到 `code_migrations` 并写审计；无漂移或无原因时拒绝。
+- 测试：漂移启动拒绝、每轮拒绝、`status.clean=false`、迁移成功后
+  `clean=true`、迁移审计、无漂移/无原因拒绝。
+
+### 12.2 P1：L001 证据溯源修正
+
+`ensure_cards()` 新建的 L001 从：
+
+```json
+{"confidence": 0.4, "support": 1, "source": "自己观察（历史变换验证）"}
+```
+
+改为：
+
+```json
+{"confidence": 0.4, "confidence_basis": "declared_prior_uncalibrated",
+ "support": 0, "source": "base_code_prior"}
+```
+
+`0.4` 只是声明的初始置信度，不是实验校准概率；`support=0` 表示没有实验证据。
+已在 `from_zero` 状态上验证加法卡片没有继承样例。既有 state 中的 L001 不被覆盖。
+
+### 12.3 种子清单校验规则
+
+- 外部种子（非 `base_code`）必须提供真实 `path`，否则拒绝初始化；
+  不允许只写描述，也不允许外部条目冒充 `base_code`。
+- 初始化时记录：`source_type`、`kind`、绝对 `path`、`sha256`、`bytes`、
+  `file_count`、`imported_at`、`imported`。
+- `import: true` 复制到 `workspace/archive/seed-NN-<name>`，记录 `stored_at`；
+  复制后立即复核哈希。
+- `load_manifest()` 重算 `seed_items_sha256`，清单被篡改即拒绝加载。
+- `verify_clean_start()` 与 `status()` 复核种子文件仍存在、哈希/大小/文件数未变；
+  导入的实验复核副本，未被导入的实验复核原文件。
+- 区分三个来源维度：
+
+| 维度 | 记录方式 | 是否算“运行期学到” |
+|---|---|---|
+| 代码先验 | `seed_items` 的 `base_code`（运行时文件指纹 + 内置先验说明） | 否 |
+| 初始经验数据 | 外部 `seed_items`（路径/哈希/大小/导入） | 否，实验开始前已存在 |
+| 运行期观察 | Phase 2 证据库（URL/获取时间/原文/哈希/独立性） | 是，但必须经验证门禁 |
+
+### 12.4 残余限制
+
+- CLI 尚未提供 `--seed` 参数，外部种子目前通过 Python API 初始化。
+- `accept-code` 允许同一实验原地升级；只有在操作纪律上限制“重大变更新建实验”。
+- 种子标签仍是声明，来源真实性需要 Phase 2 证据库与独立来源判断。

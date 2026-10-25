@@ -16,6 +16,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import tempfile
 import time
 from collections import Counter
@@ -74,6 +75,45 @@ def _atomic_write(path, text):
         raise
 
 
+def _hash_file(path):
+    digest = hashlib.sha256()
+    total = 0
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            digest.update(chunk)
+            total += len(chunk)
+    return digest.hexdigest(), total
+
+
+def _hash_path(path):
+    """文件/目录内容哈希；目录按相对路径+文件哈希聚合，拒绝符号链接。"""
+    path = Path(path)
+    if path.is_symlink():
+        raise ValueError(f"种子路径不允许符号链接：{path}")
+    if path.is_file():
+        sha, size = _hash_file(path)
+        return sha, size, 1
+    if not path.is_dir():
+        raise ValueError(f"种子路径既不是文件也不是目录：{path}")
+    digest = hashlib.sha256()
+    total = 0
+    count = 0
+    for p in sorted(x for x in path.rglob("*") if x.is_file()):
+        if p.is_symlink():
+            raise ValueError(f"种子目录内不允许符号链接：{p}")
+        rel = str(p.relative_to(path)).replace("\\", "/")
+        sha, size = _hash_file(p)
+        digest.update(rel.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(sha.encode("ascii"))
+        digest.update(b"\0")
+        total += size
+        count += 1
+    if count == 0:
+        raise ValueError(f"种子目录为空：{path}")
+    return digest.hexdigest(), total, count
+
+
 def _code_fingerprint():
     """对实际运行的代码取指纹，避免把“从零”建立在未记录的代码先验上。"""
     root = config.BASE
@@ -129,10 +169,178 @@ def load_manifest(base=None):
         raise RuntimeError(f"Teacherless manifest 损坏，拒绝静默重建：{path}") from exc
     if not isinstance(data, dict) or data.get("format") != FORMAT:
         raise RuntimeError(f"Teacherless manifest 格式不合法：{path}")
+    items = data.get("seed_items")
+    if not isinstance(items, list) or not items:
+        raise RuntimeError(f"Teacherless manifest 缺少种子清单：{path}")
+    if data.get("seed_items_sha256") != _canonical_hash(items):
+        raise RuntimeError(
+            f"Teacherless manifest 种子清单哈希不匹配，拒绝加载：{path}")
     return data
 
 
-def _seed_items(seed_entries=None):
+def _require_code_version(manifest):
+    """实验期间代码版本必须固定；升级只能走显式迁移记录。"""
+    if not manifest or not manifest.get("code_sha256"):
+        raise RuntimeError("Teacherless manifest 缺少 code_sha256")
+    current = code_fingerprint()
+    expected = manifest["code_sha256"]
+    if current != expected:
+        raise RuntimeError(
+            "拒绝继续：代码指纹已漂移，实验期间代码版本必须固定。"
+            f"manifest={expected[:12]} current={current[:12]}。"
+            "如确认升级，先运行 py -m selfdrive.teacherless accept-code "
+            "--reason \"<升级原因>\" 写入迁移记录；重大算法变更应新建实验。")
+    return current
+
+
+def seed_problems(manifest, base=None):
+    """复核外部种子文件仍在、内容哈希/大小未变；代码先验不参与。"""
+    if not manifest:
+        return ["manifest 不存在"]
+    base = _base(base)
+    problems = []
+    for index, item in enumerate(manifest.get("seed_items") or []):
+        if not isinstance(item, dict):
+            problems.append(f"seed_items[{index}] 不是对象")
+            continue
+        if item.get("source_type") == "base_code":
+            continue
+        stored = item.get("stored_at")
+        if stored:
+            if not isinstance(stored, str):
+                problems.append(f"seed_items[{index}] stored_at 不是字符串")
+                continue
+            path = (base / stored).resolve()
+            if base not in path.parents and path != base:
+                problems.append(f"seed_items[{index}] stored_at 越出实验目录：{stored}")
+                continue
+        else:
+            raw = item.get("path")
+            if not isinstance(raw, str) or not raw.strip():
+                problems.append(f"seed_items[{index}] 缺少可复核 path")
+                continue
+            path = Path(raw)
+        if not path.exists():
+            problems.append(f"seed_items[{index}] 种子文件缺失：{path}")
+            continue
+        try:
+            sha, size, count = _hash_path(path)
+        except (OSError, ValueError) as exc:
+            problems.append(f"seed_items[{index}] 种子无法复核：{exc}")
+            continue
+        if sha != item.get("sha256"):
+            problems.append(f"seed_items[{index}] 内容哈希已变化：{path}")
+        if size != item.get("bytes"):
+            problems.append(f"seed_items[{index}] 大小已变化：{path}")
+        if count != item.get("file_count"):
+            problems.append(f"seed_items[{index}] 文件数已变化：{path}")
+    return problems
+
+
+def accept_code_change(reason, base=None):
+    """显式接受代码升级：保留旧指纹与原因，禁止静默覆盖。"""
+    reason = (reason or "").strip()
+    if not reason:
+        raise ValueError("代码迁移必须提供 reason")
+    base = _base(base)
+    manifest = load_manifest(base)
+    if manifest is None:
+        raise RuntimeError("Teacherless manifest 不存在")
+    previous = manifest.get("code_sha256")
+    if not previous:
+        raise RuntimeError("manifest 缺少 code_sha256，无法迁移")
+    current = code_fingerprint()
+    if current == previous:
+        raise RuntimeError("代码指纹未变化，无需迁移")
+    migration = {
+        "at": _now(),
+        "from_sha256": previous,
+        "to_sha256": current,
+        "from_version": manifest.get("code_version"),
+        "to_version": VERSION,
+        "reason": reason[:300],
+    }
+    manifest.setdefault("code_sha256_initial", previous)
+    manifest.setdefault("code_migrations", []).append(migration)
+    manifest["code_sha256"] = current
+    manifest["code_version"] = VERSION
+    _atomic_write(_manifest_path(base),
+                  json.dumps(manifest, ensure_ascii=False, indent=1))
+    audit(base, "code_migration", "runtime",
+          f"{previous[:12]}→{current[:12]} reason={reason[:80]}")
+    return migration
+
+
+def _seed_policy_note(policy):
+    if policy == "from_zero":
+        return ("未继承历史运行状态或预装经验语料；但仍包含代码级先验"
+                "（内置模板、加法/能量概念卡、L001 假设、技能权重、情绪默认值），"
+                "这些先验在 seed_items 中登记，不计为实验中学到的证据。")
+    if policy == "teacher_history_seeded":
+        return ("显式带入教师历史数据，只能作为“停止教学后的自主延续”对照，"
+                "不能宣称完全从零或未受教师影响。")
+    return "显式带入外部初始经验数据，不是完全从零；来源、哈希与大小见 seed_items。"
+
+
+def _describe_external_seed(entry, base, index, created):
+    """外部种子必须给真实路径；记录路径/哈希/大小/导入时间，可选复制进 archive。"""
+    source = entry.get("source_type")
+    if source not in SEED_SOURCES:
+        raise ValueError(f"未知种子来源：{source}")
+    if source == "base_code":
+        raise ValueError("外部种子不能声明 base_code（代码先验由系统自动登记）")
+    raw = str(entry.get("path") or "").strip()
+    if not raw:
+        raise ValueError(f"种子 {source} 必须提供真实 path；只写描述不算可核验的来源")
+    path = Path(raw).expanduser()
+    if not path.is_absolute():
+        path = base / path
+    path = path.resolve()
+    if not path.exists():
+        raise ValueError(f"种子路径不存在：{path}")
+    sha, size, count = _hash_path(path)
+    item = {
+        "source_type": source,
+        "kind": entry.get("kind", "corpus"),
+        "path": str(path),
+        "sha256": sha,
+        "bytes": size,
+        "file_count": count,
+        "imported_at": _now(),
+        "imported": bool(entry.get("import")),
+    }
+    for key in ("description", "url", "note"):
+        if entry.get(key):
+            item[key] = entry[key]
+    if item["imported"]:
+        target = base / "workspace" / "archive" / f"seed-{index:02d}-{path.name}"
+        if target.exists():
+            raise RuntimeError(f"种子导入目标已存在：{target}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        created.append(target)
+        try:
+            if path.is_dir():
+                shutil.copytree(path, target)
+            else:
+                shutil.copy2(path, target)
+            stored = _hash_path(target)
+            if stored != (sha, size, count):
+                raise RuntimeError(f"种子导入后校验不一致：{path}")
+        except Exception:
+            try:
+                if target.is_dir():
+                    shutil.rmtree(target)
+                elif target.exists():
+                    target.unlink()
+            except OSError:
+                pass
+            created.remove(target)
+            raise
+        item["stored_at"] = str(target.relative_to(base)).replace("\\", "/")
+    return item
+
+
+def _seed_items(seed_entries=None, base=None, created=None):
     fingerprint, used = _code_fingerprint()
     items = [{
         "source_type": "base_code",
@@ -145,16 +353,12 @@ def _seed_items(seed_entries=None):
         "description": ("内置提问模板、加法/能量概念卡、L001 假设、技能权重与情绪默认值；"
                         "这些是代码先验，不是本实验从数据中学到的知识"),
     }]
-    for entry in seed_entries or []:
+    base = _base(base)
+    created = created if created is not None else []
+    for index, entry in enumerate(seed_entries or [], start=1):
         if not isinstance(entry, dict):
             raise ValueError("seed_entries 每项必须是对象")
-        source = entry.get("source_type")
-        if source not in SEED_SOURCES:
-            raise ValueError(f"未知种子来源：{source}")
-        item = dict(entry)
-        item["source_type"] = source
-        item.setdefault("declared_at", _now())
-        items.append(item)
+        items.append(_describe_external_seed(entry, base, index, created))
     return items
 
 
@@ -188,33 +392,49 @@ def init_experiment(base=None, experiment_id=None, agent_name=None, seed_entries
     if not experiment_id:
         raise ValueError("experiment_id 不能为空")
     seed_entries = list(seed_entries or [])
-    items = _seed_items(seed_entries)
-    policy = _seed_policy(seed_entries)
-    fingerprint, _used = _code_fingerprint()
-    manifest = {
-        "format": FORMAT,
-        "experiment_id": experiment_id,
-        "mode": "teacherless",
-        "created_at": _now(),
-        "base_dir": str(base),
-        "code_version": VERSION,
-        "code_sha256": fingerprint,
-        "seed_policy": policy,
-        "clean_from_zero": policy == "from_zero",
-        "seed_items": items,
-        "seed_items_sha256": _canonical_hash(items),
-        "channels_disabled": sorted(BLOCKED_SKILLS) + ["shared_kb"],
-        "llm_enabled": False,
-        "web_search": "observation_allowed",
-        "notes": ("阶段 1 隔离基线：只验证教师/LLM 零调用与独立状态；"
-                  "研究任务、定向搜索、统一验证器与评估尚未实现。"),
-    }
-
     for rel in ("logs", "brain/templates", "workspace/archive",
                 "workspace/notes", "workspace/web", "semantics"):
         (base / rel).mkdir(parents=True, exist_ok=True)
-    _atomic_write(_manifest_path(base),
-                  json.dumps(manifest, ensure_ascii=False, indent=1))
+
+    copied = []
+    try:
+        items = _seed_items(seed_entries, base=base, created=copied)
+        policy = _seed_policy(seed_entries)
+        fingerprint, _used = _code_fingerprint()
+        manifest = {
+            "format": FORMAT,
+            "experiment_id": experiment_id,
+            "mode": "teacherless",
+            "created_at": _now(),
+            "base_dir": str(base),
+            "code_version": VERSION,
+            "code_sha256": fingerprint,
+            "code_sha256_initial": fingerprint,
+            "code_migrations": [],
+            "seed_policy": policy,
+            "seed_policy_note": _seed_policy_note(policy),
+            "clean_from_zero": policy == "from_zero",
+            "seed_items": items,
+            "seed_items_sha256": _canonical_hash(items),
+            "channels_disabled": sorted(BLOCKED_SKILLS) + ["shared_kb"],
+            "llm_enabled": False,
+            "web_search": "observation_allowed",
+            "notes": ("阶段 1.1 隔离基线：只验证教师/LLM 零调用、独立状态、"
+                      "代码版本固定、种子来源可核验；研究任务、定向搜索、"
+                      "统一验证器与评估尚未实现。"),
+        }
+        _atomic_write(_manifest_path(base),
+                      json.dumps(manifest, ensure_ascii=False, indent=1))
+    except Exception:
+        for target in reversed(copied):
+            try:
+                if target.is_dir():
+                    shutil.rmtree(target)
+                elif target.exists():
+                    target.unlink()
+            except OSError:
+                pass
+        raise
     if agent_name:
         (base / "agent_name.txt").write_text(agent_name.strip(), encoding="utf-8")
     audit(base, "init", "runtime",
@@ -323,6 +543,10 @@ def verify_clean_start(base=None):
         raise RuntimeError(
             f"Teacherless 未初始化：{_manifest_path(base)} 不存在。"
             "先在独立目录运行 py -m selfdrive.teacherless init")
+    _require_code_version(manifest)
+    problems = seed_problems(manifest, base)
+    if problems:
+        raise RuntimeError("拒绝启动：种子清单复核失败 " + "；".join(problems))
     st = _load_state_file(base)
     if st is not None:
         problems = _marker_violations(st, manifest)
@@ -346,6 +570,7 @@ def stamp_state(st, manifest=None):
     manifest = manifest or load_manifest()
     if manifest is None:
         raise RuntimeError("Teacherless manifest 不存在")
+    _require_code_version(manifest)
     existing = st.get("teacherless")
     if isinstance(existing, dict) and existing.get("experiment_id"):
         problems = _marker_violations(st, manifest)
@@ -376,6 +601,7 @@ def assert_state_clean(st, manifest=None, base=None):
     manifest = manifest or load_manifest(base)
     if manifest is None:
         raise RuntimeError("Teacherless manifest 不存在")
+    _require_code_version(manifest)
     problems = _marker_violations(st, manifest)
     if problems:
         raise RuntimeError("Teacherless 状态不合法：" + "；".join(problems))
@@ -444,13 +670,24 @@ def status(base=None):
         "initialized": manifest is not None,
         "manifest": manifest,
     }
+    drift = None
+    seeds = []
     if manifest is not None:
         current_code = code_fingerprint()
-        result["code_sha256_current"] = current_code
-        result["code_drift"] = current_code != manifest.get("code_sha256")
+        drift = current_code != manifest.get("code_sha256")
+        seeds = seed_problems(manifest, base)
+        result.update({
+            "code_sha256_current": current_code,
+            "code_sha256_initial": manifest.get("code_sha256_initial",
+                                               manifest.get("code_sha256")),
+            "code_drift": drift,
+            "code_migrations": manifest.get("code_migrations") or [],
+            "seed_problems": seeds,
+        })
     if st is None:
         result.update({"state_exists": False, "artifact_counts": None,
-                       "baseline_counts": None, "clean": manifest is not None})
+                       "baseline_counts": None,
+                       "clean": manifest is not None and not drift and not seeds})
         return result
     marker = st.get("teacherless") or {}
     current = artifact_counts(st)
@@ -468,7 +705,8 @@ def status(base=None):
         "marker_problems": marker_problems,
         "contamination_markers": marks,
         "blocked_channel_log_counts": channels,
-        "clean": not violations and not marker_problems and not marks and not channels,
+        "clean": (not violations and not marker_problems and not marks
+                  and not channels and not drift and not seeds),
     })
     return result
 
@@ -482,10 +720,16 @@ def _main():
     p_init.add_argument("--name", default=None)
     p_status = sub.add_parser("status", help="显示基线计数与污染检查")
     p_status.add_argument("--base", default=None)
+    p_accept = sub.add_parser("accept-code", help="显式接受代码升级并记录迁移")
+    p_accept.add_argument("--base", default=None)
+    p_accept.add_argument("--reason", required=True)
     args = parser.parse_args()
     if args.cmd == "init":
         manifest = init_experiment(args.base, args.experiment, args.name)
         print(json.dumps(manifest, ensure_ascii=False, indent=1))
+    elif args.cmd == "accept-code":
+        migration = accept_code_change(args.reason, args.base)
+        print(json.dumps(migration, ensure_ascii=False, indent=1))
     else:
         print(json.dumps(status(args.base), ensure_ascii=False, indent=1))
 

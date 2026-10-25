@@ -7,8 +7,8 @@
 > 做梦、向老师提问、把老师的批评变成制度、以及——问出你没想到的问题。
 >
 > 另有**无教师实验基线**（`SELFDRIVE_MODE=teacherless`）：独立目录、独立状态，
-> 硬禁用教师与 LLM 通道，用于回答"没有老师时它还能学什么"。目前只完成阶段 1
-> （隔离性验收），搜索与自主验证闭环尚未实现。
+> 硬禁用教师与 LLM 通道，用于回答"没有老师时它还能学什么"。目前只完成阶段 1.1
+> （隔离性、种子来源与代码版本可核验），搜索与自主验证闭环尚未实现。
 
 ---
 
@@ -130,12 +130,28 @@ SELFDRIVE_MODE=teacherless python3 -m selfdrive.teacherless status
 
 Windows 用 `py` 代替 `python3`，并用 `set SELFDRIVE_MODE=teacherless` 设置环境变量。
 `init` 会写 `teacherless_manifest.json`：记录代码指纹、种子来源、被禁通道与基线计数。
-若确实要带入训练资料或历史资料，须在初始化时显式声明来源，`seed_policy` 会标为
-`declared` 或 `teacher_history_seeded`——后者不能再宣称“完全从零”。
-运行期每轮结束都会核对状态标记与基线计数，出现教师/LLM 痕迹会直接终止实验。
+`from_zero` 指**未继承历史运行状态或预装经验语料**，但仍包含代码级先验
+（内置模板、加法/能量概念卡、L001 假设、技能权重、情绪默认值）；这些先验在
+`seed_items` 中逐项登记，不计为实验中学到的证据。
 
-**阶段边界**：当前只完成阶段 1 的隔离性验收；研究任务、定向搜索、统一验证器、
-留出评估尚未实现，不能据此宣称“已实现无教师自主学习”。
+种子不是“只写一句声明”就算数：外部种子必须提供真实 `path`，初始化时记录
+`sha256`、`bytes`、`file_count` 与导入时间；`import: true` 会复制进
+`workspace/archive/`，否则只登记来源。manifest 的 `seed_items_sha256` 在每次加载时
+重算，启动与 `status` 会复核种子文件内容——被改动、缺失或清单被篡改都会拒绝运行。
+`teacher_history_seeded` 只能作为“停止教学后的自主延续”对照，不能再宣称“完全从零”。
+
+实验期间代码版本固定：启动与每轮结束都会核对 `code_sha256`。代码变化后实验会停止，
+不会把新旧算法混进同一段实验历史。确认升级时须显式记录迁移原因：
+
+```bash
+SELFDRIVE_MODE=teacherless python3 -m selfdrive.teacherless accept-code \
+  --reason "说明本次升级改了什么、为什么必须现在改"
+```
+
+重大算法变更应新建实验，而不是在旧实验上原地升级。
+
+**阶段边界**：当前只完成阶段 1.1 的隔离性与种子/版本可核验性；研究任务、定向搜索、
+统一验证器、留出评估尚未实现，不能据此宣称“已实现无教师自主学习”。
 设计与审计见 [docs/teacherless/MASTER_PROMPT.md](docs/teacherless/MASTER_PROMPT.md)、
 [docs/teacherless/PHASE0_AUDIT.md](docs/teacherless/PHASE0_AUDIT.md)、
 [docs/teacherless/EXPERIMENT_LOG.md](docs/teacherless/EXPERIMENT_LOG.md)。
@@ -155,12 +171,12 @@ Windows 用 `py` 代替 `python3`，并用 `set SELFDRIVE_MODE=teacherless` 设�
 1. **教学对照**：辉月（进修式教学）vs moon（幼儿式教学）——同环境同口粮，教学风格的差异
 2. **路线对照**：云端纯无 LLM vs 本地 LLM 提案——LLM 只提提案时的增量
 3. **消融**：任何模块（情绪/做梦/概念卡/LLM）没有可测贡献就移除，不因"像脑"保留
-4. **无教师基线**：`teacherless` 模式下教师/LLM 零调用、独立状态、种子来源可追溯。
-   当前只验收隔离性；是否有自主学习增益，要等阶段 2–4 的搜索、验证与留出评估
+4. **无教师基线**：`teacherless` 模式下教师/LLM 零调用、独立状态、种子来源与代码版本可追溯。
+   当前只验收隔离性与账本完整性；是否有自主学习增益，要等阶段 2–4 的搜索、验证与留出评估
 
 实验 4 的判据是"无教师、无 LLM 条件下在未参与训练的任务上是否变强"，
-不是轮次、概念数或日志体积。阶段 1 的冒烟结果（80 项测试通过、隔离运行零违规）
-只能证明通道关闭与状态未被污染，不能证明学习发生。
+不是轮次、概念数或日志体积。阶段 1.1 的冒烟结果（99 项测试通过、隔离运行零违规）
+只能证明通道关闭、状态未污染、种子与代码版本一致，不能证明学习发生。
 
 ## 目录结构
 

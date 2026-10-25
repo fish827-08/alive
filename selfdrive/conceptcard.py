@@ -59,13 +59,15 @@ def ensure_cards(st):
         c["frame"] = {"slots": ["当前", "消耗", "→缺口"], "fills_from": "state.energy"}
         c["affordances"] = ["energy < 0.35", "要选耗能动作之前"]
         cards["能量"] = c
-    # 种子定律：合并计数 = 计数相加（假设态，等变换验证喂它）
+    # 种子定律：合并计数 = 计数相加。代码先验，不是实验证据：
+    # support=0、confidence 仅作声明初值，等变换验证来喂证据。
     laws = st.setdefault("laws", {})
     if "L001" not in laws:
         laws["L001"] = {"form": "count(merge(A,B)) = add(count(A),count(B))",
-                        "concepts": ["加法"], "confidence": 0.4, "support": 1,
+                        "concepts": ["加法"], "confidence": 0.4, "support": 0,
+                        "confidence_basis": "declared_prior_uncalibrated",
                         "falsifiers": [], "status": "hypothesis",
-                        "source": "自己观察（历史变换验证）"}
+                        "source": "base_code_prior"}
         cards["加法"]["laws"].append("L001")
     return cards
 
