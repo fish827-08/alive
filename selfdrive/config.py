@@ -92,6 +92,9 @@ SKILLS = {
     # v9.22 LLM 提案：向本地 LLM 请教当前主题（只产出待验证提案，不直接进概念库）
     "llm_consult": {"sense": ["LLM 提案模块"], "act": ["提问", "收提案"],
                     "cost": 0.3, "weight": {"base": 0.06, "curiosity": 0.4, "boredom": 0.1}},
+    # v9.23 自我修改：外围自调（emotions/ask_config/模板——白名单写入器把关）
+    "self_tune": {"sense": ["自己的参数与模板"], "act": ["自省调参", "改模板"],
+                  "cost": 0.2, "weight": {"base": 0.03, "satisfaction": 0.15}},
 }
 
 # ---- 情感默认配置（brain/emotions.json 不存在时写入；存在则以文件为准） ----

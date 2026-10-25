@@ -83,6 +83,7 @@ def run_round(st):
         "reflect_memory": skills.do_reflect_memory,
         "self_talk": skills.do_self_talk,
         "sibling_letter": skills.do_sibling_letter,   # v9.21 兄弟信箱
+        "self_tune": skills.do_self_tune,             # v9.23 自我修改（白名单）
         "llm_consult": skills.do_llm_consult,         # v9.22 LLM 提案（可插拔）
         "rest": skills.do_rest,
     }
@@ -90,6 +91,7 @@ def run_round(st):
         "explore_file": (files, st),
         "visit_new_dir": (dirs, st),
         "sibling_letter": (st, AGENT_NAME),
+        "self_tune": (st, AGENT_NAME),
         "llm_consult": (st, AGENT_NAME),
     }
     fn = handlers[action]

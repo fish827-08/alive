@@ -1101,6 +1101,95 @@ def do_llm_consult(st, me="huiyue"):
     return True, f"LLM提案 {n} 条已入 unverified 影子库（模型 {result.get('model')}），未直接学习原文"
 
 
+# ---------- 技能：自我修改（v9.23 外围自调——白名单写入器把关） ----------
+
+def do_self_tune(st, me="huiyue"):
+    """自我修改：改自己的外围（情感参数/决策参数/提问模板）——改错只回退默认，不死机。
+    火星（LLM_ENABLED）：向语言区提案自改建议 → 白名单校验+夹紧 → 写入。
+    云端（无 LLM）：基于 action_stats 的确定性自调参——零成功动作的 base 权重
+    写入 ask_config（self_tuned 段），让"屡屡碰壁"变成持久的自我修正。
+    全程经 self_mod.write_external（核心禁区/路径白名单/备份/修改史）。"""
+    from . import self_mod
+    import json as _json_mod
+    json = _json_mod
+    # —— 火星路线：LLM 提案自改 ——
+    if config.LLM_ENABLED:
+        from . import llm_bridge
+        if llm_bridge.available(st):
+            stats = st.get("action_stats", {})
+            worst = min(((a, s) for a, s in stats.items()
+                         if s.get("try", 0) >= 10 and s["ok"] / max(1, s["try"]) < 0.3),
+                        key=lambda kv: kv[1]["ok"] / max(1, kv[1]["try"]), default=None)
+            worst_txt = f"{worst[0]}（{worst[1]['ok']}/{worst[1]['try']}）" if worst else "无明显短板"
+            prompt = (f"我是{me}，我的动作成功率统计：{ {a: f'{s[chr(111)+chr(107)]}/{s[chr(116)+chr(114)+chr(121)]}' for a, s in list(stats.items())[:6]} }。"
+                      f"最弱的是 {worst_txt}。请提案一个对我 emotions.json 或 ask_config.json 的"
+                      f"小改动（JSON：{{\"emotions\": {{\"维度.参数\": 值}}}} 或 "
+                      f"{{\"ask_config\": {{\"节.键\": 值}}}}），只提案，不要执行。")
+            result = llm_bridge.consult(st, task="self_tune", prompt=prompt)
+            if result:
+                # 提案 JSON → 校验 → 白名单写入
+                applied = []
+                for prop in result.get("proposals", []):
+                    try:
+                        import json as _json
+                        m = re.search(r"\{.*\}", prop, re.S)
+                        if not m:
+                            continue
+                        patch = _json.loads(m.group(0))
+                        for section in ("emotions", "ask_config"):
+                            if section not in patch:
+                                continue
+                            relpath = f"brain/{section}.json"
+                            try:
+                                cfg = json.loads((config.BASE / relpath).read_text(encoding="utf-8"))
+                            except Exception:
+                                continue
+                            if section == "emotions":
+                                for k, v in patch[section].items():
+                                    dim, _, param = k.partition(".")
+                                    if dim in cfg and param:
+                                        cfg[dim][param] = v
+                                n_bad = self_mod.clamp_emotions_config(cfg)
+                                ok, why = self_mod.write_external(st, relpath,
+                                    json.dumps(cfg, ensure_ascii=False, indent=1), f"llm:{me}")
+                                applied.append((relpath, ok, n_bad))
+                            else:
+                                clean, _rm, _cl = self_mod.validate_ask_config(patch[section])
+                                if clean:
+                                    cfg.update(clean)
+                                    ok, why = self_mod.write_external(st, relpath,
+                                        json.dumps(cfg, ensure_ascii=False, indent=1), f"llm:{me}")
+                                    applied.append((relpath, ok, 0))
+                    except Exception:
+                        continue
+                if applied:
+                    det = "；".join(f"{r}({'生效' if ok else '被拒'})" for r, ok, _ in applied)
+                    return True, f"自我修改（LLM提案）：{det}"
+                return False, "LLM 自改提案均未通过校验（核心保护区工作正常）"
+    # —— 云端路线：确定性统计自调参 ——
+    stats = st.get("action_stats", {})
+    worst = None
+    for a, s in stats.items():
+        if s.get("try", 0) >= 15 and s.get("ok", 0) / s["try"] < 0.25:
+            if worst is None or s["ok"] / s["try"] < stats[worst]["ok"] / max(1, stats[worst]["try"]):
+                worst = a
+    if not worst:
+        return False, "暂无需要自调的短板动作"
+    cfg = {}
+    relpath = "brain/ask_config.json"
+    try:
+        cfg = json.loads((config.BASE / relpath).read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    tuned = cfg.setdefault("self_tuned", {})
+    key = f"{worst}.base_boost"
+    old = tuned.get(key, 1.0)
+    tuned[key] = round(max(0.5, old * 0.9), 3)   # 每次衰减 10%，下限 0.5
+    ok, why = self_mod.write_external(st, relpath,
+        json.dumps(cfg, ensure_ascii=False, indent=1), "self:stats")
+    return ok, f"自我调参：{worst} 屡屡碰壁，base_boost {old}→{tuned[key]}（{why}）"
+
+
 # ---------- 技能：兄弟信箱（v9.21 同伴学习通道） ----------
 
 def _sibling_name(st, me):

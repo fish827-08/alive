@@ -29,4 +29,4 @@ v9.16（2026-10-24，owner 授权"按方案修改 + 项目模块化"）五大行
 
 运行方式不变：python agent_v9.py [--once]，间隔 SELFDRIVE_INTERVAL（默认 180s）。
 """
-VERSION = "9.22"
+VERSION = "9.23"
