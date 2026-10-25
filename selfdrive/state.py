@@ -22,7 +22,7 @@ import time
 from . import config
 from .config import LOGS, NOTES, STATE_FILE
 
-STATE_VERSION = 3
+STATE_VERSION = 4
 
 
 def default_state():
@@ -101,6 +101,20 @@ def default_state():
         "outcome_stats": {},
         "rejected_transforms": [],
         "decision_mode": config.DECISION_MODE,
+        # ---- 阶段 2：研究任务队列 / 定向查询 / 来源与配置账本 ----
+        "research": {
+            "tasks": {},            # {task_id: {kind, question, reason, target, priority, status...}}
+            "queries": {},          # {query_id: {task_id, purpose, text, status, sources...}}
+            "recent_queries": [],   # 去重窗口 [{query_id, text, normalized, round, outcome}]
+            "sources": [],          # 来源索引（完整摘录在 logs/research_sources.jsonl）
+            "config_history": [],   # 影响研究调度/搜索策略的参数快照（变更才记）
+            "config_sha256": None,
+            "stats": {
+                "tasks_created": 0, "queries_planned": 0, "queries_executed": 0,
+                "query_failures": 0, "duplicates_blocked": 0,
+                "sources_recorded": 0, "rewrites_planned": 0,
+            },
+        },
         "state_version": STATE_VERSION,
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }

@@ -12,7 +12,7 @@
 import math
 import random
 
-from . import config, teacherless
+from . import config, research, teacherless
 from .config import (SKILLS, WEB_SHARE_CAP, load_ask_config)
 from .state import web_share
 from .tokenizer import FORMAT_NOISE
@@ -67,8 +67,10 @@ def legacy_weights(st, e, web_built):
         for a in ("explore_file", "explore_wider", "visit_new_dir"):
             w[a] *= 0.5
         w["ask_brain"] *= 1.4
-    # ⑤ web_search 冷却
+    # ⑤ web_search 冷却/禁用
     ws = load_ask_config().get("web_search", {})
+    if not ws.get("enabled", True):
+        w["web_search"] = 0.0
     ws_cd = ws.get("cooldown_rounds", 40)
     last_ws = st.get("last_web_search_round", -999)
     if (st["rounds"] - last_ws) < ws_cd:
@@ -151,6 +153,15 @@ def legacy_weights(st, e, web_built):
         for a in teacherless.BLOCKED_SKILLS:
             if a in w:
                 w[a] = 0.0
+    # ⑰ 阶段 2：有高优先级研究任务时抬升搜索权重（缺口驱动，不绕过冷却/禁用）
+    if w.get("web_search", 0.0) > 0.0:
+        task = research.top_open_task(st)
+        if task:
+            try:
+                priority = float(task.get("priority") or 0.0)
+            except (TypeError, ValueError):
+                priority = 0.0
+            w["web_search"] *= 1.0 + min(0.5, 0.5 * max(0.0, priority))
     if sum(w.values()) <= 0.0:
         w["rest"] = 1.0
     return w

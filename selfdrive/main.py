@@ -15,7 +15,8 @@ except ImportError:
     sys.path.insert(0, str(_cfg.BASE))
     import semantics as sem
 
-from . import config, outcomes, rules_compiler, skills, templates, teacherless, working_memory
+from . import (config, outcomes, research, rules_compiler, skills, templates,
+               teacherless, working_memory)
 from .config import LOGS, NOVELTY_WEB_SCALE, ONCE
 from .decision import choose_action, evaluate_candidates, pick_actions
 from .emotions import apply_energy, update_emotions
@@ -55,6 +56,11 @@ def run_round(st):
         conceptcard.situation_match(st)
     except Exception:
         pass
+    # v9.24 阶段 2：从本地缺口刷新研究任务（不联网），再进工作记忆与决策
+    try:
+        research.ensure_tasks(st)
+    except Exception as exc:
+        log_event(st, "error", f"研究任务刷新失败：{exc.__class__.__name__}: {exc}")
     files, dirs = skills.scan_workspace()
     novelty = skills.novelty_score(files, st)
     working_memory.build(st)

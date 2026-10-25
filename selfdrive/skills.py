@@ -9,6 +9,8 @@ v9.16 行为改造落点：
   do_self_talk       ② 改为"无边概念对下注"（旧共同邻居预测 30/30 全命中，零信息）
   do_consolidate     ⑤ 概念/候选修剪 + ② 预测超时结算
 """
+import base64
+import hashlib
 import os
 import random
 import re
@@ -18,9 +20,10 @@ import time
 import urllib.parse
 import urllib.request
 from collections import Counter
+from html import unescape as _html_unescape
 from pathlib import Path
 
-from . import config, learning, predictions, rules_compiler, templates, tokenizer, teacherless
+from . import config, learning, predictions, research, rules_compiler, templates, tokenizer, teacherless
 from . import abstraction, activation, conceptcard, dream
 
 try:                                    # 顶层模块（BASE/semantics.py，兜底联想层）
@@ -638,7 +641,12 @@ def _pick_search_topic(st):
     def degree(c):
         return sum(1 for k in rels if c in k.split("|"))
 
-    recent = set(st.get("last_search_topics", [])[-5:])
+    recent = [t for t in st.get("last_search_topics", [])[-5:] if t]
+
+    def was_recent(term):
+        # 记录的是完整查询句，按包含关系判断主题是否刚搜过
+        return any(term in text for text in recent)
+
     cands = []
     for p in st.get("edge_preds", []):
         if p.get("status") == "pending":
@@ -646,19 +654,19 @@ def _pick_search_topic(st):
     kw = st.get("last_kw", "")
     if kw and kw != "无":
         cands += [w for w in kw.split("、") if w in cons]
-    hungry = [c for c in cands if c and c not in recent]
+    hungry = [c for c in cands if c and not was_recent(c)]
     if hungry:
         hungry.sort(key=lambda c: (degree(c), len(c)))
         return hungry[0][:24]
     # 回退链：last_kw 首词 → 文件名 → journey 尾词（旧行为）
     if kw and kw != "无" and recent:
         t = kw.split("、")[0][:24]
-        if t and t not in recent:
+        if t and not was_recent(t):
             return t
     if st["visited_files"]:
         t = Path(st["visited_files"][-1]).name
         t = re.sub(r"\.[A-Za-z0-9]+$", "", t)
-        if t and len(t) <= 24 and t not in recent:
+        if t and len(t) <= 24 and not was_recent(t):
             return t
     jf = NOTES / "journey.md"
     if jf.exists():
@@ -669,7 +677,7 @@ def _pick_search_topic(st):
             words = tokenizer.concept_words(line)
             if words:
                 t = words.most_common(1)[0][0][:24]
-                if t not in recent:
+                if not was_recent(t):
                     return t
     return "涌现"
 
@@ -696,56 +704,147 @@ def _fetch_url_hard(url, headers, timeout=15, hard=30):
         return r.read().decode("utf-8", errors="ignore")
 
 
-def do_web_search(st):
-    """上网搜索（无 LLM 关键词级）：Bing 标题+摘要 → workspace/web/*.md + kb。"""
-    ws = load_ask_config().get("web_search", {})
-    if not ws.get("enabled", True):
-        return False, "web_search 已禁用"
-    topic = _pick_search_topic(st)
-    st.setdefault("last_search_topics", []).append(topic)
-    del st["last_search_topics"][:-5]      # 失败也记录，避免同词重试循环
-    if any(bw in topic for bw in SEARCH_BLACK_WORDS):
-        return False, "搜索词含黑名单词，已跳过"
-    top_k = int(ws.get("top_k", 5))
-    query = urllib.parse.quote(topic)
-    url = f"https://cn.bing.com/search?q={query}&setlang=zh-hans"
+def _unwrap_bing_url(url):
+    """Bing 跳转链（/ck/a?...&u=a1<base64>）→ 真实目标 URL，避免把跟踪链当来源。"""
     try:
-        html = _fetch_url_hard(url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Accept-Language": "zh-CN,zh;q=0.9",
-        })
-    except Exception as exc:
-        return False, f"搜索失败（{exc.__class__.__name__}），静默降级"
+        parsed = urllib.parse.urlparse(url)
+    except Exception:
+        return url
+    if not (parsed.netloc == "bing.com" or parsed.netloc.endswith(".bing.com")):
+        return url
+    if not parsed.path.startswith("/ck/a"):
+        return url
+    target = (urllib.parse.parse_qs(parsed.query).get("u") or [""])[0]
+    if not target.startswith("a1"):
+        return url
+    payload = target[2:]
+    payload += "=" * (-len(payload) % 4)
+    try:
+        decoded = base64.urlsafe_b64decode(payload).decode("utf-8", "ignore")
+    except Exception:
+        return url
+    return decoded if decoded.startswith(("http://", "https://")) else url
+
+
+def _parse_bing_results(html, top_k):
+    """Bing 结果页 → [(title, snippet, url)]；解析失败返回空列表。"""
     results = []
+    seen = set()
     for m in re.finditer(r'<li class="b_algo".*?</li>', html, re.S):
         block = m.group(0)
         hm = re.search(r'<h2[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>', block, re.S)
         if not hm:
             continue
-        link, title = hm.group(1), re.sub(r"<[^>]+>", "", hm.group(2)).strip()
+        link = _unwrap_bing_url(_html_unescape(hm.group(1)))
+        title = re.sub(r"<[^>]+>", "", hm.group(2)).strip()
         pm = re.search(r"<p[^>]*>(.*?)</p>", block, re.S)
         snippet = re.sub(r"<[^>]+>", "", pm.group(1)).strip() if pm else ""
-        if title:
-            results.append((title[:80], snippet[:200], link[:200]))
+        if title and link and link not in seen:
+            seen.add(link)
+            results.append((title[:120], snippet[:300], link[:500]))
         if len(results) >= top_k:
             break
+    return results
+
+
+def _serp_says_no_results(html):
+    """真实“无结果”页带明确提示；首页/反爬页没有，不能混为一谈。"""
+    markers = ("没有与此相关的结果", "There are no results", "No results found")
+    return any(marker in html for marker in markers)
+
+
+def do_web_search(st):
+    """研究任务驱动的定向搜索：任务 → 目的化查询 → 候选材料与来源账本。
+    搜索成功只代表拿到候选材料（unverified），不代表知识已被验证。"""
+    ws = load_ask_config().get("web_search", {})
+    if not ws.get("enabled", True):
+        return False, "web_search 已禁用"
+    fallback_topic = _pick_search_topic(st)
+    # 阶段 2 的探索回退必须由已晋升概念支撑；文件名/日记尾词不是知识缺口，
+    # 不能因为“最近出现过”就重新变成搜索词。
+    if fallback_topic and fallback_topic not in (st.get("concepts") or {}):
+        fallback_topic = None
+    query = research.next_query(st, fallback_topic=fallback_topic)
+    if query is None:
+        return False, "没有可执行的研究查询（任务已耗尽或全部被禁）"
+    topic = query.get("text") or ""
+    st.setdefault("last_search_topics", []).append(topic)
+    del st["last_search_topics"][:-5]      # 失败也记录，避免同词重试循环
+    if any(bw in topic for bw in SEARCH_BLACK_WORDS):
+        research.record_execution(st, query, False, failure_kind="blocked",
+                                  detail="搜索词含黑名单词")
+        return False, "搜索词含黑名单词，已跳过"
+    top_k = int(ws.get("top_k", 5))
+    query_text = urllib.parse.quote(topic)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept-Language": "zh-CN,zh;q=0.9",
+    }
+    # 本机到 Bing 的 TLS 连接会间歇中断，且偶尔返回首页/反爬页而不是结果页；
+    # 传输失败或非结果页时换主机重试，只有两个主机都失败才记失败。
+    html, search_url, fetch_error = None, "", None
+    results, saw_no_results = [], False
+    for host in ("https://cn.bing.com/search", "https://www.bing.com/search"):
+        search_url = f"{host}?q={query_text}&setlang=zh-hans"
+        try:
+            html = _fetch_url_hard(search_url, headers=headers)
+        except Exception as exc:
+            fetch_error = exc
+            continue
+        results = _parse_bing_results(html, top_k)
+        if results:
+            break
+        if _serp_says_no_results(html):
+            saw_no_results = True
+            break
     if not results:
-        return False, f"搜索「{topic}」无可用结果"
+        if saw_no_results:
+            failure_kind = "no_results"
+            detail = f"搜索「{topic}」无可用结果"
+        elif html is None:
+            failure_kind = "network_error"
+            detail = f"{fetch_error.__class__.__name__}: {fetch_error}"
+        else:
+            failure_kind = "serp_blocked"
+            detail = f"搜索「{topic}」未返回结果页（首页/反爬/解析失败）"
+        research.record_execution(
+            st, query, False, failure_kind=failure_kind, detail=detail,
+            serp_url=search_url)
+        hints = {"no_results": "下一次改用更宽角度",
+                 "network_error": "下一次改用不同目的查询",
+                 "serp_blocked": "下一次改用不同目的查询"}
+        return False, f"搜索失败（{failure_kind}），已记录；{hints[failure_kind]}"
+    serp_sha = hashlib.sha256(html.encode("utf-8", errors="ignore")).hexdigest()
     WEB.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("web-%Y%m%d-%H%M")
+    filename = f"{stamp}.md"
+    if (WEB / filename).exists():
+        filename = f"{stamp}-{query['id'].split(':')[-1][:6]}.md"
     lines = [f"## 网络搜索 [{stamp}] 主题：{topic}", ""]
     for i, (title, snippet, link) in enumerate(results, 1):
         lines.append(f"{i}. {title}")
         if snippet:
             lines.append(f"   摘要：{snippet}")
         lines.append(f"   来源：{link}")
+    lines += [
+        "",
+        "---",
+        f"研究任务：{query['task_id']}",
+        f"查询ID：{query['id']}（目的：{query.get('purpose')}）",
+        "验证状态：unverified（搜索只提交候选材料，不等于知识已验证）",
+    ]
     text = "\n".join(lines)
-    (WEB / f"{stamp}.md").write_text(text, encoding="utf-8")
-    note, relate = semantic_note(text, f"workspace/web/{stamp}.md", topic, kind="web")
+    (WEB / filename).write_text(text, encoding="utf-8")
+    note, relate = semantic_note(text, f"workspace/web/{filename}", topic, kind="web")
     append_note(st, f"## 网络搜索 [{stamp}] 主题「{topic}」\n{text[:600]}\n- 语义联想：{relate}")
+    research.record_execution(
+        st, query, True,
+        results=[{"title": t, "snippet": s, "url": u} for t, s, u in results],
+        serp_url=search_url, serp_sha256=serp_sha)
     st["last_web_search_round"] = st["rounds"]
     mark(st, config.EVT_SEARCH)
-    return True, f"网络搜索「{topic}」抓到 {len(results)} 条结果并入库"
+    return True, (f"研究搜索「{topic}」（{query.get('purpose')}，"
+                  f"任务 {query['task_id']}）抓到 {len(results)} 条候选材料，未验证")
 
 
 def build_site(st):

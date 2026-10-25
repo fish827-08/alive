@@ -151,15 +151,78 @@ SELFDRIVE_MODE=standard py -u agent_v9.py --once
 - 解释：本阶段只证明隔离、代码版本固定、种子可核验与迁移可审计；
   **不证明学习**。训练资料与留出任务仍为 0。
 
+## 2026-10-25 / Phase 2：研究任务队列与定向搜索规划（第一小步）
+
+- 阶段：2
+- 触发：owner 审查通过 Phase 1.1（提交 `19076a3`），授权只实现“研究任务队列 +
+  定向搜索规划”，不得重写 claims/预测/统一验证器/整个决策中枢。
+- 假设：把“搜索最近出现的词”改为“从知识缺口生成任务，再按目的规划查询”，
+  可以让每次搜索都可解释、可去重、可追溯，同时不把搜索结果误当成已验证知识。
+- 实现：
+  - 新增 `selfdrive/research.py`：任务队列（五类来源、稳定 ID、优先级、状态机、
+    上限与修剪）、查询规划（每任务最多 3 个不同目的）、完全/Jaccard 双重去重、
+    `no_results` 单次改写、`network_error`/`serp_blocked` 换目的、来源账本、
+    配置快照 `config_history`。
+  - `main.py` 每轮刷新任务；`decision.py` 有开放任务时轻微抬升 `web_search`
+    权重；`working_memory.py` 暴露只读 `research_focus`。
+  - `skills.do_web_search` 改为研究查询消费者；新增 Bing SERP 解析、主机回退
+    （`cn.bing.com` → `www.bing.com`）、跳转链还原（`/ck/a?...u=a1<base64>`）；
+    成功只写 `workspace/web/*.md` 与 `unverified` 候选材料。
+  - `state.py` 增加 `research` 段（`STATE_VERSION=4`），版本号 `9.24`。
+- 边界：
+  - 不调用 `claims.add_evidence`，不更新 `laws`，不修改概念/命题置信度；
+  - 搜索结果 `source_type=web_runtime`、`verification=unverified` 硬编码；
+  - `materials_found` 仅表示“有候选材料待验证”，阶段 3 才接证据门禁。
+- 自动化测试：
+  - `py -m compileall -q selfdrive agent_v9.py tests`：通过。
+  - `py -m unittest discover -s tests`：**129 项全部通过**
+    （阶段 1.1 为 99 项，阶段 2 新增 30 项）。
+  - `tests/test_research.py` 覆盖 owner 指定案例：同一目标多目的查询、重复主题抑制、
+    失败改写/换目的、查询→任务、来源→查询追溯；另覆盖任务/尝试/配置上限、
+    工作记忆只读、决策加权、Teacherless 零痕迹。
+- 回退防线（v4 重建前发现）：`_pick_search_topic` 的旧回退链会把日记尾词/文件名
+  当成主题，从零目录里实际生成了一个“涌现”探索任务，等于重新引入“搜最近的词”。
+  现在 `do_web_search` 要求回退主题必须已晋升为概念，否则返回无查询；
+  `test_unbacked_recent_topic_is_not_searched` 固定该行为。
+- 隔离冒烟 v4（最终代码重建）：`runs/teacherless_smoke_20261025_v4/`
+  （本地临时目录，不提交）。
+  - `from_zero` 初始化，代码版本 `9.24`，代码指纹
+    `3e57179e75bab4c68090c05b1e523678a2635d5fb7b3fdcc3f52f691d1826d04`，3 轮。
+  - `status`：`clean=true`、`code_drift=false`、`seed_problems=[]`、
+    `code_migrations=[]`；8 项教师/LLM 痕迹全 0；`violations={}`。
+  - `research.stats` 全 0（任务/查询/来源均为 0），`research.jsonl` 仅
+    `config_recorded` 1 条。
+  - 3 轮后只有 1 个未晋升概念（`index`，n=1）、0 命题、0 关系，没有满足任务
+    生成条件的缺口——这是正确行为。阶段 2 不会为了“看起来在工作”而凭空搜索。
+- 真实搜索链路验证：`runs/research_harness_20261025/`（本地临时目录，合成一条
+  `光|影` 弱关系；**不是学习实验**）。
+  - 任务：`relation_unverified`（w=1,n=1），查询按 relation/evidence/counterexample
+    目的推进；每次执行都带 task_id/query_id/purpose/selection_reason。
+  - 5 次执行中 3 次成功，每次 5 条候选材料；Bing 跳转链已还原为 zhihu/zhidao
+    原站 URL；来源记录含 `serp_url`、`fetched_at`、`content_sha256`、任务/查询 ID、
+    当时的 `config_sha256`。
+  - 该验证运行在最终回退防线之前，并暴露了问题：任务耗尽后，探索回退把日记尾词
+    「下次」当成主题去搜索。防线加入后，无概念支撑的回退主题不再产生查询
+    （最终 v4 重建中研究统计保持为 0）。
+  - 观测到 Bing 会间歇返回首页/反爬页（记 `serp_blocked`，不触发改写）、
+    真实无结果页（记 `no_results`，触发一次 `broadened` 改写）、以及
+    TLS `UNEXPECTED_EOF`（主机回退后成功）。
+  - 观测到搜索结果可能与查询主题无关（如“涌现是什么”返回 Gmail 链接）。
+    这验证了阶段 2 的核心约束：**搜索成功只代表拿到候选材料，不代表知识成立**。
+- 异常/限制：
+  - Bing 可用性与结果相关性不稳定；已做主机回退和失败分类，但不能保证相关性。
+  - 未做正文提取、来源可信度、证据计数与留出评估。
+  - 不能据此宣称“搜索让系统变强”。
+- 产物：`docs/teacherless/PHASE2_RESEARCH.md`、`tests/test_research.py`。
+
 ## 下一门槛
 
-1. owner 检查 Phase 1.1 修正（代码版本硬门禁、L001 溯源、种子账本）与文档，
-   确认是否进入阶段 2。
-2. 进入阶段 2 前必须先确定：
-   - 正式实验的种子策略（`from_zero` / `declared` / `teacher_history_seeded`）；
-   - 外部训练资料通过 `seed_entries` 登记（path/哈希/大小/导入方式）；
-   - 研究任务、证据、留出任务的 schema；
-   - 运行期网络资料的 URL/获取时间/原文/哈希/独立来源记录方式。
+1. owner 检查 Phase 2 第一小步（研究任务、定向查询、去重/失败改写、来源账本、
+   配置快照）与文档，确认是否进入阶段 3。
+2. 阶段 3 前必须先确定：
+   - 候选材料如何进入证据门禁（正文提取、来源可信度、同源去重、支持/反驳计数）；
+   - 命题/关系边更新的可撤销记录与回滚方式；
+   - 留出任务与对照评估的设计，避免把“搜到更多网页”当成能力提升。
 3. 正式开跑前冻结代码版本；升级只能 `accept-code` 留下迁移记录，
    重大算法变更新建实验。
 4. 在留出任务评估建立之前，任何“学会/进化”表述都不成立。

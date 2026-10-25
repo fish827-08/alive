@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """容量受限的当前工作记忆；构建过程只读长期记忆，不强化边权。"""
-from . import config, teacherless
+from . import config, research, teacherless
 
 
 def build(st):
@@ -53,6 +53,7 @@ def build(st):
         },
         "active_concepts": active,
         "active_claims": claims[:8],
+        "research_focus": research.focus(st, limit=3),
         "open_predictions": pending,
         "contradictions": contradictions,
         "available_skills": [s for s in config.SKILLS if teacherless.allow_action(s)],

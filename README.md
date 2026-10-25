@@ -7,8 +7,9 @@
 > 做梦、向老师提问、把老师的批评变成制度、以及——问出你没想到的问题。
 >
 > 另有**无教师实验基线**（`SELFDRIVE_MODE=teacherless`）：独立目录、独立状态，
-> 硬禁用教师与 LLM 通道，用于回答"没有老师时它还能学什么"。目前只完成阶段 1.1
-> （隔离性、种子来源与代码版本可核验），搜索与自主验证闭环尚未实现。
+> 硬禁用教师与 LLM 通道，用于回答"没有老师时它还能学什么"。目前完成阶段 1.1
+> （隔离性、种子来源与代码版本可核验）与阶段 2 第一小步（研究任务队列 + 定向搜索 +
+> 候选材料来源账本）；证据门禁、统一验证器与留出评估尚未实现。
 
 ---
 
@@ -26,7 +27,7 @@
 | **moon** | 云端 `/home/qingwu/moon` | 1400+ | 无（路线 A） | 教师制·幼儿式（日常问答与纠错） |
 | **火星** | 本机 `D:\火星` | 从零 | qwen3:1.7b（路线 B） | 教师制·幼儿式 + LLM 提案 |
 
-## 架构（v9.23，模块化）
+## 架构（v9.24，模块化）
 
 ```
 selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是启动器）
@@ -34,6 +35,7 @@ selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是�
 ├── main.py           # 主循环（每轮编排 13 道决策门）
 ├── decision.py       # 候选后果评估 + 情感/内稳态/信息价值/风险仲裁
 ├── working_memory.py # 容量受限工作记忆（目标、缺口、证据、候选与选择）
+├── research.py       # 研究任务队列 + 定向查询规划 + 候选材料来源账本
 ├── outcomes.py       # 行动前预期→行动后实际结果→Brier 校准与信用归因
 ├── skills.py         # 15 个技能实现（探索/问答/搜索/巩固/做梦/信箱/LLM…）
 ├── tokenizer.py      # jieba 分词器官（缺失自动回退）
@@ -110,7 +112,7 @@ LLM 的回答**不直接进概念库**——接口只接受含 `proposals`、`as
 模型不在线时自动降级为无 LLM 路径。火星需用 `SELFDRIVE_SIBLING=同伴目录名`
 显式配置通信对象，不会默认冒充 moon。
 
-### 无教师实验基线（Teacherless，阶段 1）
+### 无教师实验基线（Teacherless，阶段 1.1 + 阶段 2）
 
 该模式硬禁用教师问答、教师回答读取、LLM、兄弟信箱、外部目录扫描与共享向量库，
 并要求**独立工作目录 + 独立 state/logs**。它不会接管辉月/moon/火星的任何数据。
@@ -150,10 +152,31 @@ SELFDRIVE_MODE=teacherless python3 -m selfdrive.teacherless accept-code \
 
 重大算法变更应新建实验，而不是在旧实验上原地升级。
 
-**阶段边界**：当前只完成阶段 1.1 的隔离性与种子/版本可核验性；研究任务、定向搜索、
-统一验证器、留出评估尚未实现，不能据此宣称“已实现无教师自主学习”。
+**阶段 2 第一小步（研究任务 + 定向搜索）**：系统每轮从本地状态生成可解释的研究任务
+（预测落空、命题证据缺口、弱关系未验证、孤立概念），按任务类型规划最多 3 条
+**目的不同**的查询（找证据/找反例/查定义/查机制/查关系/找桥接），并做
+“完全相同 + 二元组 Jaccard 相似”双重去重。`no_results` 允许一次更宽改写；
+网络失败或返回首页/反爬页时换主机、换查询目的，不重复同一文本。每次查询都绑定
+`task_id`/`query_id`/`selection_reason`，可回答“为什么搜这句”。
+
+搜索结果只保存为**候选材料**：登记真实 URL、标题/摘要、内容哈希、SERP URL/哈希、
+获取时间与任务/查询 ID，硬编码 `source_type=web_runtime`、`verification=unverified`。
+不写 `claims` 证据、不晋升定律、不改变概念置信度。影响研究调度与搜索策略的配置
+（含 `ask_config.json` 的 `web_search`/`research` 段）会写入
+`state.research.config_history`，只在哈希变化时记录。
+
+```bash
+py -m unittest discover -s tests        # 129 项（阶段 2 新增 30 项）
+```
+
+详见 [docs/teacherless/PHASE2_RESEARCH.md](docs/teacherless/PHASE2_RESEARCH.md)。
+
+**阶段边界**：当前完成阶段 1.1 的隔离性与种子/版本可核验性，以及阶段 2 的
+研究任务/定向查询/来源账本；统一验证器、证据门禁、留出评估尚未实现，
+不能据此宣称“已实现无教师自主学习”。
 设计与审计见 [docs/teacherless/MASTER_PROMPT.md](docs/teacherless/MASTER_PROMPT.md)、
 [docs/teacherless/PHASE0_AUDIT.md](docs/teacherless/PHASE0_AUDIT.md)、
+[docs/teacherless/PHASE2_RESEARCH.md](docs/teacherless/PHASE2_RESEARCH.md)、
 [docs/teacherless/EXPERIMENT_LOG.md](docs/teacherless/EXPERIMENT_LOG.md)。
 
 ### 老师如何教学（答疑协议）
@@ -171,12 +194,15 @@ SELFDRIVE_MODE=teacherless python3 -m selfdrive.teacherless accept-code \
 1. **教学对照**：辉月（进修式教学）vs moon（幼儿式教学）——同环境同口粮，教学风格的差异
 2. **路线对照**：云端纯无 LLM vs 本地 LLM 提案——LLM 只提提案时的增量
 3. **消融**：任何模块（情绪/做梦/概念卡/LLM）没有可测贡献就移除，不因"像脑"保留
-4. **无教师基线**：`teacherless` 模式下教师/LLM 零调用、独立状态、种子来源与代码版本可追溯。
-   当前只验收隔离性与账本完整性；是否有自主学习增益，要等阶段 2–4 的搜索、验证与留出评估
+4. **无教师基线**：`teacherless` 模式下教师/LLM 零调用、独立状态、种子来源与代码版本可追溯；
+   阶段 2 起搜索由研究任务驱动，结果只作为待验证候选材料。
+   当前验收隔离性、账本完整性与查询可追溯性；是否有自主学习增益，要等阶段 3–4 的
+   验证闭环与留出评估
 
 实验 4 的判据是"无教师、无 LLM 条件下在未参与训练的任务上是否变强"，
-不是轮次、概念数或日志体积。阶段 1.1 的冒烟结果（99 项测试通过、隔离运行零违规）
-只能证明通道关闭、状态未污染、种子与代码版本一致，不能证明学习发生。
+不是轮次、概念数或日志体积。阶段 1.1/2 的冒烟与测试（129 项通过、隔离运行零违规、
+来源账本可回溯）只能证明通道关闭、状态未污染、种子与代码版本一致、搜索材料有出处，
+不能证明学习发生；阶段 2 的 `materials_found` 明确不等于“已验证”。
 
 ## 目录结构
 
@@ -186,7 +212,7 @@ selfdrive/            # 认知包（见上）
 brain/                # 辉月的师生通道（inbox/outbox/PROTOCOL.md/模板）
 moon/                 # moon 的档案快照（云端运行时在 ~/moon）
 docs/                 # 行为诊断报告与设计文档（从 v9.15 到当前架构设计）
-  teacherless/        # 无教师实验：主提示词/阶段 0 审计/实验日志
+  teacherless/        # 无教师实验：主提示词/阶段 0 审计/阶段 2 研究队列/实验日志
 logs/                 # events.jsonl（每轮认知事件）+ console.txt
 state.json            # 辉月的长期记忆（概念/关系/定律/概念卡/预测/履历）
 workspace/            # 学生的"世界"（archive 口粮资料 + 自己搜的 web 缓存 + 笔记）
@@ -196,6 +222,8 @@ requirements.txt      # 唯一依赖：jieba（LLM 学生另需本机 Ollama）
 ## 观察它
 
 - `logs/events.jsonl`：每轮的认知事件（含预测结算/做梦/规则编译/自省）
+- `logs/research.jsonl`：研究任务/查询生命周期、去重拦截、失败改写、配置快照
+- `logs/research_sources.jsonl`：每次搜索的候选材料来源（URL/摘要/哈希/SERP/任务与查询 ID，全部 unverified）
 - `logs/teacherless_audit.jsonl`：仅 Teacherless 模式生成，记录初始化/启动/通道拦截
 - `workspace/notes/journey.md`：它的日记（含"概念使用""定律毕业""自省"条目）
 - 构建站：`build_site` 技能会生成 `workspace/web/index.html`（探索站网页）
