@@ -10,9 +10,9 @@ rest 不再是"脑子一片空白"：从不久前被点亮过的概念（recent_
 """
 import random
 
-from . import config
+from . import config, predictions
 from .config import (DREAM_LOG_MAX, DREAM_PRIME_WINDOW, DREAM_WEAK_W,
-                     DREAM_WALK_STEPS, PRED_HORIZON, PRED_MAX_PENDING)
+                     DREAM_WALK_STEPS, PRED_MAX_PENDING)
 from .state import append_note, log_event
 
 
@@ -75,17 +75,20 @@ def do_dream(st):
     preds = st.setdefault("edge_preds", [])
     bet = None
     if (a != b and "|".join(sorted([a, b])) not in rels
-            and sum(1 for p in preds if p.get("status") == "pending") < PRED_MAX_PENDING):
-        # dream 起源的注：兑现/落空走 predictions 的标准结算，这里不动情绪
+            and sum(1 for p in preds if p.get("status") == "pending") < PRED_MAX_PENDING
+            and predictions.pending_for(st, a) < config.BET_PER_CONCEPT_CAP
+            and predictions.pending_for(st, b) < config.BET_PER_CONCEPT_CAP):
+        # dream 起源的注：兑现/落空走 predictions 的标准结算，这里不动情绪。
+        # v9.19.1：梦押本就是冷门对，有效期加倍（DREAM_BET_HORIZON）
         preds.append({"a": a, "b": b, "round": st["rounds"],
-                      "deadline": st["rounds"] + PRED_HORIZON,
+                      "deadline": st["rounds"] + config.DREAM_BET_HORIZON,
                       "status": "pending", "origin": "dream"})
         bet = [a, b]
     dlog = st.setdefault("dream_log", [])
     dlog.append({"round": st["rounds"], "path": path, "bet": bet})
     del dlog[:-DREAM_LOG_MAX]
     if bet:
-        detail = f"梦游：{'→'.join(path)}…；下注 {a}↔{b}（{PRED_HORIZON}轮内同现则转正）"
+        detail = f"梦游：{'→'.join(path)}…；下注 {a}↔{b}（{config.DREAM_BET_HORIZON}轮内同现则转正）"
         append_note(st, f"- 做梦：从《{a}》出发走过 {'→'.join(path)}，"
                         f"梦里把《{a}》和《{b}》连了一下——下了一注，等世界验证")
     else:

@@ -21,14 +21,23 @@ def _adjacent_pairs(st):
     return {frozenset(k.split("|")) for k in st.get("relations", {})}
 
 
+def pending_for(st, concept):
+    """概念当前挂着的 pending 注数（v9.19.1 磁铁效应：新概念不该被注海淹没）。"""
+    return sum(1 for p in st.get("edge_preds", [])
+               if p.get("status") == "pending" and concept in (p.get("a"), p.get("b")))
+
+
 def make_edge_prediction(st):
-    """对一对无边的概念下注。返回 (a, b) 或 None（概念不够/都在赌了）。"""
+    """对一对无边的概念下注。返回 (a, b) 或 None（概念不够/都在赌了）。
+    v9.19.1：两端各自 pending 注 ≥ BET_PER_CONCEPT_CAP 的概念不再当选——
+    免得"减法"这种新学的饥饿概念一夜被押 34 注全落空。"""
     preds = st.setdefault("edge_preds", [])
     pending = [p for p in preds if p.get("status") == "pending"]
     if len(pending) >= PRED_MAX_PENDING:
         return None
     cons = [c for c, v in st.get("concepts", {}).items()
-            if v.get("n", 0) >= 2 and len(c) >= 2]
+            if v.get("n", 0) >= 2 and len(c) >= 2
+            and pending_for(st, c) < config.BET_PER_CONCEPT_CAP]
     if len(cons) < 6:
         return None
     adj = _adjacent_pairs(st)

@@ -595,6 +595,11 @@ def do_read_brain(st):
                            "right": right, "round": st["rounds"]})
                 del rq[:max(0, len(rq) - config.REPLAY_QUEUE_MAX)]
                 append_note(st, f"- 自问自答：我押《{gs['guess']}》会出现在答案里——没中，答案里是别的（战绩 {sq['hit']}/{sq['hit'] + sq['miss']}）。这对错了的路已降权，巩固期我会重放对拍。")
+        # v9.19.1 梦兑现放宽：老师的回答本身就是"世界文本"——下注两端都在回答里出现即兑现
+        try:
+            predictions.verify_edge_predictions(st, set(tokenizer.concept_words(text)))
+        except Exception:
+            pass
         # v9.16.1 问题4全量：相反/先后回答按句式收割 typed 边（提问→建图的断链接上）
         rel_tag = st.get("q_rel_tags", {}).pop(p.stem, None)
         rel_type, rel_topic = None, None
@@ -1156,7 +1161,9 @@ def do_self_talk(st):
                  "kind": win["kind"], "score": win["score"]}
         if pair:
             pending = sum(1 for p in st.get("edge_preds", []) if p.get("status") == "pending")
-            if pending < config.PRED_MAX_PENDING:
+            if (pending < config.PRED_MAX_PENDING
+                    and predictions.pending_for(st, pair[0]) < config.BET_PER_CONCEPT_CAP
+                    and predictions.pending_for(st, pair[1]) < config.BET_PER_CONCEPT_CAP):
                 a, b = pair
                 st.setdefault("edge_preds", []).append(
                     {"a": a, "b": b, "round": st["rounds"],

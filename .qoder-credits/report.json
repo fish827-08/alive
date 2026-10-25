@@ -1,0 +1,1155 @@
+{
+  "schemaVersion": 3.2,
+  "generatedAt": "2026-10-23T12:25:07.270Z",
+  "source": "desktop-rich",
+  "usageSource": "transcript-ratio",
+  "availability": {
+    "credits": "measured",
+    "roundTrips": "measured",
+    "contextRatio": "measured",
+    "tokens": "derived",
+    "outputTokens": "unavailable",
+    "cachedTokens": "unavailable",
+    "categoryShare": "derived",
+    "toolShare": "derived",
+    "fileShare": "derived",
+    "systemPrompt": "derived",
+    "contextWindow": "fallback",
+    "compactions": "measured",
+    "compactionCost": "measured",
+    "model": "measured",
+    "title": "measured",
+    "toolCalls": "measured",
+    "fileReads": "measured",
+    "userTurns": "measured",
+    "userContextLimit": "fallback"
+  },
+  "session": {
+    "id": "e9f5acc1-570a-45af-9601-c190d7edcdf9",
+    "title": "读一下这个项目，并上网联查，给我详细讲一下",
+    "titleSource": "first-user",
+    "model": "dfmodel",
+    "modelSource": "runtime-config",
+    "cwd": "D:\\Project\\alive",
+    "turns": 1,
+    "roundTrips": 17,
+    "compactions": 0,
+    "startedAt": "2026-10-23T12:19:04.113Z",
+    "endedAt": "2026-10-23T12:25:06.664Z"
+  },
+  "context": {
+    "contextWindow": 200000,
+    "contextWindowSource": "fallback",
+    "systemPromptTokens": 21895,
+    "netContextTokens": 155312,
+    "peakContextTokens": 155312,
+    "peakContextRatio": 0.77656,
+    "peakSessionTokens": 155312,
+    "peakSessionRatio": 0.77656,
+    "peakSessionNotable": false,
+    "peakAdvice": {
+      "level": "sweet",
+      "tone": "success",
+      "text": "正处性价比区间（65–85%）。此时压一次每轮省得最多，且第一轮就回本"
+    },
+    "userContextLimit": 200000,
+    "userContextLimitSource": "default",
+    "peakUserRatio": 0.77656,
+    "peakUserAdvice": {
+      "level": "sweet",
+      "tone": "success",
+      "text": "正处性价比区间（65–85%）。此时压一次每轮省得最多，且第一轮就回本"
+    },
+    "currentContextTokens": 155312,
+    "netUserRatio": 0.77656,
+    "netUserAdvice": {
+      "level": "sweet",
+      "tone": "success",
+      "text": "正处性价比区间（65–85%）。此时压一次每轮省得最多，且第一轮就回本"
+    },
+    "netWindowRatio": 0.77656,
+    "observedAutoCompactions": 0,
+    "observedAutoTriggerTokens": null,
+    "autoTriggerRatio": null,
+    "thresholdNotEnforced": false
+  },
+  "totals": {
+    "billedInputTokens": 1483725,
+    "netContextTokens": 155312,
+    "peakContextTokens": 155312,
+    "amplification": 9.55,
+    "attributedTokens": 1483725,
+    "coverage": 1,
+    "credits": 7.929,
+    "originalCredits": 7.929,
+    "outputTokens": 0,
+    "cachedTokens": 0,
+    "cachedTrips": 0,
+    "cachedShare": 0,
+    "toolCalls": 47,
+    "fileReads": 27
+  },
+  "creditsCoverage": {
+    "trips": 17,
+    "roundTrips": 17,
+    "tokens": 1483725,
+    "tokenShare": 1,
+    "full": true
+  },
+  "compactionCost": {
+    "count": 0,
+    "items": [],
+    "totals": {
+      "preTokens": 0,
+      "postTokens": 0,
+      "savedTokens": 0,
+      "measured": 0
+    }
+  },
+  "proxy": {
+    "matched": 0,
+    "requests": 17,
+    "breakdown": {
+      "proxy": 0,
+      "transcriptTokens": 0,
+      "transcriptRatio": 17
+    },
+    "logPath": "C:\\Users\\圣羽\\.qoder-credits-proxy\\usage.jsonl",
+    "logExists": false,
+    "logRecords": 0,
+    "configured": false,
+    "enabled": true,
+    "port": 49787,
+    "lastRecordAt": null,
+    "dormant": false,
+    "status": null,
+    "statusSuperseded": false
+  },
+  "byCategory": [
+    {
+      "key": "tool_result",
+      "label": "工具返回",
+      "tokens": 945049,
+      "share": 0.6369435885616308
+    },
+    {
+      "key": "system",
+      "label": "系统提示词",
+      "tokens": 372215,
+      "share": 0.2508652209809769
+    },
+    {
+      "key": "assistant_thinking",
+      "label": "模型思考",
+      "tokens": 69021,
+      "share": 0.046518468331118244
+    },
+    {
+      "key": "assistant_tool_use",
+      "label": "工具调用",
+      "tokens": 17137,
+      "share": 0.011549796884093008
+    },
+    {
+      "key": "assistant_text",
+      "label": "模型回复",
+      "tokens": 2108,
+      "share": 0.001420800252971942
+    },
+    {
+      "key": "user_input",
+      "label": "用户输入",
+      "tokens": 412,
+      "share": 0.00027785330645771787
+    },
+    {
+      "key": "attachment",
+      "label": "附件/技能",
+      "tokens": 77783,
+      "share": 0.052424271682751364
+    }
+  ],
+  "byCategoryDetail": [
+    {
+      "key": "tool_result",
+      "label": "工具返回",
+      "tokens": 945049,
+      "share": 0.6369435885616308,
+      "children": [
+        {
+          "tool": "Read",
+          "label": "agent_v9.py",
+          "kind": "read",
+          "tokens": 264547,
+          "share": 0.17829906437443468,
+          "catShare": 0.27992912963780064,
+          "trips": 27
+        },
+        {
+          "tool": "Read",
+          "label": "brain/inbox.md",
+          "kind": "read",
+          "tokens": 125495,
+          "share": 0.08458105985501352,
+          "catShare": 0.13279207354299233,
+          "trips": 14
+        },
+        {
+          "tool": "Bash",
+          "label": "（无路径）",
+          "kind": "shell",
+          "tokens": 98025,
+          "share": 0.0660670272090969,
+          "catShare": 0.10372508397218012,
+          "trips": 162
+        },
+        {
+          "tool": "WebSearch",
+          "label": "Baldwin effect learning evolution innate behavior",
+          "kind": "other",
+          "tokens": 33064,
+          "share": 0.02228476319700244,
+          "catShare": 0.03498702804643455,
+          "trips": 6
+        },
+        {
+          "tool": "Read",
+          "label": "semantics.py",
+          "kind": "read",
+          "tokens": 32882,
+          "share": 0.02216192765225142,
+          "catShare": 0.03479417651773259,
+          "trips": 15
+        },
+        {
+          "tool": "WebSearch",
+          "label": "Generative Agents memory stream reflection retrieval 2023 paper",
+          "kind": "other",
+          "tokens": 29707,
+          "share": 0.02002195377583493,
+          "catShare": 0.03143442234978648,
+          "trips": 7
+        },
+        {
+          "tool": "WebSearch",
+          "label": "在有限死规则内让生命自发涌现智能与语言",
+          "kind": "other",
+          "tokens": 29440,
+          "share": 0.019842278431012588,
+          "catShare": 0.031152332462944077,
+          "trips": 5
+        },
+        {
+          "tool": "WebSearch",
+          "label": "Darwin Gödel Machine self-improving agent 2025",
+          "kind": "other",
+          "tokens": 29309,
+          "share": 0.019753371708835676,
+          "catShare": 0.031012749109294687,
+          "trips": 7
+        },
+        {
+          "tool": "WebSearch",
+          "label": "Voyager Minecraft lifelong learning agent skill library 2023",
+          "kind": "other",
+          "tokens": 26423,
+          "share": 0.017808611814579642,
+          "catShare": 0.02795948045382747,
+          "trips": 6
+        },
+        {
+          "tool": "WebSearch",
+          "label": "homeostatic reinforcement learning energy regulation agent",
+          "kind": "other",
+          "tokens": 26245,
+          "share": 0.01768864706877892,
+          "catShare": 0.02777113607301404,
+          "trips": 7
+        },
+        {
+          "tool": "WebSearch",
+          "label": "Project Sid Altera Minecraft civilization agents 2024",
+          "kind": "other",
+          "tokens": 25980,
+          "share": 0.017509964700899334,
+          "catShare": 0.02749060515773614,
+          "trips": 6
+        },
+        {
+          "tool": "WebSearch",
+          "label": "spreading activation semantic network Collins Loftus theory",
+          "kind": "other",
+          "tokens": 25299,
+          "share": 0.017050764659655694,
+          "catShare": 0.02676966212684604,
+          "trips": 7
+        },
+        {
+          "tool": "WebSearch",
+          "label": "Schmidhuber compression progress curiosity intrinsic reward",
+          "kind": "other",
+          "tokens": 24983,
+          "share": 0.016838008695118627,
+          "catShare": 0.02643563574153063,
+          "trips": 6
+        },
+        {
+          "tool": "WebSearch",
+          "label": "self-evolving agents survey 2025 memory skill self-modification",
+          "kind": "other",
+          "tokens": 23226,
+          "share": 0.01565391130204717,
+          "catShare": 0.024576605500335445,
+          "trips": 5
+        },
+        {
+          "tool": "WebSearch",
+          "label": "predictive processing free energy principle active inference explained",
+          "kind": "other",
+          "tokens": 21989,
+          "share": 0.0148203759948007,
+          "catShare": 0.023267956944615163,
+          "trips": 5
+        },
+        {
+          "tool": null,
+          "label": "其他 12 项",
+          "kind": null,
+          "tokens": 128434,
+          "share": 0.08656185812226855,
+          "catShare": 0.13590192236292964,
+          "trips": 97
+        }
+      ]
+    },
+    {
+      "key": "system",
+      "label": "系统提示词",
+      "tokens": 372215,
+      "share": 0.2508652209809769,
+      "children": []
+    },
+    {
+      "key": "assistant_thinking",
+      "label": "模型思考",
+      "tokens": 69021,
+      "share": 0.046518468331118244,
+      "children": []
+    },
+    {
+      "key": "assistant_tool_use",
+      "label": "工具调用",
+      "tokens": 17137,
+      "share": 0.011549796884093008,
+      "children": [
+        {
+          "tool": "Bash",
+          "label": "（无路径）",
+          "kind": "shell",
+          "tokens": 13871,
+          "share": 0.009348949810483084,
+          "catShare": 0.8094471187938338,
+          "trips": 162
+        },
+        {
+          "tool": "Read",
+          "label": "agent_v9.py",
+          "kind": "read",
+          "tokens": 396,
+          "share": 0.0002666424721201406,
+          "catShare": 0.02308633431358215,
+          "trips": 27
+        },
+        {
+          "tool": "Read",
+          "label": "workspace/archive/alife/人工生命与涌现.md",
+          "kind": "read",
+          "tokens": 271,
+          "share": 0.00018276394763263492,
+          "catShare": 0.01582399668727916,
+          "trips": 12
+        },
+        {
+          "tool": "Read",
+          "label": "brain/ask_config.json",
+          "kind": "read",
+          "tokens": 186,
+          "share": 0.0001254645939786172,
+          "catShare": 0.010862926442577851,
+          "trips": 14
+        },
+        {
+          "tool": "Read",
+          "label": "brain/emotions.json",
+          "kind": "read",
+          "tokens": 160,
+          "share": 0.00010795955387292962,
+          "catShare": 0.009347311901356225,
+          "trips": 13
+        },
+        {
+          "tool": "Read",
+          "label": "brain/inbox.md",
+          "kind": "read",
+          "tokens": 160,
+          "share": 0.00010754108055310045,
+          "catShare": 0.009311079807923872,
+          "trips": 14
+        },
+        {
+          "tool": "Read",
+          "label": "README.md",
+          "kind": "read",
+          "tokens": 158,
+          "share": 0.00010668761670668079,
+          "catShare": 0.009237185534718506,
+          "trips": 15
+        },
+        {
+          "tool": "Read",
+          "label": "semantics.py",
+          "kind": "read",
+          "tokens": 158,
+          "share": 0.00010668761670668079,
+          "catShare": 0.009237185534718506,
+          "trips": 15
+        },
+        {
+          "tool": "WebSearch",
+          "label": "在有限死规则内让生命自发涌现智能与语言",
+          "kind": "other",
+          "tokens": 123,
+          "share": 0.00008276237093227356,
+          "catShare": 0.007165699255391953,
+          "trips": 5
+        },
+        {
+          "tool": "WebSearch",
+          "label": "open-ended artificial life agent intrinsic motivation 2025 survey",
+          "kind": "other",
+          "tokens": 118,
+          "share": 0.0000797353011404032,
+          "catShare": 0.006903610681692497,
+          "trips": 7
+        },
+        {
+          "tool": "WebSearch",
+          "label": "Generative Agents memory stream reflection retrieval 2023 paper",
+          "kind": "other",
+          "tokens": 118,
+          "share": 0.0000797353011404032,
+          "catShare": 0.006903610681692497,
+          "trips": 7
+        },
+        {
+          "tool": "WebSearch",
+          "label": "homeostatic reinforcement learning energy regulation agent",
+          "kind": "other",
+          "tokens": 112,
+          "share": 0.00007553870634353987,
+          "catShare": 0.006540262751077102,
+          "trips": 7
+        },
+        {
+          "tool": "WebSearch",
+          "label": "spreading activation semantic network Collins Loftus theory",
+          "kind": "other",
+          "tokens": 112,
+          "share": 0.00007553870634353987,
+          "catShare": 0.006540262751077102,
+          "trips": 7
+        },
+        {
+          "tool": "WebSearch",
+          "label": "autotelic agents intrinsic motivation Oudeyer survey",
+          "kind": "other",
+          "tokens": 100,
+          "share": 0.00006714551674981321,
+          "catShare": 0.005813566889846312,
+          "trips": 7
+        },
+        {
+          "tool": "WebSearch",
+          "label": "Schmidhuber compression progress curiosity intrinsic reward",
+          "kind": "other",
+          "tokens": 95,
+          "share": 0.00006399581007435289,
+          "catShare": 0.005540860217420041,
+          "trips": 6
+        },
+        {
+          "tool": null,
+          "label": "其他 12 项",
+          "kind": null,
+          "tokens": 998,
+          "share": 0.0006726484793148106,
+          "catShare": 0.0582389877558122,
+          "trips": 64
+        }
+      ]
+    },
+    {
+      "key": "assistant_text",
+      "label": "模型回复",
+      "tokens": 2108,
+      "share": 0.001420800252971942,
+      "children": []
+    },
+    {
+      "key": "user_input",
+      "label": "用户输入",
+      "tokens": 412,
+      "share": 0.00027785330645771787,
+      "children": []
+    },
+    {
+      "key": "attachment",
+      "label": "附件/技能",
+      "tokens": 77783,
+      "share": 0.052424271682751364,
+      "children": []
+    }
+  ],
+  "byTool": [
+    {
+      "tool": "Read",
+      "tokens": 441139,
+      "calls": 8,
+      "perCall": 55142,
+      "share": 0.29731834633943316
+    },
+    {
+      "tool": "WebSearch",
+      "tokens": 409151,
+      "calls": 19,
+      "perCall": 21534,
+      "share": 0.27575906208671086
+    },
+    {
+      "tool": "Bash",
+      "tokens": 111897,
+      "calls": 20,
+      "perCall": 5595,
+      "share": 0.07541597701957999
+    }
+  ],
+  "byFile": [
+    {
+      "attr": "file:D:/Project/alive/agent_v9.py",
+      "label": "agent_v9.py",
+      "kind": "read",
+      "tool": "Read",
+      "selfTokens": 20646,
+      "reads": 2,
+      "trips": 54,
+      "billed": 264942,
+      "perRead": 132471,
+      "share": 0.17856570684655484
+    },
+    {
+      "attr": "file:D:/Project/alive/brain/inbox.md",
+      "label": "brain/inbox.md",
+      "kind": "read",
+      "tool": "Read",
+      "selfTokens": 9450,
+      "reads": 1,
+      "trips": 28,
+      "billed": 125655,
+      "perRead": 125655,
+      "share": 0.08468860093556663
+    },
+    {
+      "attr": "file:Baldwin effect learning evolution innate behavior",
+      "label": "Baldwin effect learning evolution innate behavior",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 6283,
+      "reads": 1,
+      "trips": 12,
+      "billed": 33144,
+      "perRead": 33144,
+      "share": 0.02233809303873107
+    },
+    {
+      "attr": "file:D:/Project/alive/semantics.py",
+      "label": "semantics.py",
+      "kind": "read",
+      "tool": "Read",
+      "selfTokens": 2296,
+      "reads": 1,
+      "trips": 30,
+      "billed": 33041,
+      "perRead": 33041,
+      "share": 0.022268615268958104
+    },
+    {
+      "attr": "file:Generative Agents memory stream reflection retrieval 2023 paper",
+      "label": "Generative Agents memory stream reflection retrieval 2023 paper",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 4790,
+      "reads": 1,
+      "trips": 14,
+      "billed": 29825,
+      "perRead": 29825,
+      "share": 0.020101689076975328
+    },
+    {
+      "attr": "file:在有限死规则内让生命自发涌现智能与语言",
+      "label": "在有限死规则内让生命自发涌现智能与语言",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 6741,
+      "reads": 1,
+      "trips": 10,
+      "billed": 29563,
+      "perRead": 29563,
+      "share": 0.01992504080194486
+    },
+    {
+      "attr": "file:Darwin Gödel Machine self-improving agent 2025",
+      "label": "Darwin Gödel Machine self-improving agent 2025",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 4722,
+      "reads": 1,
+      "trips": 14,
+      "billed": 29402,
+      "perRead": 29402,
+      "share": 0.019816320630788628
+    },
+    {
+      "attr": "file:Voyager Minecraft lifelong learning agent skill library 2023",
+      "label": "Voyager Minecraft lifelong learning agent skill library 2023",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 5027,
+      "reads": 1,
+      "trips": 12,
+      "billed": 26518,
+      "perRead": 26518,
+      "share": 0.017872607624653994
+    },
+    {
+      "attr": "file:homeostatic reinforcement learning energy regulation agent",
+      "label": "homeostatic reinforcement learning energy regulation agent",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 4233,
+      "reads": 1,
+      "trips": 14,
+      "billed": 26357,
+      "perRead": 26357,
+      "share": 0.017764185775122458
+    },
+    {
+      "attr": "file:Project Sid Altera Minecraft civilization agents 2024",
+      "label": "Project Sid Altera Minecraft civilization agents 2024",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 4941,
+      "reads": 1,
+      "trips": 12,
+      "billed": 26064,
+      "perRead": 26064,
+      "share": 0.01756684986540987
+    },
+    {
+      "attr": "file:spreading activation semantic network Collins Loftus theory",
+      "label": "spreading activation semantic network Collins Loftus theory",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 4081,
+      "reads": 1,
+      "trips": 14,
+      "billed": 25411,
+      "perRead": 25411,
+      "share": 0.017126303365999233
+    },
+    {
+      "attr": "file:Schmidhuber compression progress curiosity intrinsic reward",
+      "label": "Schmidhuber compression progress curiosity intrinsic reward",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 4754,
+      "reads": 1,
+      "trips": 12,
+      "billed": 25078,
+      "perRead": 25078,
+      "share": 0.016902004505192976
+    },
+    {
+      "attr": "file:self-evolving agents survey 2025 memory skill self-modification",
+      "label": "self-evolving agents survey 2025 memory skill self-modification",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 5315,
+      "reads": 1,
+      "trips": 10,
+      "billed": 23309,
+      "perRead": 23309,
+      "share": 0.01571007148232264
+    },
+    {
+      "attr": "file:predictive processing free energy principle active inference explained",
+      "label": "predictive processing free energy principle active inference explained",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 5035,
+      "reads": 1,
+      "trips": 10,
+      "billed": 22081,
+      "perRead": 22081,
+      "share": 0.014882447772999905
+    },
+    {
+      "attr": "file:open-ended artificial life agent intrinsic motivation 2025 survey",
+      "label": "open-ended artificial life agent intrinsic motivation 2025 survey",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 3220,
+      "reads": 1,
+      "trips": 14,
+      "billed": 20050,
+      "perRead": 20050,
+      "share": 0.01351303524589991
+    },
+    {
+      "attr": "file:LLM as oracle teacher symbolic agent knowledge transfer 2025",
+      "label": "LLM as oracle teacher symbolic agent knowledge transfer 2025",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 3469,
+      "reads": 1,
+      "trips": 12,
+      "billed": 18299,
+      "perRead": 18299,
+      "share": 0.012333414730440567
+    },
+    {
+      "attr": "file:Tierra Avida Lenia artificial life open-ended evolution",
+      "label": "Tierra Avida Lenia artificial life open-ended evolution",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 3438,
+      "reads": 1,
+      "trips": 12,
+      "billed": 18136,
+      "perRead": 18136,
+      "share": 0.012223199724201404
+    },
+    {
+      "attr": "file:open-endedness survey AI 2025 novelty search quality diversity",
+      "label": "open-endedness survey AI 2025 novelty search quality diversity",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 4133,
+      "reads": 1,
+      "trips": 10,
+      "billed": 18126,
+      "perRead": 18126,
+      "share": 0.012216317109395953
+    },
+    {
+      "attr": "file:autotelic agents intrinsic motivation Oudeyer survey",
+      "label": "autotelic agents intrinsic motivation Oudeyer survey",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 2156,
+      "reads": 1,
+      "trips": 14,
+      "billed": 13425,
+      "perRead": 13425,
+      "share": 0.009047858382037333
+    },
+    {
+      "attr": "file:costly signaling theory language evolution sender receiver cost",
+      "label": "costly signaling theory language evolution sender receiver cost",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 2850,
+      "reads": 1,
+      "trips": 10,
+      "billed": 12499,
+      "perRead": 12499,
+      "share": 0.008424027041320703
+    },
+    {
+      "attr": "file:hippocampal replay sleep memory consolidation reinforcement learning",
+      "label": "hippocampal replay sleep memory consolidation reinforcement learning",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 2652,
+      "reads": 1,
+      "trips": 10,
+      "billed": 11631,
+      "perRead": 11631,
+      "share": 0.007838778846871052
+    },
+    {
+      "attr": "file:D:/Project/alive/README.md",
+      "label": "README.md",
+      "kind": "read",
+      "tool": "Read",
+      "selfTokens": 580,
+      "reads": 1,
+      "trips": 30,
+      "billed": 8346,
+      "perRead": 8346,
+      "share": 0.005625347062715896
+    },
+    {
+      "attr": "file:D:/Project/alive/brain/emotions.json",
+      "label": "brain/emotions.json",
+      "kind": "read",
+      "tool": "Read",
+      "selfTokens": 317,
+      "reads": 1,
+      "trips": 26,
+      "billed": 3906,
+      "perRead": 3906,
+      "share": 0.0026325521982860523
+    },
+    {
+      "attr": "file:D:/Project/alive/workspace/archive/alife/人工生命与涌现.md",
+      "label": "workspace/archive/alife/人工生命与涌现.md",
+      "kind": "read",
+      "tool": "Read",
+      "selfTokens": 248,
+      "reads": 1,
+      "trips": 24,
+      "billed": 2802,
+      "perRead": 2802,
+      "share": 0.001888560792203894
+    },
+    {
+      "attr": "file:D:/Project/alive/brain/ask_config.json",
+      "label": "brain/ask_config.json",
+      "kind": "read",
+      "tool": "Read",
+      "selfTokens": 184,
+      "reads": 1,
+      "trips": 28,
+      "billed": 2447,
+      "perRead": 2447,
+      "share": 0.0016489632351475404
+    },
+    {
+      "attr": "file:SpeedyWeather.jl atmospheric model intermediate complexity",
+      "label": "SpeedyWeather.jl atmospheric model intermediate complexity",
+      "kind": "other",
+      "tool": "WebSearch",
+      "selfTokens": 132,
+      "reads": 1,
+      "trips": 4,
+      "billed": 233,
+      "perRead": 233,
+      "share": 0.00015681706640299062
+    }
+  ],
+  "byAttr": [
+    {
+      "attr": "tool_result|Read",
+      "tokens": 439649,
+      "share": 0.29631459945786215
+    },
+    {
+      "attr": "tool_result|WebSearch",
+      "tokens": 407374,
+      "share": 0.2745619618946718
+    },
+    {
+      "attr": "system",
+      "tokens": 372215,
+      "share": 0.2508652209809769
+    },
+    {
+      "attr": "tool_result|Bash",
+      "tokens": 98025,
+      "share": 0.0660670272090969
+    },
+    {
+      "attr": "attachment",
+      "tokens": 77783,
+      "share": 0.052424271682751364
+    },
+    {
+      "attr": "assistant_thinking",
+      "tokens": 69021,
+      "share": 0.046518468331118244
+    },
+    {
+      "attr": "tool_use|Bash",
+      "tokens": 13871,
+      "share": 0.009348949810483084
+    },
+    {
+      "attr": "assistant_text",
+      "tokens": 2108,
+      "share": 0.001420800252971942
+    },
+    {
+      "attr": "tool_use|WebSearch",
+      "tokens": 1776,
+      "share": 0.0011971001920391363
+    },
+    {
+      "attr": "tool_use|Read",
+      "tokens": 1489,
+      "share": 0.001003746881570784
+    },
+    {
+      "attr": "user_input",
+      "tokens": 412,
+      "share": 0.00027785330645771787
+    }
+  ],
+  "byRequest": [
+    {
+      "index": 1,
+      "time": "20:19",
+      "ratio": 0.133175,
+      "inputTokens": 26635,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.553,
+      "originalCredits": 0.553,
+      "afterCompact": false
+    },
+    {
+      "index": 2,
+      "time": "20:19",
+      "ratio": 0.139545,
+      "inputTokens": 27909,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.054,
+      "originalCredits": 0.054,
+      "afterCompact": false
+    },
+    {
+      "index": 3,
+      "time": "20:19",
+      "ratio": 0.1581,
+      "inputTokens": 31620,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.112,
+      "originalCredits": 0.112,
+      "afterCompact": false
+    },
+    {
+      "index": 4,
+      "time": "20:19",
+      "ratio": 0.253005,
+      "inputTokens": 50601,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.445,
+      "originalCredits": 0.445,
+      "afterCompact": false
+    },
+    {
+      "index": 5,
+      "time": "20:19",
+      "ratio": 0.312005,
+      "inputTokens": 62401,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.399,
+      "originalCredits": 0.399,
+      "afterCompact": false
+    },
+    {
+      "index": 6,
+      "time": "20:19",
+      "ratio": 0.329305,
+      "inputTokens": 65861,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.166,
+      "originalCredits": 0.166,
+      "afterCompact": false
+    },
+    {
+      "index": 7,
+      "time": "20:20",
+      "ratio": 0.35007,
+      "inputTokens": 70014,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.375,
+      "originalCredits": 0.375,
+      "afterCompact": false
+    },
+    {
+      "index": 8,
+      "time": "20:20",
+      "ratio": 0.37228,
+      "inputTokens": 74456,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.072,
+      "originalCredits": 0.072,
+      "afterCompact": false
+    },
+    {
+      "index": 9,
+      "time": "20:20",
+      "ratio": 0.372985,
+      "inputTokens": 74597,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.065,
+      "originalCredits": 0.065,
+      "afterCompact": false
+    },
+    {
+      "index": 10,
+      "time": "20:20",
+      "ratio": 0.374645,
+      "inputTokens": 74929,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.142,
+      "originalCredits": 0.142,
+      "afterCompact": false
+    },
+    {
+      "index": 11,
+      "time": "20:20",
+      "ratio": 0.472585,
+      "inputTokens": 94517,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.479,
+      "originalCredits": 0.479,
+      "afterCompact": false
+    },
+    {
+      "index": 12,
+      "time": "20:20",
+      "ratio": 0.57384,
+      "inputTokens": 114768,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.538,
+      "originalCredits": 0.538,
+      "afterCompact": false
+    },
+    {
+      "index": 13,
+      "time": "20:20",
+      "ratio": 0.681665,
+      "inputTokens": 136333,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.619,
+      "originalCredits": 0.619,
+      "afterCompact": false
+    },
+    {
+      "index": 14,
+      "time": "20:20",
+      "ratio": 0.692535,
+      "inputTokens": 138507,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.134,
+      "originalCredits": 0.134,
+      "afterCompact": false
+    },
+    {
+      "index": 15,
+      "time": "20:21",
+      "ratio": 0.69664,
+      "inputTokens": 139328,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.298,
+      "originalCredits": 0.298,
+      "afterCompact": false
+    },
+    {
+      "index": 16,
+      "time": "20:22",
+      "ratio": 0.729685,
+      "inputTokens": 145937,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 0.887,
+      "originalCredits": 0.887,
+      "afterCompact": false
+    },
+    {
+      "index": 17,
+      "time": "20:25",
+      "ratio": 0.77656,
+      "inputTokens": 155312,
+      "outputTokens": null,
+      "usageSource": "transcript-ratio",
+      "credits": 2.591,
+      "originalCredits": 2.591,
+      "afterCompact": false
+    }
+  ],
+  "identity": {
+    "sumAttributed": 1483725,
+    "billedInputTokens": 1483725,
+    "absDiff": 0,
+    "ok": true
+  },
+  "pluginVersion": "2.7.4",
+  "selfCmd": "\"C:\\Users\\圣羽\\.qoder-cn\\plugins\\cache\\qoder-marketplace\\qoder-credits-inspector\\2.7.4\\bin\\credits-inspector.cmd\" cli",
+  "linkHealth": {
+    "matched": 0,
+    "requests": 17,
+    "coverage": 0,
+    "usageSource": "transcript-ratio",
+    "breakdown": {
+      "proxy": 0,
+      "transcriptTokens": 0,
+      "transcriptRatio": 17
+    },
+    "logRecords": 0,
+    "lastRecordAt": null,
+    "recentRequests": 0,
+    "proxyErrors": null,
+    "clientAbort": null,
+    "clientAbortMaxMs": null,
+    "upstreamRejected": null,
+    "aborted": null,
+    "truncated": null,
+    "noUsage": null,
+    "slowestMs": null,
+    "supersededFailure": null
+  },
+  "subagents": {
+    "scanned": false,
+    "dir": null,
+    "probedPaths": [
+      "C:\\Users\\圣羽\\.qoder-cn\\projects\\D--Project-alive\\e9f5acc1-570a-45af-9601-c190d7edcdf9\\subagents",
+      "C:\\Users\\圣羽\\.qoder-cn\\projects\\e9f5acc1-570a-45af-9601-c190d7edcdf9\\subagents"
+    ],
+    "reason": "no-dir",
+    "count": 0,
+    "items": [],
+    "totals": {
+      "roundTrips": 0,
+      "billedInputTokens": 0,
+      "credits": 0,
+      "originalCredits": 0
+    },
+    "combined": {
+      "roundTrips": 17,
+      "billedInputTokens": 1483725,
+      "credits": 7.929,
+      "originalCredits": 7.929
+    }
+  },
+  "manual": null,
+  "artifacts": {
+    "report": "report.json",
+    "canvas": "读一下这个项目，并上网联查，给我详细讲一下__e9f5acc1.canvas.tsx"
+  }
+}

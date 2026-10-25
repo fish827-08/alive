@@ -179,6 +179,10 @@ ABSTRACT_GROUND_MIN = 2       # 类比接地门槛：抽象节点须有 ≥N 次
 META_EVERY = 60               # 元认知自省间隔（轮）
 TRANSFORM_RECHECK_SUPPORT = 1  # 老变换复检：support ≤ 此值且从未复检过的，择机重问大脑
 
+# ---- v9.19.1（晨间报告两修正） ----
+BET_PER_CONCEPT_CAP = 2       # 新概念磁铁效应：同一概念的 pending 注上限（减法×34 的教训）
+DREAM_BET_HORIZON = 120       # 梦注有效期加倍（梦押本就冷门，60 轮太苛刻）
+
 
 def load_ask_config():
     """读 brain/ask_config.json。失败返回 {}（各处用默认值，行为回退）。"""
