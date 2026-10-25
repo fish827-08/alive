@@ -33,7 +33,7 @@
 | `selfdrive/skills.py` | `do_web_search` 消费研究查询；SERP 解析、主机回退、Bing 跳转链还原 |
 | `selfdrive/decision.py` | 有开放研究任务时轻微抬升 `web_search` 权重；搜索禁用/冷却仍优先 |
 | `selfdrive/working_memory.py` | 工作记忆暴露只读 `research_focus`（最多 3 条） |
-| `selfdrive/__init__.py` | 版本 `9.24` |
+| `selfdrive/__init__.py` | 版本 `9.24.1` |
 
 ## 3. 任务结构
 
@@ -51,16 +51,27 @@
   "status": "open | active | materials_found | exhausted | blocked | abandoned",
   "verification": "unverified | pending_verification",
   "attempts": [{"query_id": "...", "purpose": "...", "outcome": "..."}],
+  "attempt_history": [{"kind": "relation_unverified", "attempts": ["..."]}],
+  "kind_history": [{"from": "relation_unverified", "to": "prediction_miss"}],
   "query_ids": ["RQ:..."],
   "source_ids": ["RS:..."],
   "result_count": 0
 }
 ```
 
-- 任务 ID 由 `kind + 目标` 稳定哈希生成，同一缺口不会每轮新建任务。
+- 关系任务按**关系键**稳定哈希（`relation|A|B`），同一关系只保留一个任务；
+  其他任务按 `kind + 目标` 稳定哈希，同一缺口不会每轮新建任务。
+- 同一关系先有 `relation_unverified`、后出现 `prediction_miss` 时，任务**原地升级**：
+  `kind`/问题/原因/目标切换为更强信号，旧 `attempts` 归档进 `attempt_history`，
+  `rewrites` 重置，未执行查询标记 `cancelled`；`query_ids`/`source_ids`/`result_count`
+  保留。升级写 `task_upgraded` 与 `kind_history`，不会静默丢掉研究历史。
+  已 `exhausted` 或 `materials_found` 的同类任务也会被更强信号重新打开；
+  同强度/更弱信号不会降级，也不会重开已闭合任务。
 - `status=materials_found` 只表示“有候选材料待验证”，不是“已学会”。
   `verification` 只会变成 `pending_verification`。
-- 上限：开放/活跃任务 24，总任务 80，每轮最多新建 3 个；超出按优先级与时间修剪。
+- 上限：开放/活跃任务 24，总任务 80，每轮最多新建 3 个；所有创建入口
+  （含探索回退）共用 `_create_task` 的同一组硬上限，拒绝时写
+  `task_creation_blocked`。超出按优先级与时间修剪。
 
 ## 4. 任务来源
 
@@ -120,10 +131,21 @@ question/reason/priority/target。
 来源记录同时写两处：
 
 - `state.research.sources`（索引，最多 200 条）：id、task_id、query_id、purpose、
-  url、title、content_sha256、fetched_at、serp_url、serp_sha256、source_type、
-  verification、fetch_count；
-- `logs/research_sources.jsonl`（逐次追加）：同一 URL 每次被搜到都会留一条带
-  task/query 的完整记录；同一 URL + 内容哈希在索引中只占一条并累加 `fetch_count`。
+  url、title、title_excerpt_sha256、fetched_at、serp_url、serp_sha256、source_type、
+  verification、config_sha256、fetch_count；
+- `logs/research_sources.jsonl`（逐次追加，`format=alive-research-source/2`）：
+  同一 URL 每次被搜到都会留一条带 task/query 的完整记录；同一 URL + 摘要哈希
+  在索引中只占一条并累加 `fetch_count`。
+
+哈希覆盖范围必须按字段名理解：
+
+| 字段 | 输入 | 不是什么 |
+|---|---|---|
+| `serp_sha256` | Bing 搜索结果页 HTML 全文 | 不是目标网页正文 |
+| `title_excerpt_sha256` | 结果条目的 `title + "\n" + excerpt`（excerpt 最多 400 字符） | **不是网页正文哈希** |
+
+阶段 2 尚未实现正文提取，因此不存在 `page_content_sha256`；阶段 3 做来源变更
+检测或证据去重时，不能把 `title_excerpt_sha256` 当成网页内容指纹。
 
 `source_type=web_runtime`、`verification=unverified` 是硬编码值。阶段 2 不写
 `claims.add_evidence`，不更新 `laws`，不因“多个网页说法相似”晋升任何知识。
@@ -150,6 +172,10 @@ question/reason/priority/target。
 - 搜索在 Teacherless 中按既有策略允许（`observation_allowed`），但结果仍是
   `unverified` 候选材料；
 - 冒烟测试断言研究链路运行前后 8 项教师/LLM 痕迹计数不变。
+- **共享记忆副作用**：`do_web_search()` 成功后仍会调用 `semantic_note()` →
+  `kb_remember()`。Teacherless 下 `kb_remember()` 直接返回 `False`，候选材料
+  不会写入共享向量库；普通模式下仍可能写入本地共享记忆库。阶段 3 不得把共享库
+  召回结果自动视为已验证证据。
 
 ## 10. 测试与实测
 
@@ -160,27 +186,33 @@ py -m compileall -q selfdrive agent_v9.py tests
 py -m unittest discover -s tests
 ```
 
-- 全量：**129 项通过**（阶段 1.1 为 99 项，阶段 2 新增 30 项）。
-- `tests/test_research.py`：30 项，覆盖 owner 指定的固定案例：
+- 全量：**135 项通过**（阶段 1.1 为 99 项，阶段 2/2.1 新增 36 项）。
+- `tests/test_research.py`：36 项，覆盖 owner 指定的固定案例：
   - 同一研究目标生成 3 条目的不同的具体查询；
   - 重复主题/相似查询被抑制并计数；
   - `no_results` 生成一次更宽改写；`network_error`/`serp_blocked` 换目的不改写；
   - 每次查询都能回溯到 `task_id`，每次来源都能回溯到 `query_id`；
+  - 关系任务先建立、后出现预测落空时原地升级，尝试历史不丢失；
+  - 已 `exhausted` / `materials_found` 的关系任务被更强信号重新打开；
+  - 探索回退受总任务、开放任务与每轮新增三组硬上限约束；
+  - `title_excerpt_sha256` 只覆盖标题+摘要，不再冒充网页正文哈希；
   - 任务上限、尝试上限、配置变更只记一次；
   - 无概念支撑的最近词（日记尾词/文件名）不能变成搜索查询；
   - 工作记忆只读、决策加权、Teacherless 零痕迹等集成行为。
 
-### 隔离冒烟 v4
+### 隔离冒烟 v5（Phase 2.1 最终代码）
 
-`runs/teacherless_smoke_20261025_v4/`（本地临时目录，不提交）：
+`runs/teacherless_smoke_20261025_v5/`（本地临时目录，不提交）：
 
-- `from_zero` 初始化，代码版本 `9.24`，代码指纹 `3e57179e75ba`；
-- 3 轮；`status.clean=true`、`code_drift=false`、`seed_problems=[]`；
-- 8 项教师/LLM 痕迹全 0；
-- `research.stats` 全 0，`research.jsonl` 只有 `config_recorded`；
-- 3 轮后只有 1 个未晋升概念（`index`，n=1）、0 命题、0 关系，没有满足任务
-  生成条件的缺口——这是正确行为，不是失败。若强行搜索，只会得到无来源主题的
-  随机词，正是阶段 2 要避免的。
+- `from_zero` 初始化，代码版本 `9.24.1`，代码指纹 `6d1811661e57`；
+- 3 轮；`status.clean=true`、`code_drift=false`、`seed_problems=[]`、
+  `violations={}`；
+- 8 项教师/LLM 痕迹全 0；`events.jsonl` 无 error；
+- `research.stats` 全 0，`research.jsonl` 只有 `config_recorded`
+  （`research-config-v2`）；
+- 3 轮后 0 概念、0 命题、0 关系、0 预测，没有满足任务生成条件的缺口——
+  这是正确行为，不是失败。若强行搜索，只会得到无来源主题的随机词，
+  正是阶段 2 要避免的。
 
 ### 真实搜索链路验证
 
@@ -190,7 +222,8 @@ py -m unittest discover -s tests
 - 任务来自 `relation_unverified`，查询带任务/目的/选择理由；
 - 连续 5 次执行中 3 次抓到 5 条候选材料；
 - Bing 跳转链已还原为 zhihu/zhidao 原站 URL；
-- 来源记录含 task_id/query_id/purpose/serp_url/fetched_at/content_sha256；
+- 来源记录含 task_id/query_id/purpose/serp_url/fetched_at/title_excerpt_sha256
+  （2.1 前的记录字段名为 content_sha256，语义相同且从未代表正文）；
 - 同时观测到：Bing 会偶尔返回首页/反爬页（记为 `serp_blocked`），
   且返回结果可能与查询主题无关——因此**搜索成功绝不能当成知识已验证**，
   这正是阶段 3 证据门禁要解决的问题。
@@ -198,14 +231,16 @@ py -m unittest discover -s tests
 ## 11. 已知限制
 
 1. **不做正文提取与证据判断**：只保存标题/摘要/URL；摘要可能误导。
+   `title_excerpt_sha256` 只是摘要条目指纹，不是网页正文哈希。
 2. **不验证、不晋升**：`materials_found` 之后没有消费者，阶段 3 才接验证器。
 3. **查询模板仍是规则式**：只按任务类型分目的，没有查询效果学习或 bandit。
 4. **Bing 可用性不稳定**：已做主机回退与失败分类，但不能保证结果相关性。
 5. **任务来源范围有限**：只覆盖预测落空、命题证据缺口、弱关系、孤立概念；
    尚未覆盖“能力缺口/失败动作/矛盾集合”等更丰富信号。
 6. **配置指纹范围有限**：只覆盖研究与搜索相关参数，不是全运行配置快照。
-7. **闭合任务不自动重开**：同一缺口在 `exhausted`/`blocked` 后不会原地重启；
-   何时因新证据重开，需要在后续阶段设计。
+7. **闭合任务的重新打开规则有限**：只有同一关系出现更强的 `prediction_miss`
+   信号时才会重开/升级；同强度或更弱信号、以及其他类型的闭合任务不会自动重启，
+   何时因新证据重开需要后续阶段设计。
 8. **没有评估**：本阶段不能证明“搜索让系统变强”。
 
 ## 12. 下一阶段门槛（阶段 3，尚未启动）

@@ -163,7 +163,7 @@ SEARCH_BLACK_WORDS = {"密码", "爆破", "入侵", "漏洞", "赌博", "色情"
 
 # ---- 阶段 2：研究任务队列 + 定向搜索规划（2026-10-25） ----
 # 任务只决定"缺什么、为什么值得查、下一查什么"；搜索结果一律是 unverified 候选材料。
-RESEARCH_CONFIG_VERSION = "research-config-v1"
+RESEARCH_CONFIG_VERSION = "research-config-v2"
 RESEARCH_MAX_TASKS = 24          # 同时保留的 open/active 任务上限（materials_found 另计）
 RESEARCH_TASK_KEEP = 80          # 任务总数硬上限；超出先清 closed，再清最老 materials_found
 RESEARCH_NEW_PER_ROUND = 3       # 每轮最多新增任务数（防任务洪水）

@@ -24,7 +24,7 @@ from . import config, tokenizer
 from .state import append_jsonl
 
 FORMAT = "alive-research-state/1"
-SOURCE_FORMAT = "alive-research-source/1"
+SOURCE_FORMAT = "alive-research-source/2"
 
 KIND_BASE = {
     "prediction_miss": 0.80,
@@ -33,6 +33,7 @@ KIND_BASE = {
     "isolated_concept": 0.55,
     "exploration": 0.40,
 }
+RELATION_KINDS = {"prediction_miss", "relation_unverified"}
 KIND_LABELS = {
     "prediction_miss": "预测落空",
     "claim_evidence_gap": "命题证据缺口",
@@ -186,9 +187,17 @@ def _relation_parts(key):
     return a, b
 
 
+def _relation_key(key):
+    parts = _relation_parts(key)
+    if not parts:
+        return str(key or "")
+    return "|".join(sorted(parts))
+
+
 def _task_key(kind, target):
     if target.get("type") == "relation":
-        return f"{kind}|relation|{target.get('relation')}"
+        # 同一关系只保留一个任务：弱关系与预测落空共享 ID，后者可原地升级前者
+        return f"relation|{_relation_key(target.get('relation'))}"
     if target.get("type") == "claim":
         return f"{kind}|claim|{target.get('claim_id')}"
     if target.get("type") == "concept":
@@ -360,7 +369,32 @@ def _prune_tasks(st, r):
         _drop_task(st, r, task, "hard_cap")
 
 
+def _new_tasks_this_round(st, r):
+    round_now = st.get("rounds", 0)
+    return sum(1 for t in r["tasks"].values()
+               if t.get("created_round") == round_now)
+
+
+def _creation_block_reason(st, r):
+    if len(r["tasks"]) >= config.RESEARCH_TASK_KEEP:
+        return "total_cap"
+    open_active = sum(1 for t in r["tasks"].values()
+                      if t.get("status") in ("open", "active"))
+    if open_active >= config.RESEARCH_MAX_TASKS:
+        return "open_cap"
+    if _new_tasks_this_round(st, r) >= config.RESEARCH_NEW_PER_ROUND:
+        return "round_cap"
+    return None
+
+
 def _create_task(st, r, candidate):
+    # 所有入口（含探索回退）共用同一组硬上限
+    blocked = _creation_block_reason(st, r)
+    if blocked:
+        _log(st, "task_creation_blocked", kind=candidate["kind"],
+             target=candidate["target"], reason=blocked,
+             round_new=_new_tasks_this_round(st, r))
+        return None
     task_id = _stable_id("RT", _task_key(candidate["kind"], candidate["target"]))
     task = {
         "id": task_id,
@@ -390,13 +424,86 @@ def _create_task(st, r, candidate):
     return task
 
 
+def _upgrade_task(st, r, task, candidate):
+    """同一关系出现更强信号：原地升级，保留查询/来源与旧尝试历史。"""
+    old = {
+        "kind": task.get("kind"),
+        "priority": task.get("priority"),
+        "question": task.get("question"),
+        "reason": task.get("reason"),
+        "target": task.get("target"),
+        "rewrites": task.get("rewrites", 0),
+    }
+    archived = list(task.get("attempts") or [])
+    if archived:
+        history = task.setdefault("attempt_history", [])
+        history.append({
+            "kind": old["kind"],
+            "round": task.get("updated_round", 0),
+            "attempts": archived,
+            "rewrites": old["rewrites"],
+            "result_count": task.get("result_count", 0),
+        })
+        del history[:-5]
+    cancelled = []
+    for qid in task.get("query_ids") or []:
+        q = r["queries"].get(qid)
+        if q and q.get("status") == "planned":
+            q["status"] = "cancelled"
+            q["failure"] = "superseded"
+            cancelled.append(qid)
+    task["kind"] = candidate["kind"]
+    task["kind_label"] = KIND_LABELS.get(candidate["kind"], candidate["kind"])
+    task["question"] = candidate["question"]
+    task["reason"] = candidate["reason"]
+    task["target"] = candidate["target"]
+    task["priority"] = candidate["priority"]
+    task["status"] = "open"
+    task["attempts"] = []
+    task["rewrites"] = 0
+    task["verification"] = ("pending_verification"
+                            if task.get("result_count", 0) > 0 else "unverified")
+    task["updated_round"] = st.get("rounds", 0)
+    history = task.setdefault("kind_history", [])
+    history.append({
+        "round": st.get("rounds", 0),
+        "from": old["kind"],
+        "to": candidate["kind"],
+        "from_priority": old["priority"],
+        "to_priority": candidate["priority"],
+        "reason": candidate["reason"],
+        "archived_attempts": len(archived),
+        "archived_rewrites": old["rewrites"],
+        "cancelled_queries": cancelled,
+        "previous_question": old["question"],
+        "previous_reason": old["reason"],
+        "previous_target": old["target"],
+    })
+    del history[:-5]
+    _log(st, "task_upgraded", task_id=task["id"],
+         from_kind=old["kind"], to_kind=candidate["kind"],
+         from_priority=old["priority"], to_priority=candidate["priority"],
+         archived_attempts=len(archived), cancelled_queries=cancelled,
+         reason=candidate["reason"])
+
+
 def _refresh_task(st, task, candidate):
     task["last_seen_round"] = st.get("rounds", 0)
+    old_kind = task.get("kind")
+    new_kind = candidate["kind"]
+    if (old_kind in RELATION_KINDS and new_kind in RELATION_KINDS
+            and KIND_BASE.get(new_kind, 0.0) > KIND_BASE.get(old_kind, 0.0)):
+        _upgrade_task(st, ensure_state(st), task, candidate)
+        return
     if task.get("status") not in ("open", "active"):
         return
-    if abs(candidate["priority"] - task.get("priority", 0.0)) >= 0.02:
+    if old_kind in RELATION_KINDS:
+        new_priority = max(task.get("priority", 0.0), candidate["priority"])
+    else:
+        new_priority = candidate["priority"]
+    if abs(new_priority - task.get("priority", 0.0)) >= 0.02:
         old = task.get("priority")
-        task["priority"] = candidate["priority"]
+        task["priority"] = new_priority
         _log(st, "task_priority_updated", task_id=task["id"],
              old=old, new=task["priority"], reason=candidate["reason"])
 
@@ -408,43 +515,15 @@ def ensure_tasks(st):
     _prune_tasks(st, r)
     tasks = r["tasks"]
 
-    seen_relations, seen_concepts = set(), set()
-    for task in tasks.values():
-        target = task.get("target") or {}
-        if target.get("type") == "relation" and target.get("relation"):
-            seen_relations.add(target["relation"])
-            seen_concepts.update(target.get("concepts") or [])
-
-    open_active = [t for t in tasks.values() if t.get("status") in ("open", "active")]
-    added = 0
     for candidate in sorted(_task_candidates(st),
                             key=lambda c: (-c["priority"], c["kind"])):
-        target = candidate["target"]
-        task_id = _stable_id("RT", _task_key(candidate["kind"], target))
+        task_id = _stable_id("RT", _task_key(candidate["kind"], candidate["target"]))
         existing = tasks.get(task_id)
         if existing is not None:
             _refresh_task(st, existing, candidate)
             continue
-        rel = target.get("relation")
-        concept = target.get("concept")
-        if candidate["kind"] in ("prediction_miss", "relation_unverified"):
-            if rel in seen_relations:
-                continue
-        elif candidate["kind"] == "isolated_concept":
-            if concept in seen_concepts:
-                continue
-        if len(open_active) >= config.RESEARCH_MAX_TASKS:
-            continue
-        if added >= config.RESEARCH_NEW_PER_ROUND:
+        if _create_task(st, r, candidate) is None:
             break
-        task = _create_task(st, r, candidate)
-        added += 1
-        open_active.append(task)
-        if rel:
-            seen_relations.add(rel)
-            seen_concepts.update(target.get("concepts") or [])
-        if concept:
-            seen_concepts.add(concept)
     _prune_tasks(st, r)
     return tasks
 
@@ -736,6 +815,8 @@ def next_query(st, fallback_topic=None):
     topic = _clean_topic(fallback_topic, 24)
     if topic:
         task = _ensure_exploration_task(st, topic)
+        if task is None:
+            return None
         query = _next_for_task(st, r, task)
         if query:
             return query
@@ -756,9 +837,10 @@ def _record_sources(st, r, task, query, results, serp_url, serp_sha256, fetched_
         seen_urls.add(url)
         title = str(item.get("title") or "")[:160]
         excerpt = str(item.get("snippet") or "")[:400]
-        content_sha = hashlib.sha256(
+        # 只覆盖 SERP 条目的标题+摘要，不是网页正文；正文提取属于阶段 3
+        item_sha = hashlib.sha256(
             (title + "\n" + excerpt).encode("utf-8", errors="ignore")).hexdigest()
-        sid = _stable_id("RS", f"{url}|{content_sha}")
+        sid = _stable_id("RS", f"{url}|{item_sha}")
         record = {
             "format": SOURCE_FORMAT,
             "id": sid,
@@ -768,7 +850,7 @@ def _record_sources(st, r, task, query, results, serp_url, serp_sha256, fetched_
             "url": url,
             "title": title,
             "excerpt": excerpt,
-            "content_sha256": content_sha,
+            "title_excerpt_sha256": item_sha,
             "fetched_at": fetched_at,
             "serp_url": serp_url,
             "serp_sha256": serp_sha256,
@@ -789,7 +871,7 @@ def _record_sources(st, r, task, query, results, serp_url, serp_sha256, fetched_
             entry = {
                 "id": sid, "task_id": task["id"], "query_id": query["id"],
                 "purpose": query.get("purpose"),
-                "url": url, "title": title, "content_sha256": content_sha,
+                "url": url, "title": title, "title_excerpt_sha256": item_sha,
                 "fetched_at": fetched_at, "serp_url": serp_url,
                 "serp_sha256": serp_sha256,
                 "source_type": "web_runtime", "verification": "unverified",

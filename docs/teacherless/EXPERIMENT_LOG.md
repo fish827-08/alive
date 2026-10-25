@@ -199,7 +199,8 @@ SELFDRIVE_MODE=standard py -u agent_v9.py --once
   - 任务：`relation_unverified`（w=1,n=1），查询按 relation/evidence/counterexample
     目的推进；每次执行都带 task_id/query_id/purpose/selection_reason。
   - 5 次执行中 3 次成功，每次 5 条候选材料；Bing 跳转链已还原为 zhihu/zhidao
-    原站 URL；来源记录含 `serp_url`、`fetched_at`、`content_sha256`、任务/查询 ID、
+    原站 URL；来源记录含 `serp_url`、`fetched_at`、当时的 `content_sha256`
+    （Phase 2.1 已改名为 `title_excerpt_sha256`）、任务/查询 ID、
     当时的 `config_sha256`。
   - 该验证运行在最终回退防线之前，并暴露了问题：任务耗尽后，探索回退把日记尾词
     「下次」当成主题去搜索。防线加入后，无概念支撑的回退主题不再产生查询
@@ -215,10 +216,46 @@ SELFDRIVE_MODE=standard py -u agent_v9.py --once
   - 不能据此宣称“搜索让系统变强”。
 - 产物：`docs/teacherless/PHASE2_RESEARCH.md`、`tests/test_research.py`。
 
+## 2026-10-25 / Phase 2.1：审查修正（任务竞争、哈希契约、创建上限）
+
+- 阶段：2.1（不扩展功能，只修 owner 对 `a0ae54d` 指出的三个问题）
+- 触发：owner 审查要求阶段 3 前先完成小型修正提交。
+- 修正：
+  1. **任务竞争**：关系任务改为按关系键唯一（`relation|A|B`）。
+     `relation_unverified` 任务遇到同一关系的 `prediction_miss` 时**原地升级**：
+     `kind`/问题/原因/目标切换为更强信号，旧 `attempts` 归档进 `attempt_history`，
+     `rewrites` 重置，未执行查询标记 `cancelled`；`query_ids`/`source_ids`/
+     `result_count` 保留。已 `exhausted`/`materials_found` 的任务也可被更强信号重开。
+     升级写 `task_upgraded` 与 `kind_history`，不再用 `seen_relations` 跨类型压制。
+  2. **哈希契约**：`content_sha256` 改名为 `title_excerpt_sha256`，明确它只覆盖
+     标题+摘要（excerpt 最多 400 字符），不是网页正文；`SOURCE_FORMAT` 升为
+     `alive-research-source/2`。`serp_sha256` 仍为 SERP HTML；正文提取属于阶段 3，
+     当前不存在 `page_content_sha256`。
+  3. **创建上限**：总任务 80、开放/活跃 24、每轮新增 3 的检查统一收口到
+     `_create_task`，探索回退不再绕过；拒绝时写 `task_creation_blocked`。
+  4. **文档副作用**：明确 `do_web_search` → `semantic_note` → `kb_remember`；
+     Teacherless 下不写共享向量库，普通模式仍可能写入，阶段 3 不得把召回当已验证证据。
+- 自动化测试：
+  - `py -m compileall -q selfdrive agent_v9.py tests`：通过。
+  - `py -m unittest discover -s tests`：**135 项全部通过**
+    （阶段 1.1 为 99 项，阶段 2/2.1 为 36 项）。
+  - 新增 6 项回归：弱关系任务被预测落空升级、耗尽任务重开且保留历史、
+    `materials_found` 任务重开、探索回退遵守总/开放/每轮三组上限；
+    来源哈希断言改为校验 `title_excerpt_sha256` 的输入与格式版本。
+- 隔离冒烟 v5（Phase 2.1 最终代码）：
+  `runs/teacherless_smoke_20261025_v5/`（本地临时目录，不提交）。
+  - `from_zero`，代码版本 `9.24.1`，指纹
+    `6d1811661e574f9234b07eea0a01018f4df84bcfbdc8dcd5516f8eb164085abb`，3 轮。
+  - `status`：`clean=true`、`code_drift=false`、`seed_problems=[]`、
+    `code_migrations=[]`、`violations={}`；8 项教师/LLM 痕迹全 0。
+  - `research.stats` 全 0，`research.jsonl` 仅 `config_recorded`
+    （`research-config-v2`）；3 轮后 0 概念/命题/关系/预测。
+- 边界：仍不做正文提取、证据门禁、来源可信度、定律晋升与留出评估；
+  不能据此宣称学习发生。
+
 ## 下一门槛
 
-1. owner 检查 Phase 2 第一小步（研究任务、定向查询、去重/失败改写、来源账本、
-   配置快照）与文档，确认是否进入阶段 3。
+1. owner 复查 Phase 2.1 修正提交，确认是否进入阶段 3。
 2. 阶段 3 前必须先确定：
    - 候选材料如何进入证据门禁（正文提取、来源可信度、同源去重、支持/反驳计数）；
    - 命题/关系边更新的可撤销记录与回滚方式；

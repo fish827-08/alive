@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """阶段 2 回归：研究任务来源、定向查询、重复抑制、失败改写与来源追溯。"""
 import base64
+import hashlib
 import json
 import tempfile
 import unittest
@@ -159,6 +160,117 @@ class TaskSourceTests(ResearchSandbox):
         self.assertGreater(tasks["C-add"]["priority"], tasks["C-sub"]["priority"])
 
 
+class TaskCompetitionAndLimitTests(ResearchSandbox):
+    def test_prediction_miss_upgrades_weak_relation_task(self):
+        st = self.fresh()
+        st["relations"] = {"光|影": {"w": 1, "n": 1, "last_touch": 1}}
+        research.ensure_tasks(st)
+        task = self.tasks_of(st)[0]
+        task_id = task["id"]
+        self.assertEqual(task["kind"], "relation_unverified")
+        self.add_miss(st, "光", "影")
+        research.ensure_tasks(st)
+        self.assertEqual(len(self.tasks_of(st)), 1)
+        self.assertEqual(task["id"], task_id)
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertIn("预测落空", task["reason"])
+        self.assertEqual(task["status"], "open")
+        upgrade = task["kind_history"][-1]
+        self.assertEqual(upgrade["from"], "relation_unverified")
+        self.assertEqual(upgrade["to"], "prediction_miss")
+        query = research.next_query(st)
+        self.assertEqual(query["task_id"], task_id)
+        self.assertEqual(query["purpose"], "bridge")
+
+    def test_prediction_miss_reopens_exhausted_relation_task_with_history(self):
+        st = self.fresh()
+        st["relations"] = {"光|影": {"w": 1, "n": 1, "last_touch": 1}}
+        research.ensure_tasks(st)
+        task = self.tasks_of(st)[0]
+        for _ in range(config.RESEARCH_ATTEMPTS_PER_TASK):
+            query = research.next_query(st)
+            research.record_execution(st, query, False, failure_kind="network_error")
+        self.assertEqual(task["status"], "exhausted")
+        self.add_miss(st, "光", "影")
+        research.ensure_tasks(st)
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertEqual(task["status"], "open")
+        self.assertEqual(task["attempts"], [])
+        self.assertEqual(len(task["attempt_history"]), 1)
+        self.assertEqual(len(task["attempt_history"][0]["attempts"]),
+                         config.RESEARCH_ATTEMPTS_PER_TASK)
+        self.assertEqual(research.next_query(st)["purpose"], "bridge")
+
+    def test_prediction_miss_reopens_materials_found_relation_task(self):
+        st = self.fresh()
+        st["relations"] = {"光|影": {"w": 1, "n": 1, "last_touch": 1}}
+        research.ensure_tasks(st)
+        task = self.tasks_of(st)[0]
+        query = research.next_query(st)
+        research.record_execution(st, query, True, results=[
+            {"title": "光影", "snippet": "摘要", "url": "https://example.org/l"}])
+        for _ in range(config.RESEARCH_ATTEMPTS_PER_TASK - 1):
+            query = research.next_query(st)
+            research.record_execution(st, query, False, failure_kind="network_error")
+        self.assertEqual(task["status"], "materials_found")
+        self.assertEqual(task["verification"], "pending_verification")
+        self.add_miss(st, "光", "影")
+        research.ensure_tasks(st)
+        self.assertEqual(task["kind"], "prediction_miss")
+        self.assertEqual(task["status"], "open")
+        self.assertEqual(task["verification"], "pending_verification")
+        self.assertGreater(task["result_count"], 0)
+        self.assertEqual(task["attempts"], [])
+
+    def test_exploration_fallback_respects_total_task_cap(self):
+        st = self.fresh()
+        r = research.ensure_state(st)
+        for i in range(config.RESEARCH_TASK_KEEP):
+            r["tasks"][f"RT:old{i}"] = {
+                "id": f"RT:old{i}", "kind": "exploration",
+                "target": {"type": "exploration", "topic": f"旧{i}", "bucket": 0},
+                "status": "exhausted", "priority": 0.3,
+                "created_round": 1, "updated_round": 1,
+                "query_ids": [], "attempts": [],
+            }
+        self.assertIsNone(research.next_query(st, fallback_topic="新主题"))
+        self.assertEqual(len(r["tasks"]), config.RESEARCH_TASK_KEEP)
+        self.assertIn('"reason": "total_cap"',
+                      (self.logs / "research.jsonl").read_text(encoding="utf-8"))
+
+    def test_exploration_fallback_respects_round_cap(self):
+        st = self.fresh()
+        r = research.ensure_state(st)
+        for i in range(config.RESEARCH_NEW_PER_ROUND):
+            r["tasks"][f"RT:new{i}"] = {
+                "id": f"RT:new{i}", "kind": "exploration",
+                "target": {"type": "exploration", "topic": f"新{i}", "bucket": 0},
+                "status": "exhausted", "priority": 0.3,
+                "created_round": st["rounds"], "updated_round": st["rounds"],
+                "query_ids": [], "attempts": [],
+            }
+        self.assertIsNone(research.next_query(st, fallback_topic="另一个主题"))
+        self.assertEqual(len(r["tasks"]), config.RESEARCH_NEW_PER_ROUND)
+        self.assertIn('"reason": "round_cap"',
+                      (self.logs / "research.jsonl").read_text(encoding="utf-8"))
+
+    def test_exploration_fallback_respects_open_task_cap(self):
+        st = self.fresh()
+        r = research.ensure_state(st)
+        for i in range(config.RESEARCH_MAX_TASKS):
+            r["tasks"][f"RT:open{i}"] = {
+                "id": f"RT:open{i}", "kind": "exploration",
+                "target": {"type": "exploration", "topic": f"旧{i}", "bucket": 0},
+                "status": "open", "priority": 0.3,
+                "created_round": 1, "updated_round": 1,
+                "query_ids": [], "attempts": [],
+            }
+        self.assertIsNone(research._ensure_exploration_task(st, "新主题"))
+        self.assertEqual(len(r["tasks"]), config.RESEARCH_MAX_TASKS)
+        self.assertIn('"reason": "open_cap"',
+                      (self.logs / "research.jsonl").read_text(encoding="utf-8"))
+
+
 class QueryPlanningTests(ResearchSandbox):
     def test_same_goal_gets_distinct_purposes_and_specific_text(self):
         task = {"kind": "claim_evidence_gap", "target": {
@@ -312,7 +424,11 @@ class ProvenanceAndIntegrationTests(ResearchSandbox):
             self.assertEqual(row["serp_sha256"], "serp-hash")
             self.assertTrue(row["url"].startswith("https://example.org/"))
             self.assertTrue(row["excerpt"])
-            self.assertEqual(len(row["content_sha256"]), 64)
+            self.assertEqual(row["format"], research.SOURCE_FORMAT)
+            self.assertNotIn("content_sha256", row)
+            expected = hashlib.sha256(
+                (row["title"] + "\n" + row["excerpt"]).encode("utf-8")).hexdigest()
+            self.assertEqual(row["title_excerpt_sha256"], expected)
             self.assertTrue(row["fetched_at"])
             self.assertEqual(row["config_sha256"], research.ensure_state(st)["config_sha256"])
         task = research.ensure_state(st)["tasks"][query["task_id"]]

@@ -27,7 +27,7 @@
 | **moon** | 云端 `/home/qingwu/moon` | 1400+ | 无（路线 A） | 教师制·幼儿式（日常问答与纠错） |
 | **火星** | 本机 `D:\火星` | 从零 | qwen3:1.7b（路线 B） | 教师制·幼儿式 + LLM 提案 |
 
-## 架构（v9.24，模块化）
+## 架构（v9.24.1，模块化）
 
 ```
 selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是启动器）
@@ -157,16 +157,22 @@ SELFDRIVE_MODE=teacherless python3 -m selfdrive.teacherless accept-code \
 **目的不同**的查询（找证据/找反例/查定义/查机制/查关系/找桥接），并做
 “完全相同 + 二元组 Jaccard 相似”双重去重。`no_results` 允许一次更宽改写；
 网络失败或返回首页/反爬页时换主机、换查询目的，不重复同一文本。每次查询都绑定
-`task_id`/`query_id`/`selection_reason`，可回答“为什么搜这句”。
+`task_id`/`query_id`/`selection_reason`，可回答“为什么搜这句”。同一关系先有弱关系
+任务、后出现预测落空时，任务原地升级为 `prediction_miss`，旧尝试归档、查询/来源保留，
+不会因旧任务占位而丢掉更强信号；探索回退与常规创建共用三组任务硬上限。
 
-搜索结果只保存为**候选材料**：登记真实 URL、标题/摘要、内容哈希、SERP URL/哈希、
-获取时间与任务/查询 ID，硬编码 `source_type=web_runtime`、`verification=unverified`。
-不写 `claims` 证据、不晋升定律、不改变概念置信度。影响研究调度与搜索策略的配置
-（含 `ask_config.json` 的 `web_search`/`research` 段）会写入
+搜索结果只保存为**候选材料**：登记真实 URL、标题/摘要、SERP URL/哈希、获取时间、
+任务/查询 ID 与当时的配置哈希，硬编码 `source_type=web_runtime`、
+`verification=unverified`。`title_excerpt_sha256` 只覆盖标题+摘要，**不是网页正文哈希**；
+正文提取属于阶段 3。不写 `claims` 证据、不晋升定律、不改变概念置信度。影响研究调度与
+搜索策略的配置（含 `ask_config.json` 的 `web_search`/`research` 段）会写入
 `state.research.config_history`，只在哈希变化时记录。
 
+Teacherless 模式下 `kb_remember()` 直接返回 `False`，候选材料不会进入共享向量库；
+普通模式仍可能写入本地共享记忆库，阶段 3 不能把共享库召回自动视为已验证证据。
+
 ```bash
-py -m unittest discover -s tests        # 129 项（阶段 2 新增 30 项）
+py -m unittest discover -s tests        # 135 项（阶段 2/2.1 新增 36 项）
 ```
 
 详见 [docs/teacherless/PHASE2_RESEARCH.md](docs/teacherless/PHASE2_RESEARCH.md)。
@@ -200,7 +206,7 @@ py -m unittest discover -s tests        # 129 项（阶段 2 新增 30 项）
    验证闭环与留出评估
 
 实验 4 的判据是"无教师、无 LLM 条件下在未参与训练的任务上是否变强"，
-不是轮次、概念数或日志体积。阶段 1.1/2 的冒烟与测试（129 项通过、隔离运行零违规、
+不是轮次、概念数或日志体积。阶段 1.1/2 的冒烟与测试（135 项通过、隔离运行零违规、
 来源账本可回溯）只能证明通道关闭、状态未污染、种子与代码版本一致、搜索材料有出处，
 不能证明学习发生；阶段 2 的 `materials_found` 明确不等于“已验证”。
 
