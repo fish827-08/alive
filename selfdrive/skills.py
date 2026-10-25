@@ -1121,6 +1121,76 @@ def do_reflect_memory(st):
                   f"（因果 {built['causal']} / 相反 {built['contrast']} / 相似 {built['similar']} / 时序 {built['temporal']}）｜关系分布：{dist_s}")
 
 
+# ---------- 技能：兄弟信箱（v9.21 同伴学习通道） ----------
+
+def _sibling_name(st, me):
+    """我的名字与兄弟的名字/目录（辉月↔moon 互为镜像）。"""
+    if me == "huiyue":
+        return "huiyue", "moon", config.SHARED_LETTERS / "from_huiyue", config.SHARED_LETTERS / "from_moon"
+    return "moon", "huiyue", config.SHARED_LETTERS / "from_moon", config.SHARED_LETTERS / "from_huiyue"
+
+
+def do_sibling_letter(st, me="huiyue"):
+    """兄弟信箱：读兄弟的信（按普通阅读消化——信里的话也要过我自己的概念晋升和
+    验证，无特权、不全信）+ 写一封信（冷却 100 轮，防依赖拐杖）。
+    串行调度器保证两 agent 不会同时读写同一文件。老师只读不写此信箱。"""
+    me_name, sib_name, my_outbox_dir, sib_outbox_dir = _sibling_name(st, me)
+    SHARED = config.SHARED_LETTERS
+    SHARED.mkdir(parents=True, exist_ok=True)
+    my_outbox_dir.mkdir(parents=True, exist_ok=True)
+    sib_outbox_dir.mkdir(parents=True, exist_ok=True)
+    # 兼容：moon 的信箱路径按其 BASE 计算（相对项目根，两边指向同一物理目录）
+    read_new = []
+    for p in sorted(sib_outbox_dir.glob("*.md")):
+        if p.stem in st.setdefault("letters_read", []):
+            continue
+        try:
+            text = p.read_text(encoding="utf-8")[:config.LETTER_MAX_CHARS * 3]
+        except Exception:
+            continue
+        read_new.append((p.stem, text))
+        st["letters_read"].append(p.stem)
+        del st["letters_read"][:-60]
+    learned = 0
+    for stem, text in read_new[:3]:
+        learning.learn_from_text(st, text, stem, f"{sib_name}来信")
+        append_note(st, f"- 兄弟来信 [{stem}]：{text[:60]}……（按普通阅读消化）")
+        learned += 1
+    wrote = ""
+    if st["rounds"] - st.get("last_letter_round", -999) >= config.LETTER_COOLDOWN and learned == 0:
+        # 写信素材：最近的语义中心 + 概念卡里的一个新词
+        topic = (st.get("last_kw") or "").split("、")[0][:8]
+        cons = list(st.get("concepts", {}).keys())
+        word = random.choice(cons[-20:]) if cons else topic
+        if me_name == "huiyue":
+            letter = (f"弟弟，我最近在琢磨《{topic or word}》。"
+                      f"我发现它好像和《{word}》有点关系——你读到过它们吗？你怎么看？")
+        else:
+            letter = (f"哥哥，我今天学了《{word}》这个词。"
+                      f"我不太确定它是什么意思——你能用一句话告诉我吗？"
+                      f"另外我推出了一条变换：《{st.get('last_kw', '').split('、')[0] or '一加一'}》，对不对呀？")
+        letter = letter[:config.LETTER_MAX_CHARS]
+        fn = my_outbox_dir / f"L-{st['rounds']}-{me_name}.md"
+        try:
+            fn.write_text(letter, encoding="utf-8")
+            st["last_letter_round"] = st["rounds"]
+            wrote = f"，写了一封信给{sib_name}"
+            append_note(st, f"- 写给{sib_name}：{letter[:60]}……")
+        except Exception:
+            pass
+    # 信箱 LRU：每箱最多保留 LETTERS_KEEP 封
+    for d in (my_outbox_dir, sib_outbox_dir):
+        letters = sorted(d.glob("*.md"))
+        for old in letters[:-config.LETTERS_KEEP]:
+            try:
+                old.unlink()
+            except Exception:
+                pass
+    if not read_new and not wrote:
+        return False, "没有新信，写信冷却中"
+    return True, (f"兄弟信箱：读了 {learned} 封{sib_name}的来信{wrote}")
+
+
 def _virtual_experiment(st):
     """虚拟实验（青梧路径1 仿生）：挑一条因果边（没有则挑强边）A—B，
     "屏蔽 A"看 B 还剩几条独立连接——像婴儿拨开吊饰看还动不动：

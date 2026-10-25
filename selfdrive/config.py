@@ -83,6 +83,9 @@ SKILLS = {
                       "cost": 0.2, "weight": {"base": 0.12, "satisfaction": 0.3, "boredom": 0.3, "curiosity": 0.15}},
     "self_talk":     {"sense": ["自己的记忆"], "act": ["自言自语", "内部推理"],
                       "cost": 0.1, "weight": {"base": 0.08, "satisfaction": 0.2, "curiosity": 0.35}},
+    # v9.21 兄弟信箱：读对方的信（普通阅读消化，无特权）+ 写信（冷却节流）
+    "sibling_letter": {"sense": ["兄弟信箱"], "act": ["读信", "写信"],
+                       "cost": 0.2, "weight": {"base": 0.04, "curiosity": 0.3, "boredom": 0.15}},
 }
 
 # ---- 情感默认配置（brain/emotions.json 不存在时写入；存在则以文件为准） ----
@@ -182,6 +185,12 @@ TRANSFORM_RECHECK_SUPPORT = 1  # 老变换复检：support ≤ 此值且从未�
 # ---- v9.19.1（晨间报告两修正） ----
 BET_PER_CONCEPT_CAP = 2       # 新概念磁铁效应：同一概念的 pending 注上限（减法×34 的教训）
 DREAM_BET_HORIZON = 120       # 梦注有效期加倍（梦押本就冷门，60 轮太苛刻）
+
+# ---- v9.21 兄弟信箱（同伴学习通道；老师只读不写，兄弟纯通道） ----
+SHARED_LETTERS = BASE.parent / "shared_letters"   # /home/qingwu/shared_letters
+LETTER_COOLDOWN = 100         # 每个 agent 写信冷却（轮）——防依赖，同伴是补充不是拐杖
+LETTER_MAX_CHARS = 300        # 信件篇幅上限
+LETTERS_KEEP = 30             # 各信箱保留信件数（LRU）
 
 
 def load_ask_config():

@@ -78,6 +78,8 @@ def default_state():
         # ---- v9.19 ----
         "replay_queue": [],            # 错误重放队列（猜错/落空的对儿，巩固期对拍）
         "last_meta_round": -999,       # 元认知自省：上次自省轮
+        "letters_read": [],            # v9.21 兄弟信箱：已读信件列表
+        "last_letter_round": -999,     # v9.21 兄弟信箱：上次写信轮（冷却）
         # ---- v9.20 概念卡 ----
         "concept_cards": {},           # 七面概念卡 {名: {ground/affordances/frame/links/laws/history/stats}}
         "laws": {},                    # 定律表（独立于概念卡，卡只引用）
