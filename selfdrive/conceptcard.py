@@ -17,7 +17,7 @@ v9.20 先点亮两张卡：『加法』(探针=COMPOSE) 和『能量』(读自�
 """
 import random
 
-from . import config
+from . import claims, config, probes
 from .state import append_note
 
 HISTORY_KEEP = 12            # 每卡履历保留条数（情景记忆遗忘：旧的淡出）
@@ -25,8 +25,8 @@ EXEMPLARS_GRADUATE = 5       # 样例数毕业门槛：hypothesis → belief
 CONFIDENCE_GRADUATE = 0.75
 HISTORY_FADE = 400           # 轮龄超过此值的低权履历在巩固期淡出
 
-# 探针类（写到 ground.probes 里的合法值）
-PROBES = ("COUNT", "SEARCH", "ASK", "COMPOSE", "ABLATE")
+# 五类文本探针，加一个读取自身内稳态的内部探针
+PROBES = ("COUNT", "SEARCH", "ASK", "COMPOSE", "ABLATE", "READ_STATE")
 
 
 def default_card(name):
@@ -47,13 +47,15 @@ def ensure_cards(st):
         c["links"] = {"inverse": ["减法"], "part_of": ["算术"]}
         # 种子样例：support 最高的已验证变换
         tfs = st.get("transforms", {})
-        for tkey, tf in sorted(tfs.items(), key=lambda kv: -kv[1].get("support", 0))[:3]:
+        verified = [(k, v) for k, v in tfs.items()
+                    if probes.verify_addition(*k.partition("→")[::2]) is True]
+        for tkey, tf in sorted(verified, key=lambda kv: -kv[1].get("support", 0))[:3]:
             expr, _, res = tkey.partition("→")
             c["ground"]["exemplars"].append((expr, res, "历史验证"))
         cards["加法"] = c
     if "能量" not in cards:
         c = default_card("能量")
-        c["ground"]["probes"] = ["ASK"]      # 能量不可问老师，探针=读自身 state
+        c["ground"]["probes"] = ["READ_STATE"]
         c["frame"] = {"slots": ["当前", "消耗", "→缺口"], "fills_from": "state.energy"}
         c["affordances"] = ["energy < 0.35", "要选耗能动作之前"]
         cards["能量"] = c
@@ -116,7 +118,10 @@ def probe_COMPOSE(st, a=None, b=None):
     # 定向：查直接表
     tfs = st.get("transforms", {})
     direct = {}
-    for v in tfs.values():
+    for tkey, v in tfs.items():
+        expr, _, result = tkey.partition("→")
+        if probes.verify_addition(expr, result) is not True:
+            continue
         ops = tuple(sorted(v.get("operands", [])))
         if ops and v.get("result"):
             direct[ops] = v["result"]
@@ -135,23 +140,31 @@ def probe_ENERGY(st):
 
 # ---------- 定律表（验证回写） ----------
 
-def on_transform_verdict(st, ok):
-    """变换组合被判 真/假 → 喂 L001（合并计数定律）：命中涨信+记样例，反驳记黑。"""
+def on_transform_verdict(st, ok, expr="", result="", observation_id=""):
+    """正确算式支持合并计数定律；错误候选只反驳该算式，不冒充定律反例。"""
     laws = st.get("laws", {})
     card = st.get("concept_cards", {}).get("加法")
     law = laws.get("L001")
     if not law or not card:
         return
-    if ok:
-        law["support"] += 1
-        law["confidence"] = min(0.95, law["confidence"] + 0.08)
-        use_card(st, "加法", "verified", "变换组合判真")
+    law.setdefault("id", "L001")
+    law.setdefault("supporting_evidence", [])
+    law.setdefault("counter_evidence", [])
+    law.setdefault("evidence_index", {})
+    law.setdefault("independent_support", 0)
+    law.setdefault("independent_counter", 0)
+    if not ok:
+        use_card(st, "加法", "candidate_refuted", "错误候选被探针排除")
+        return
+    group = f"transform:{expr}→{result}"
+    _, is_new = claims.add_evidence(
+        st, law, "arithmetic_probe", observation_id, group, "support",
+        observation_id or group, reliability=1.0)
+    if is_new:
+        law["confidence"] = min(0.95, law.get("confidence", 0.4) + 0.08)
+        use_card(st, "加法", "verified", "变换组合经探针判真")
         s = card["stats"]
         s["typicality"] = min(1.0, s.get("typicality", 0.5) + 0.05)
-    else:
-        law["falsifiers"].append(st["rounds"])
-        law["confidence"] = max(0.05, law["confidence"] - 0.15)
-        use_card(st, "加法", "falsified", "变换组合判假")
     graduate(st)
 
 
@@ -160,6 +173,7 @@ def graduate(st):
     for lid, law in st.get("laws", {}).items():
         if law["status"] == "hypothesis" and (
                 law.get("support", 0) >= EXEMPLARS_GRADUATE
+                and law.get("independent_support", 0) >= EXEMPLARS_GRADUATE
                 and not law.get("falsifiers")
                 and law.get("confidence", 0) >= CONFIDENCE_GRADUATE):
             law["status"] = "belief"

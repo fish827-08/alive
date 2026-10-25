@@ -14,10 +14,10 @@ import re
 from collections import Counter
 from pathlib import Path
 
-from . import config, predictions, tokenizer
+from . import claims, config, predictions, probes, tokenizer
 from .state import append_note, record_active
 
-_NUM = "一二三四五六七八九十"
+_NUM = "一二两三四五六七八九十"
 PROMOTE_MIN_N = 3        # 跨源晋升：总次数下限
 PROMOTE_MIN_SRCS = 2     # 跨源晋升：来源数下限
 PROMOTE_HOT_N = 5        # 单源高频术语直接晋升
@@ -139,15 +139,33 @@ def merge_concepts(st, drop, keep):
     return True
 
 
-def _bump_transforms(st, text):
-    """v9.11 数字加法句式识别（owner 授权 2026-10-23）：X加Y…等于Z →
-    表达式/操作数/结果全部直接晋升（数字词是干净封闭集）+ 变换边 + 结构边。"""
+def reject_transform(st, expr, result, source, reason):
+    rejected = st.setdefault("rejected_transforms", [])
+    key = (expr, result, source)
+    if any((r.get("expr"), r.get("result"), r.get("source")) == key for r in rejected):
+        return
+    rejected.append({"expr": expr, "result": result, "source": source,
+                     "reason": reason, "round": st["rounds"]})
+    del rejected[:-40]
+
+
+def _bump_transforms(st, text, source=""):
+    """文本只提供候选；独立加法探针判真后才能进入程序性记忆。"""
     cons = st.setdefault("concepts", {})
     rels = st.setdefault("relations", {})
     found = 0
     for m in re.finditer(r"([%s]+(?:加[%s]+)+)等于([%s]+)" % (_NUM, _NUM, _NUM), text):
         expr, res = m.group(1), m.group(2)
+        verdict = probes.verify_addition(expr, res)
+        observation = source or f"text-round-{st['rounds']}"
+        if verdict is not True:
+            reject_transform(st, expr, res, source,
+                             "probe_refuted" if verdict is False else "probe_inconclusive")
+            if verdict is False:
+                claims.record_transform_verdict(st, expr, res, False, observation)
+            continue
         ops = re.findall(r"[%s]+" % _NUM, expr)
+        claims.record_transform_verdict(st, expr, res, True, observation)
         for w in [res] + ops + [expr]:
             cc = cons.setdefault(w, {"n": 0, "last": 0})
             cc["n"] += 1
@@ -155,7 +173,10 @@ def _bump_transforms(st, text):
         tfs = st.setdefault("transforms", {})
         tkey = expr + "→" + res
         tf = tfs.setdefault(tkey, {"operands": ops, "result": res, "support": 0, "last": 0})
-        tf["support"] += 1
+        groups = tf.setdefault("evidence_groups", [])
+        if observation not in groups:
+            tf["support"] = tf.get("support", 0) + 1
+            groups.append(observation)
         tf["last"] = st["rounds"]
         for x, y in ((expr, res),):
             rkey = "|".join(sorted([x, y]))
@@ -183,7 +204,7 @@ def learn_from_text(st, text, title, source, rel_type=None):
     if not wc:
         return 0, len(st.get("relations", {})), len(st.get("rules", {}))
 
-    _bump_transforms(st, text[:600])
+    _bump_transforms(st, text[:600], source)
 
     # 候选晋升：文本前 15 词逐一记数；标题概念词直接晋升（策划入口）
     promoted_now = []
@@ -239,7 +260,10 @@ def learn_from_text(st, text, title, source, rel_type=None):
         rr = st.setdefault("rules", {}).setdefault(rkey, {
             "premises": pre, "conclusion": title_concept, "support": 0,
             "confidence": 0.5, "status": "pending", "first": st["rounds"]})
-        rr["support"] += 1
+        groups = rr.setdefault("evidence_groups", [])
+        if source not in groups:
+            groups.append(source)
+            rr["support"] = rr.get("support", 0) + 1
     return len(promoted_now), len(rels), len(st.get("rules", {}))
 
 
@@ -371,14 +395,30 @@ def recheck_transform(st):
     return None
 
 
+def audit_transforms(st):
+    removed = 0
+    tfs = st.get("transforms", {})
+    for tkey in list(tfs):
+        expr, _, result = tkey.partition("→")
+        verdict = probes.verify_addition(expr, result)
+        if verdict is False:
+            tf = tfs.pop(tkey)
+            reject_transform(st, expr, result, tf.get("source", "legacy"), "probe_refuted")
+            claims.record_transform_verdict(st, expr, result, False, f"consolidate-{st['rounds']}")
+            removed += 1
+    return removed
+
+
 def transform_compose(st):
-    """v9.12 组合泛化：把已知 transforms 当改写规则，对未见表达式做符号归约。
-    不内置算术——结果必须由已知规则链归约得到。返回 (expr, result, via) 或 None。"""
+    """只用通过环境探针的变换做符号归约，不在生成阶段内置算术答案。"""
     tfs = st.get("transforms", {})
     if len(tfs) < 2:
         return None
     direct = {}
-    for v in tfs.values():
+    for tkey, v in tfs.items():
+        expr, _, result = tkey.partition("→")
+        if probes.verify_addition(expr, result) is not True:
+            continue
         ops = tuple(v.get("operands", []))
         if ops and v.get("result"):
             direct[tuple(sorted(ops))] = v["result"]

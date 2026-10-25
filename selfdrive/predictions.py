@@ -106,7 +106,9 @@ def expire_edge_predictions(st):
             break
         if p.get("status") != "pending":
             continue
-        eff_deadline = min(p.get("deadline", 0), p.get("round", 0) + PRED_HORIZON)
+        horizon = config.DREAM_BET_HORIZON if p.get("origin") == "dream" else PRED_HORIZON
+        eff_deadline = min(p.get("deadline", p.get("round", 0) + horizon),
+                           p.get("round", 0) + horizon)
         if st["rounds"] > eff_deadline:
             p["status"] = "miss"
             p["settled_round"] = st["rounds"]

@@ -22,16 +22,21 @@
 | **moon** | 云端 `/home/qingwu/moon` | 1400+ | 无（路线 A） | 无教师对照组（观察自发成长） |
 | **第三个学生** | 本机（自建目录） | 从零 | qwen3:1.7b（路线 B） | 幼儿式 + LLM 提案 |
 
-## 架构（v9.22，模块化）
+## 架构（v9.23，模块化）
 
 ```
 selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是启动器）
 ├── config.py         # 常量/技能注册表/LLM 开关
 ├── main.py           # 主循环（每轮编排 13 道决策门）
-├── decision.py       # pick_action：情感×技能+学习调制+[RULE]乘子+概念卡乘子
+├── decision.py       # 候选后果评估 + 情感/内稳态/信息价值/风险仲裁
+├── working_memory.py # 容量受限工作记忆（目标、缺口、证据、候选与选择）
+├── outcomes.py       # 行动前预期→行动后实际结果→Brier 校准与信用归因
 ├── skills.py         # 15 个技能实现（探索/问答/搜索/巩固/做梦/信箱/LLM…）
 ├── tokenizer.py      # jieba 分词器官（缺失自动回退）
 ├── learning.py       # 概念晋升制/赫布建边/定律归纳/碎片合并/老变换复检
+├── claims.py         # 命题与独立证据门禁、来源校准、证据日志
+├── probes.py         # 可执行环境探针（封闭中文数词加法）
+├── verification.py   # 教师意见与环境裁决汇合（探针优先）
 ├── conceptcard.py    # 七面概念卡 + Laws 定律表（提案/验证/毕业/反驳降级）
 ├── predictions.py    # 可失败预测（无边概念对下注→同现兑现/超时落空）
 ├── activation.py     # 并行扩散激活（4 路径撒网，赢家通吃，防垄断）
@@ -46,7 +51,8 @@ selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是�
 
 **四权分立**（安全边界）：LLM/教师/做梦只有**提案权**——输出一律是待验证提案；
 **验证权**归探针与阅读消化（概念晋升制，同源重复不膨胀置信度）；**信念权**归
-中枢门禁；**行动权**归 `pick_action` 的十二道门。
+中枢门禁；**行动权**归 `pick_action` 的候选后果仲裁。决策模式可用
+`SELFDRIVE_DECISION_MODE=legacy|shadow|enforce` 切换，默认 `enforce`。
 
 ## 快速开始
 
@@ -54,10 +60,11 @@ selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是�
 
 ```bash
 # 服务器（ubuntu）：
-git clone https://gitee.com/little-fishy/alive.git && cd alive
+git clone https://gitee.com/little-fishy/alive.git ~/selfdrive && cd ~/selfdrive
 python3 -m pip install jieba
-# 起两个学生目录（moon 是可选对照组）
-cp -r selfdrive moon 2>/dev/null; mkdir -p moon/logs
+# 两个独立工作目录（目录名决定身份：selfdrive=辉月，moon=对照组）
+git clone https://gitee.com/little-fishy/alive.git ~/moon
+mkdir -p ~/selfdrive/logs ~/moon/logs
 # 串行调度器（两个 agent 一轮接一轮，永不同时占 CPU）
 cat > ~/alternator.sh <<'EOS'
 #!/bin/bash
@@ -93,15 +100,17 @@ set SELFDRIVE_LLM_MODEL=qwen3:1.7b
 python agent_v9.py                       # 常驻；--once 单轮
 ```
 
-LLM 的回答**不直接进概念库**——全部存为 `unverified` 提案（影子运行），
-只有当后续自然阅读中同现时，才会被晋升制验证。模型不在线时自动降级为无 LLM 路径。
+LLM 的回答**不直接进概念库**——接口只接受含 `proposals`、`assumptions`、`unknowns`、
+`suggested_checks` 四个字符串数组的 JSON，全部存为 `unverified` 提案；散文和越权字段会被拒绝。
+模型不在线时自动降级为无 LLM 路径。第三个学生需用 `SELFDRIVE_SIBLING=同伴目录名`
+显式配置通信对象，不会默认冒充 moon。
 
 ### 老师如何教学（答疑协议）
 
 学生把问题写进自己的 `brain/inbox.md`，老师把回答放进 `brain/outbox/Q-编号.md`。
 结构化协议见 [brain/PROTOCOL.md](brain/PROTOCOL.md)，要点：
 
-- `[VERDICT:真/假/存疑]` 判卷推理（判假会自动删除错误规则）
+- `[VERDICT:真/假/存疑]` 提供教师判卷证据；算术由环境探针最终裁决，存疑不等于反驳
 - `"X 的反面是 Y"` 句式会被收割成知识图的 typed 边
 - `[RULE] 触发 -> 效果 [/RULE]` 直接编译进决策层（权重乘子/情绪/概念合并/新模板）
 - `FEED-*.md` 主动投喂新概念

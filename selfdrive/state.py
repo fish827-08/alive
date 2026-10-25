@@ -15,10 +15,14 @@ v9.16 新增状态键（旧 state.json 自动兼容：缺省补默认，已有�
   feelings          情绪增量队列（本技能层产生，主循环结算时应用）
 """
 import json
+import os
+import tempfile
 import time
 
 from . import config
 from .config import LOGS, NOTES, STATE_FILE
+
+STATE_VERSION = 3
 
 
 def default_state():
@@ -86,6 +90,18 @@ def default_state():
         # ---- v9.20 概念卡 ----
         "concept_cards": {},           # 七面概念卡 {名: {ground/affordances/frame/links/laws/history/stats}}
         "laws": {},                    # 定律表（独立于概念卡，卡只引用）
+        # ---- v9.23 完整认知闭环 ----
+        "claims": {},
+        "evidence": [],
+        "evidence_seq": 0,
+        "source_reliability": {},
+        "working_memory": {},
+        "current_action": None,
+        "action_outcomes": [],
+        "outcome_stats": {},
+        "rejected_transforms": [],
+        "decision_mode": config.DECISION_MODE,
+        "state_version": STATE_VERSION,
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
 
@@ -95,16 +111,37 @@ def load_state():
     if STATE_FILE.exists():
         try:
             old = json.loads(STATE_FILE.read_text(encoding="utf-8"))
-            for k in d:
-                if k in old:
-                    d[k] = old[k]
-        except Exception:
-            pass
+        except Exception as exc:
+            raise RuntimeError(f"状态文件损坏，拒绝静默重建：{STATE_FILE}") from exc
+        if not isinstance(old, dict):
+            raise RuntimeError(f"状态文件顶层必须是对象：{STATE_FILE}")
+        d.update(old)
+    d["state_version"] = STATE_VERSION
+    d["decision_mode"] = config.DECISION_MODE
     return d
 
 
 def save_state(st):
-    STATE_FILE.write_text(json.dumps(st, ensure_ascii=False, indent=1), encoding="utf-8")
+    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=STATE_FILE.name + ".", suffix=".tmp", dir=STATE_FILE.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(st, f, ensure_ascii=False, indent=1)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_name, STATE_FILE)
+    except Exception:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
+
+
+def append_jsonl(name, row):
+    LOGS.mkdir(parents=True, exist_ok=True)
+    with open(LOGS / name, "a", encoding="utf-8") as f:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 def log_event(st, action, detail):

@@ -520,58 +520,11 @@ def do_read_brain(st):
                 verdict = v
                 break
         if verdict:
+            from . import verification
             for il in st.get("infer_log", []):
                 if il.get("qid") == p.stem and "verdict" not in il:
-                    il["verdict"] = verdict
-                    # v9.20 概念卡：变换验证结果喂定律 L001（命中涨信/反驳记黑）
-                    if il.get("type") == "transform":
-                        try:
-                            conceptcard.on_transform_verdict(st, verdict == "真")
-                        except Exception:
-                            pass
-                    if il.get("type") == "transform":
-                        expr_t = il["premises"][0] if il.get("premises") else ""
-                        Dt = il.get("result")
-                        if verdict == "假" and expr_t:
-                            # v9.19 错误闭环：判假的变换直接从表里删掉——
-                            # "一加一加一→四"式错误不能永远挂着，删了才会被对的重推出来
-                            tfs = st.setdefault("transforms", {})
-                            tkey = expr_t + "→" + (Dt or "")
-                            if tkey in tfs:
-                                del tfs[tkey]
-                                append_note(st, f"- 错误清除：变换『{expr_t}={Dt}』被大脑判假，已从我的变换表删除——这条路我走错了，不再走")
-                        if verdict == "真" and Dt:
-                            tfs = st.setdefault("transforms", {})
-                            tkey = expr_t + "→" + Dt
-                            if tkey not in tfs:
-                                tfs[tkey] = {
-                                    "operands": re.findall(r"[一二三四五六七八九十]+", expr_t),
-                                    "result": Dt, "support": 1, "last": st["rounds"],
-                                    "source": "composed"}
-                                append_note(st, f"- 变换习得：组合推导 {expr_t}={Dt} 判真，已注册为新变换")
-                        append_note(st, f"- 推理验证：{expr_t}→{Dt} 被大脑判定为『{verdict}』")
-                        break
-                    prem = il.get("premises", [])
-                    if len(prem) >= 2:
-                        A, C = prem[0], prem[1]
-                        D = il.get("result")
-                        if verdict == "真" and D:
-                            cc = st.setdefault("concepts", {}).setdefault(D, {"n": 0, "last": 0})
-                            cc["n"] += 1
-                            for k in list(st.get("relations", {}).keys()):
-                                if D in k.split("|"):
-                                    st["relations"][k]["w"] += 1
-                        elif verdict == "假":
-                            ak = "|".join(sorted([A, C]))
-                            if ak in st.get("relations", {}):
-                                st["relations"][ak]["w"] = max(0, st["relations"][ak]["w"] - 2)   # v9.19: 判假降权加倍
-                            _mk = st.setdefault("mistakes", [])
-                            _mk.append({"round": st["rounds"], "premises": [A, C],
-                                        "pattern": sorted([A, C]), "result": D})
-                            del _mk[:-30]
-                            mark(st, config.EVT_INFER_FALSE)
-                        append_note(st, f"- 推理验证：{A}+{C}→{D if D else '?'} 被大脑判定为『{verdict}』")
-                        break
+                    verification.apply_verdict(st, il, verdict, p.stem)
+                    break
         # 关系学习：Q-/FEED- 都学；相反/先后问题的回答给边打类型（⑤ 表征入口）
         # v9.16.1 路径5 + v9.19 错误闭环：自问自答对拍——猜对加粗对的路，猜错降权错的路并排队重放
         gs = st.get("q_self_guess", {}).pop(p.stem, None)
@@ -907,6 +860,10 @@ def _metacognition(st):
     settled = [p for p in st.get("edge_preds", []) if p.get("status") in ("hit", "miss")]
     sq = st.get("selfqa", {})
     parts = [f"自问自答 {sq.get('hit', 0)} 中 {sq.get('miss', 0)} 错"]
+    from . import outcomes
+    outcome_metrics = outcomes.metrics(st)
+    if outcome_metrics["n"]:
+        parts.append(f"行动预测 Brier={outcome_metrics['brier']:.3f}（{outcome_metrics['n']} 次）")
     if settled:
         h = sum(1 for p in settled if p["status"] == "hit")
         parts.insert(0, f"预测命中率 {h / len(settled):.0%}（{h}/{len(settled)}）")
@@ -981,12 +938,14 @@ def do_consolidate_memory(st):
         conceptcard.consolidate_cards(st)          # v9.20：情景履历淡出+典型度压缩
     except Exception:
         pass
+    removed_tfs = learning.audit_transforms(st)
     replay_sfx = _replay_mistake(st)               # v9.19 问题二：错误对拍重放
     meta_sfx = _metacognition(st)                  # v9.19 问题五：轻元认知自省
     expired = predictions.expire_edge_predictions(st)
     extra = f"，踢残词 {kicked} 个/解散 {died} 类" if (kicked or died) else ""
     extra += f"，{replay_sfx}" if replay_sfx else ""
     extra += f"，{meta_sfx}" if meta_sfx else ""
+    extra += f"，复检清除错误变换 {removed_tfs} 条" if removed_tfs else ""
     return True, (f"记忆巩固：重放 {replayed} 条、修剪关系 {len(rm)} 条、规则库 {len(st.get('rules', {}))} 条"
                   f"（回收噪音规则 {rm_rules} 条，层级 {_added} 条，概念修剪 {pruned} 个，遗产碎片合并 {swept} 对，"
                   f"抽象节点 +{grown}（共 {len(st.get('abstract', {}))}）{extra}，预测落空 {expired} 个）")
@@ -1124,36 +1083,34 @@ def do_reflect_memory(st):
 # ---------- 技能：LLM 提案（v9.22，设计稿路线 B 最小版） ----------
 
 def do_llm_consult(st, me="huiyue"):
-    """向本地 LLM 请教当前语义中心（只在 LLM_ENABLED 时可被选中）。
-    输出处理（设计稿 10.3 管线）：
-    ① 回答文本按普通阅读消化——概念走晋升制，LLM 的话和网页平等，无特权；
-    ② 提案存入 llm_proposals（status=unverified，影子运行）——不晋升、不进决策，
-       等后续自然阅读同现时才被晋升制自然验证。
-    失败/超时/未启用 → 返回 False，无 LLM 路径照常。"""
+    """LLM 只扩展候选空间；原文不直接进入概念、关系、变换或信念。"""
     if not config.LLM_ENABLED:
-        return False, "LLM 未启用（云端纯无 LLM 路线）"
+        return False, "LLM 未启用（纯无 LLM 路线）"
     from . import llm_bridge
     if not llm_bridge.available(st):
         return False, "LLM 冷却中或预算已用完"
+    wm = st.get("working_memory", {})
+    active = wm.get("active_concepts", [])[:6]
     topic = (st.get("last_kw") or "").split("、")[0][:12]
-    prompt = (f"我正在自学中文资料，最近在读「{topic or '涌现'}」相关的概念。"
-              f"请给我 2-3 条关于它的简短解释或值得验证的问题，每条一行。")
+    prompt = (f"当前学习目标：{wm.get('goal', 'learn_and_verify')}；主题：{topic or '涌现'}。"
+              f"工作记忆概念：{'、'.join(active)}。请提出候选解释、假设、未知项和可执行核对建议。")
     result = llm_bridge.consult(st, task="hypothesize", prompt=prompt)
     if not result:
-        return False, "LLM 调用失败（Ollama 未启动或超时），继续无 LLM 路径"
+        return False, "LLM 调用失败或结构越界，继续无 LLM 路径"
     n = llm_bridge.save_proposals(st, result, topic)
-    # 回答文本按普通阅读消化（词汇层无特权）
-    learn_from_text(st, result.get("raw", ""), f"llm-{me}-{st['rounds']}", f"llm:{result.get('model')}")
-    return True, f"LLM提案 {n} 条（待验证）已入账，回答按普通阅读消化（模型 {result.get('model')}）"
+    return True, f"LLM提案 {n} 条已入 unverified 影子库（模型 {result.get('model')}），未直接学习原文"
 
 
 # ---------- 技能：兄弟信箱（v9.21 同伴学习通道） ----------
 
 def _sibling_name(st, me):
-    """我的名字与兄弟的名字/目录（辉月↔moon 互为镜像）。"""
-    if me == "huiyue":
-        return "huiyue", "moon", config.SHARED_LETTERS / "from_huiyue", config.SHARED_LETTERS / "from_moon"
-    return "moon", "huiyue", config.SHARED_LETTERS / "from_moon", config.SHARED_LETTERS / "from_huiyue"
+    """返回身份对应的发件箱与同伴发件箱；第三个学生须显式配置同伴。"""
+    me_name = re.sub(r"[^A-Za-z0-9_-]", "_", me)
+    sibling = config.SIBLING_NAME or {"huiyue": "moon", "moon": "huiyue"}.get(me_name, "")
+    sibling = re.sub(r"[^A-Za-z0-9_-]", "_", sibling)
+    my_outbox = config.SHARED_LETTERS / f"from_{me_name}"
+    sib_outbox = config.SHARED_LETTERS / f"from_{sibling}" if sibling else None
+    return me_name, sibling, my_outbox, sib_outbox
 
 
 def do_sibling_letter(st, me="huiyue"):
@@ -1164,23 +1121,24 @@ def do_sibling_letter(st, me="huiyue"):
     SHARED = config.SHARED_LETTERS
     SHARED.mkdir(parents=True, exist_ok=True)
     my_outbox_dir.mkdir(parents=True, exist_ok=True)
+    if sib_outbox_dir is None:
+        return False, "未配置同伴：请设置 SELFDRIVE_SIBLING"
     sib_outbox_dir.mkdir(parents=True, exist_ok=True)
-    # 兼容：moon 的信箱路径按其 BASE 计算（相对项目根，两边指向同一物理目录）
     read_new = []
-    for p in sorted(sib_outbox_dir.glob("*.md")):
-        if p.stem in st.setdefault("letters_read", []):
-            continue
+    unread = [p for p in sorted(sib_outbox_dir.glob("*.md"))
+              if p.stem not in st.setdefault("letters_read", [])]
+    for p in unread[:3]:
         try:
             text = p.read_text(encoding="utf-8")[:config.LETTER_MAX_CHARS * 3]
         except Exception:
             continue
         read_new.append((p.stem, text))
-        st["letters_read"].append(p.stem)
-        del st["letters_read"][:-60]
     learned = 0
-    for stem, text in read_new[:3]:
+    for stem, text in read_new:
         learning.learn_from_text(st, text, stem, f"{sib_name}来信")
         append_note(st, f"- 兄弟来信 [{stem}]：{text[:60]}……（按普通阅读消化）")
+        st["letters_read"].append(stem)
+        del st["letters_read"][:-60]
         learned += 1
     wrote = ""
     if st["rounds"] - st.get("last_letter_round", -999) >= config.LETTER_COOLDOWN and learned == 0:

@@ -23,6 +23,9 @@ STATE_FILE = BASE / "state.json"
 
 INTERVAL = int(os.environ.get("SELFDRIVE_INTERVAL", "180"))   # v9.3：默认 180s（owner 拍板）
 ONCE = "--once" in sys.argv
+DECISION_MODE = os.environ.get("SELFDRIVE_DECISION_MODE", "enforce")
+if DECISION_MODE not in {"legacy", "shadow", "enforce"}:
+    raise ValueError("SELFDRIVE_DECISION_MODE 必须是 legacy、shadow 或 enforce")
 
 # ---- v9.16 ①：世界重开——web 自食缓存读入配额 ----
 WEB_SHARE_CAP = 0.20        # 最近 RECENT_READS_MAX 次阅读中，web-* 占比上限
@@ -191,6 +194,7 @@ DREAM_BET_HORIZON = 120       # 梦注有效期加倍（梦押本就冷门，60 
 
 # ---- v9.21 兄弟信箱（同伴学习通道；老师只读不写，兄弟纯通道） ----
 SHARED_LETTERS = BASE.parent / "shared_letters"   # /home/qingwu/shared_letters
+SIBLING_NAME = os.environ.get("SELFDRIVE_SIBLING", "").strip()
 LETTER_COOLDOWN = 100         # 每个 agent 写信冷却（轮）——防依赖，同伴是补充不是拐杖
 LETTER_MAX_CHARS = 300        # 信件篇幅上限
 LETTERS_KEEP = 30             # 各信箱保留信件数（LRU）
@@ -206,10 +210,13 @@ LLM_DAILY_MAX = 40            # 每自然日调用上限（预算）
 LLM_MAX_PROMPT_CHARS = 1500   # 提示词截断
 LLM_PROPOSAL_MAX_CHARS = 300  # 单条提案截断
 LLM_PROPOSALS_PER_CALL = 3    # 每次调用最多入账提案数
+LLM_FAILURE_SILENCE = 50      # 连续失败后的静默轮数
+LLM_PROMPT_VERSION = "proposal-json-v1"
 LLM_SYSTEM_PROMPT = (
-    "你是一个学习助手的提案生成器。你只提出候选解释、候选概念和值得验证的问题，"
-    "你说的内容不会被当作事实——必须由系统自己通过阅读和验证确认。"
-    "回答保持简短（150字内），直接给出想法列表，不要客套。"
+    "你是自主认知系统的候选生成器，不是裁判或执行器。只输出一个JSON对象，不要Markdown。"
+    "必须恰好包含proposals、assumptions、unknowns、suggested_checks四个数组；"
+    "数组元素只能是简短字符串，没有内容就给空数组。禁止输出confidence、approved、execute等权限字段。"
+    "所有内容都是待验证提案，不是事实。"
 )
 
 

@@ -9,6 +9,7 @@
   ⑪ v9.16 [RULE] 编译乘子（陈述→动作的落地处）
   ⑫ v9.16 web 配额：自食缓存占比 ≥ 上限 → 压制 explore_file（配合选文件过滤）
 """
+import math
 import random
 
 from . import config
@@ -17,8 +18,8 @@ from .state import web_share
 from .tokenizer import FORMAT_NOISE
 
 
-def pick_action(st, e, web_built):
-    """权重 = base + Σ(技能对情感维度的系数 × 情感当前值)，再过十二道门。"""
+def legacy_weights(st, e, web_built):
+    """旧策略的可解释先验：基础权重乘历史门控，不消耗随机数。"""
     w = {}
     for name, sk in SKILLS.items():
         wd = sk.get("weight", {})
@@ -128,15 +129,85 @@ def pick_action(st, e, web_built):
     for a, f in st.pop("card_boost", {}).items():
         if a in w:
             w[a] *= max(0.0, f)
-    # ⑭ v9.22 LLM 开关：未启用时 llm_consult 权重归零（云端纯无 LLM 路线 A）
-    if not config.LLM_ENABLED:
+    # ⑭ LLM 关闭、冷却或预算耗尽时不产生空调用候选
+    from . import llm_bridge
+    if not llm_bridge.available(st):
         w["llm_consult"] = 0.0
     # ⑫ v9.16 web 配额：自食缓存占比超限 → 压制读文件（去外部找吃的）
     if web_share(st) >= WEB_SHARE_CAP:
         w["explore_file"] *= 0.25
         w["web_search"] *= 1.3
-    names = list(w.keys())
-    return random.choices(names, weights=[w[n] for n in names], k=1)[0]
+    if sum(w.values()) <= 0.0:
+        w["rest"] = 1.0
+    return w
+
+
+def success_probability(st, action):
+    stats = st.get("action_stats", {}).get(action, {})
+    return (stats.get("ok", 0) + 1.0) / (stats.get("try", 0) + 2.0)
+
+
+def evaluate_candidates(st, weights):
+    from .emotions import expected_energy_delta
+
+    info_values = {
+        "explore_file": 0.15, "explore_wider": 0.16, "web_search": 0.20,
+        "read_brain": 0.14, "self_talk": 0.10, "consolidate_memory": 0.07,
+        "reflect_memory": 0.07, "llm_consult": 0.08, "sibling_letter": 0.08,
+    }
+    risks = {"explore_wider": 0.08, "web_search": 0.05, "build_site": 0.04}
+    energy = st.get("energy", 1.0)
+    target = 0.8
+    candidates = []
+    for action, prior in weights.items():
+        if prior <= 0.0:
+            continue
+        probability = success_probability(st, action)
+        success_delta = expected_energy_delta(action, True)
+        failure_delta = expected_energy_delta(action, False)
+        energy_delta = probability * success_delta + (1.0 - probability) * failure_delta
+        before_gap = abs(energy - target)
+        after_gap = abs(max(0.0, min(1.0, energy + energy_delta)) - target)
+        homeostasis = before_gap - after_gap
+        information = info_values.get(action, 0.02) * (1.0 - 0.5 * probability)
+        risk = risks.get(action, 0.0)
+        model = st.get("outcome_stats", {}).get(action, {})
+        calibration_penalty = 0.15 * model.get("brier", 0.0)
+        utility = (math.log1p(max(0.0, prior)) + 0.4 * probability
+                   + 12.0 * homeostasis + information - risk - calibration_penalty)
+        candidates.append({
+            "action": action,
+            "prior_weight": round(prior, 6),
+            "success_probability": round(probability, 6),
+            "expected_energy_delta": round(energy_delta, 6),
+            "homeostasis_gain": round(homeostasis, 6),
+            "information_value": round(information, 6),
+            "risk": risk,
+            "utility": round(utility, 6),
+        })
+    return candidates
+
+
+def choose_action(st, e, web_built):
+    weights = legacy_weights(st, e, web_built)
+    candidates = evaluate_candidates(st, weights)
+    st["decision_mode"] = config.DECISION_MODE
+    if config.DECISION_MODE in ("legacy", "shadow"):
+        names = list(weights)
+        action = random.choices(names, weights=[weights[n] for n in names], k=1)[0]
+    else:
+        ranked = sorted(candidates, key=lambda c: c["utility"], reverse=True)
+        best = ranked[0]["utility"]
+        shortlist = [c for c in ranked if best - c["utility"] <= 0.6][:4]
+        scores = [math.exp(c["utility"] - best) for c in shortlist]
+        action = random.choices([c["action"] for c in shortlist], weights=scores, k=1)[0]
+    for candidate in candidates:
+        candidate["selected"] = candidate["action"] == action
+    return action, candidates
+
+
+def pick_action(st, e, web_built):
+    return choose_action(st, e, web_built)[0]
 
 
 def explore_starved(st):

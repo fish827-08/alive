@@ -1,127 +1,148 @@
 # -*- coding: utf-8 -*-
-"""llm_bridge — v9.22 LLM 提案模块（设计稿第 10 节的最小落地）。
-
-权力边界（设计稿第 3 节，必须遵守）：
-  LLM 只有提案权——输出是 {proposals, assumptions, unknowns, suggested_checks}
-  结构化提案，绝不携带 confidence/approved/执行权限；
-  验证权归探针与阅读消化（晋升制），信念权归中枢门禁，行动权归 pick_action。
-
-实现约束（设计稿 10.5）：
-  - 通过 Ollama HTTP API 调本地小模型（默认 qwen3:1.7b，用户本机）；
-  - 每轮不必调用：技能层有冷却（LETTER 式）+ 每日预算；
-  - 超时/schema 校验失败/模型不可用 → 返回 None，无 LLM 路径照常运行；
-  - 记录模型名与原始输出摘要（provenance 的雏形）；
-  - 云端默认 LLM_ENABLED=False（用户决定：云端不部署 LLM）。
-"""
+"""可关闭的 LLM 提案桥：严格 JSON、调用预算、失败降级、无执行权限。"""
+import hashlib
 import json
 import time
 import urllib.request
 
 from . import config
+from .state import append_jsonl, append_note
+
+_FIELDS = ("proposals", "assumptions", "unknowns", "suggested_checks")
+
+
+def _budget(st):
+    today = time.strftime("%Y%m%d")
+    budget = st.setdefault("llm_budget", {})
+    if budget.get("day") != today:
+        budget.clear()
+        budget.update({"day": today, "calls": 0, "fails": 0})
+    return budget
 
 
 def available(st):
-    """LLM 是否可用（开关 + 冷却 + 日预算）。不探活网络——探活放 consult 内部，
-    失败自动降级并记一次失败（连续失败进入静默期，避免每轮空耗）。"""
     if not config.LLM_ENABLED:
         return False
     if st["rounds"] - st.get("last_llm_round", -999) < config.LLM_COOLDOWN:
         return False
-    # 日预算：按自然日计数
-    today = time.strftime("%Y%m%d")
-    budget = st.setdefault("llm_budget", {"day": today, "calls": 0, "fails": 0})
-    if budget.get("day") != today:
-        budget.update({"day": today, "calls": 0, "fails": 0})
+    budget = _budget(st)
     if budget["calls"] >= config.LLM_DAILY_MAX:
         return False
-    # 连续失败静默期：连错 3 次，50 轮内不再尝试（Ollama 未启动时不空耗）
     if budget.get("fails", 0) >= 3:
-        if st["rounds"] - budget.get("fail_round", -999) < 50:
+        if st["rounds"] - budget.get("fail_round", -999) < config.LLM_FAILURE_SILENCE:
             return False
         budget["fails"] = 0
     return True
 
 
 def _strip_think(text):
-    """qwen3 系列会输出 <think>…</think> 思考段——剥掉，只留正文。"""
+    if "<think>" in text and "</think>" not in text:
+        return ""
     if "</think>" in text:
         return text.split("</think>", 1)[1].strip()
     return text.strip()
 
 
+def _failed(st):
+    budget = _budget(st)
+    budget["fails"] = budget.get("fails", 0) + 1
+    budget["fail_round"] = st["rounds"]
+    return None
+
+
+def _parse_result(raw, task, elapsed, prompt):
+    parsed = json.loads(raw)
+    if not isinstance(parsed, dict) or set(parsed) != set(_FIELDS):
+        raise ValueError("LLM 输出必须恰好包含四个提案数组")
+    result = {"model": config.LLM_MODEL, "task": task, "seconds": round(elapsed, 4)}
+    for key in _FIELDS:
+        values = parsed[key]
+        if not isinstance(values, list) or len(values) > 8:
+            raise ValueError(f"{key} 必须是最多 8 项的数组")
+        if any(not isinstance(item, str) for item in values):
+            raise ValueError(f"{key} 只能包含字符串")
+        result[key] = [item.strip()[:config.LLM_PROPOSAL_MAX_CHARS]
+                       for item in values if item.strip()]
+    result.update({
+        "raw": raw,
+        "prompt_version": config.LLM_PROMPT_VERSION,
+        "input_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+    })
+    if not any(result[key] for key in _FIELDS):
+        raise ValueError("空提案")
+    return result
+
+
 def consult(st, task, prompt, max_chars=900):
-    """向本地 LLM 提交一个任务，返回严格结构或 None。
-    返回: {"proposals": [...], "assumptions": [...], "unknowns": [...],
-           "suggested_checks": [...], "raw": str} 或 None。
-    只提案：返回值里没有任何字段能直接改变置信度或触发执行。"""
     if not available(st):
         return None
+    budget = _budget(st)
+    budget["calls"] += 1
+    st["last_llm_round"] = st["rounds"]
+    prompt = prompt[:config.LLM_MAX_PROMPT_CHARS]
     body = json.dumps({
         "model": config.LLM_MODEL,
         "messages": [
             {"role": "system", "content": config.LLM_SYSTEM_PROMPT},
-            {"role": "user", "content": prompt[:config.LLM_MAX_PROMPT_CHARS]},
+            {"role": "user", "content": prompt},
         ],
         "stream": False,
         "options": {"temperature": 0.7, "num_predict": 400},
     }).encode("utf-8")
+    started = time.time()
     try:
         req = urllib.request.Request(
             config.OLLAMA_URL.rstrip("/") + "/api/chat", data=body,
             headers={"Content-Type": "application/json"}, method="POST")
-        with urllib.request.urlopen(req, timeout=config.LLM_TIMEOUT) as r:
-            data = json.loads(r.read().decode("utf-8", errors="ignore"))
-        raw = _strip_think(data.get("message", {}).get("content", ""))
-    except Exception as exc:
-        b = st.setdefault("llm_budget", {"day": time.strftime("%Y%m%d"), "calls": 0, "fails": 0})
-        b["fails"] = b.get("fails", 0) + 1
-        b["fail_round"] = st["rounds"]
-        return None
-    st.setdefault("llm_budget", {})["calls"] = \
-        st.setdefault("llm_budget", {"calls": 0}).get("calls", 0) + 1
-    st["last_llm_round"] = st["rounds"]
-    # 解析：优先 JSON 块，失败则整段正文作为单条提案（文本世界的提案本来就是散文）
-    proposals = []
-    try:
-        start = raw.find("{")
-        end = raw.rfind("}")
-        if start >= 0 and end > start:
-            parsed = json.loads(raw[start:end + 1])
-            for key in ("proposals", "assumptions", "unknowns", "suggested_checks"):
-                val = parsed.get(key, [])
-                if isinstance(val, list):
-                    proposals.extend(str(x)[:config.LLM_PROPOSAL_MAX_CHARS] for x in val if x)
-            if proposals:
-                return {"proposals": proposals, "raw": raw[:max_chars],
-                        "model": config.LLM_MODEL, "task": task}
+        with urllib.request.urlopen(req, timeout=config.LLM_TIMEOUT) as response:
+            data = json.loads(response.read().decode("utf-8", errors="strict"))
+        content = data.get("message", {}).get("content", "")
+        if not isinstance(content, str):
+            raise ValueError("LLM content 必须是字符串")
+        raw = _strip_think(content)
+        result = _parse_result(raw, task, time.time() - started, prompt)
     except Exception:
-        pass
-    if raw and len(raw) > 20:
-        proposals = [raw[:config.LLM_PROPOSAL_MAX_CHARS]]
-        return {"proposals": proposals, "raw": raw[:max_chars],
-                "model": config.LLM_MODEL, "task": task}
-    return None
+        return _failed(st)
+    budget["fails"] = 0
+    budget.pop("fail_round", None)
+    result["raw"] = result["raw"][:max_chars]
+    return result
 
 
 def save_proposals(st, result, topic):
-    """提案落账（设计稿阶段 1 的影子运行）：只记录，不晋升，不进决策。
-    Proposal 的验证途径 = 后续自然阅读中同现（晋升制的跨源门槛会自然筛选）
-    —— 现在这个函数只做三件事：存 pending、记 provenance、写笔记。"""
     if not result:
         return 0
     props = st.setdefault("llm_proposals", [])
     n = 0
-    for p in result.get("proposals", [])[:config.LLM_PROPOSALS_PER_CALL]:
-        props.append({
-            "content": p, "topic": topic[:20], "task": result.get("task"),
-            "model": result.get("model"), "round": st["rounds"],
-            "status": "unverified",   # 设计稿 6.2：unverified 是唯一合法初始态
-            "verified_round": None,
-        })
-        n += 1
+    for field in _FIELDS:
+        for content in result.get(field, []):
+            if n >= config.LLM_PROPOSALS_PER_CALL:
+                break
+            record = {
+                "id": f"P{st['rounds']:08d}-{len(props) + 1:03d}",
+                "kind": field,
+                "content": content,
+                "topic": topic[:20],
+                "task": result.get("task"),
+                "scope": "未验证自然语言提案",
+                "status": "unverified",
+                "round": st["rounds"],
+                "verified_round": None,
+                "provenance": {
+                    "source": "llm",
+                    "model": result.get("model"),
+                    "prompt_version": result.get("prompt_version"),
+                    "input_sha256": result.get("input_sha256"),
+                    "raw_sha256": hashlib.sha256(result.get("raw", "").encode("utf-8")).hexdigest(),
+                },
+            }
+            props.append(record)
+            append_jsonl("proposals.jsonl", record)
+            n += 1
+        if n >= config.LLM_PROPOSALS_PER_CALL:
+            break
     del props[:max(0, len(props) - 40)]
     if n:
-        from .state import append_note
         append_note(st, f"- LLM提案（待验证×{n}，模型 {result.get('model')}）："
-                        f"{props[-1]['content'][:80]}……——这些只是别人的说法，等我读到证据才算数")
+                        f"{props[-1]['content'][:80]}——仅入影子提案库，未进入概念或信念")
     return n

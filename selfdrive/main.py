@@ -15,9 +15,9 @@ except ImportError:
     sys.path.insert(0, str(_cfg.BASE))
     import semantics as sem
 
-from . import config, rules_compiler, skills, templates
+from . import config, outcomes, rules_compiler, skills, templates, working_memory
 from .config import LOGS, NOVELTY_WEB_SCALE, ONCE
-from .decision import pick_action
+from .decision import choose_action
 from .emotions import apply_energy, update_emotions
 from .state import clamp, load_state, log_event, save_state
 
@@ -46,7 +46,11 @@ def run_round(st):
         pass
     files, dirs = skills.scan_workspace()
     novelty = skills.novelty_score(files, st)
-    action = pick_action(st, st["emotions"], st["web_built"])
+    working_memory.build(st)
+    action, candidates = choose_action(st, st["emotions"], st["web_built"])
+    working_memory.attach_decision(st, action, candidates)
+    outcomes.begin(st, action, candidates)
+    save_state(st)                    # 行动前预期必须先落盘，崩溃后才能识别未结算行动
     st["action_counts"][action] = st["action_counts"].get(action, 0) + 1
     # 渴求度更新（v9.8b）
     urge_cfg = config.load_ask_config().get("urge", {})
@@ -84,10 +88,15 @@ def run_round(st):
         "llm_consult": (st, AGENT_NAME),
     }
     fn = handlers[action]
-    if action in args_map:
-        ok, detail = fn(*args_map[action])
-    else:
-        ok, detail = fn(st)
+    try:
+        if action in args_map:
+            ok, detail = fn(*args_map[action])
+        else:
+            ok, detail = fn(st)
+    except Exception as exc:
+        outcomes.settle(st, False, f"{exc.__class__.__name__}: {exc}", forced_status="inconclusive")
+        save_state(st)
+        raise
 
     # 成功率统计（P2 修复：read_brain 无新回答的空转不计尝试）
     stats = st.setdefault("action_stats", {})
@@ -133,6 +142,7 @@ def run_round(st):
     m["sat_sum"] += new_e.get("satisfaction", 0.0) - old_e.get("satisfaction", 0.0)
     m["cur_sum"] += new_e.get("curiosity", 0.0) - old_e.get("curiosity", 0.0)
     m["n"] += 1
+    outcomes.settle(st, ok, detail)
     log_event(st, action, detail)
     save_state(st)
     SEM.save()
@@ -147,7 +157,7 @@ def main():
     if ONCE:
         run_round(st)
         return
-    print(f"selfdrive agent v9.18（模块化·扩散激活/做梦/分层图）启动 | 间隔 {config.INTERVAL}s", flush=True)
+    print(f"selfdrive agent v9.23（工作记忆/证据门禁/行动后果）启动 | 间隔 {config.INTERVAL}s", flush=True)
     while True:
         try:
             run_round(st)

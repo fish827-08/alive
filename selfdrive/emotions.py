@@ -69,17 +69,23 @@ def day_factor():
     return 1.0 if 6 <= h < 20 else 0.4
 
 
+BASE_METABOLISM = 0.008
+ENERGY_GAINS = {
+    "explore_file": 0.06, "explore_wider": 0.06, "read_brain": 0.05,
+    "web_search": 0.05, "consolidate_memory": 0.03, "rest": 0.08,
+    "reflect_memory": 0.02, "ask_brain": -0.02, "tidy_notes": -0.01,
+    "refresh_site": -0.01,
+}
+
+
+def expected_energy_delta(action, ok):
+    return -BASE_METABOLISM + (ENERGY_GAINS.get(action, 0.0) if ok else 0.0)
+
+
 def apply_energy(st, action, ok):
     """内稳态：动作耗能/回能，能量低→恐惧上升（求生动机，不会死亡）。"""
     en = st.setdefault("energy", 1.0)
-    en -= 0.008  # 基础代谢
-    gains = {"explore_file": 0.06, "explore_wider": 0.06, "read_brain": 0.05,
-             "web_search": 0.05, "consolidate_memory": 0.03, "rest": 0.08,
-             "reflect_memory": 0.02,
-             "ask_brain": -0.02, "tidy_notes": -0.01, "refresh_site": -0.01}
-    g = gains.get(action, 0.0)
-    if ok:
-        en += g
+    en += expected_energy_delta(action, ok)
     st["energy"] = max(0.0, min(1.0, en))
     e = st.setdefault("emotions", {})
     fear = e.get("fear", 0.0)

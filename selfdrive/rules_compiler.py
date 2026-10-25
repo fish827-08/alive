@@ -139,10 +139,15 @@ def _undo_rule(st, rid, source=""):
     rule = rules.pop(rid, None)
     if not rule:
         return
-    # 回滚它设置的乘子（按出生值近似：乘子重算为 1.0 基线的逆操作不可靠，直接复位该技能）
-    for eff in rule.get("effects", []):
-        if eff["kind"] == "weight":
-            st.setdefault("skill_multipliers", {}).pop(eff["skill"], None)
+    affected = {e["skill"] for e in rule.get("effects", []) if e["kind"] == "weight"}
+    mult = st.setdefault("skill_multipliers", {})
+    for skill in affected:
+        value = 1.0
+        for remaining in rules.values():
+            for eff in remaining.get("effects", []):
+                if eff["kind"] == "weight" and eff["skill"] == skill:
+                    value *= eff["factor"]
+        mult[skill] = max(MULTIPLIER_MIN, min(MULTIPLIER_MAX, value))
     st.get("rule_metrics", {}).pop(rid, None)
     append_note(st, f"- 规则撤销：[{rid}]（{source or '老师指令'}）已从决策层移除")
 
