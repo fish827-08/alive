@@ -133,6 +133,15 @@ def legacy_weights(st, e, web_built):
     from . import llm_bridge
     if not llm_bridge.available(st):
         w["llm_consult"] = 0.0
+    # ⑮ v9.23 自我调参持久化：self_tune 写入 ask_config 的 self_tuned 段
+    #    （"屡屡碰壁"的动作被自己持久降权——自我修改真正改变行为的一环）
+    try:
+        for full_key, boost in load_ask_config().get("self_tuned", {}).items():
+            act, _, kind = full_key.partition(".")
+            if kind == "base_boost" and act in w:
+                w[act] *= max(0.0, float(boost))
+    except Exception:
+        pass
     # ⑫ v9.16 web 配额：自食缓存占比超限 → 压制读文件（去外部找吃的）
     if web_share(st) >= WEB_SHARE_CAP:
         w["explore_file"] *= 0.25
