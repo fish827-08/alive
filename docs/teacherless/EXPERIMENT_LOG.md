@@ -429,13 +429,76 @@ SELFDRIVE_MODE=standard py -u agent_v9.py --once
 - 边界：仍不做正文提取、证据门禁、来源可信度、定律晋升与留出评估；
   搜索材料仍全部 `unverified`；不能据此宣称学习发生。
 
+## 2026-10-26 / Phase 3.0 网页候选验证管线（v9.25.0）
+
+- 阶段：3.0（最小验证闭环第一小步；不是完整阶段 3）
+- 假设：阶段 2 的 `pending_verification` 候选材料可以在不修改任务/来源状态、不写
+  `claims`/`relations`/`laws`、不调用教师/LLM 的条件下，被安全抓取、抽取、判定，
+  并写成可追溯、可幂等的候选账本。
+- 实现：
+  1. 新增 `selfdrive/verification.py`：`verify_task`/`verify_pending` 消费现有研究
+     任务与来源账本；`sources_for_task` 支持当前索引、任务快照与共享来源的
+     `query_id` 重绑定；`summarize_task`/`latest_candidates` 只读汇总。
+  2. 安全抓取：仅 HTTP(S) 与 80/443；拒绝凭据、本地域名、非法 IDNA、全数字伪 IP；
+     DNS 结果必须全部 `is_global`；连接固定到已校验 IP 并保留 TLS SNI；每跳重定向
+     复检；5 跳上限、单跳 10 秒、总时限 30 秒、正文 2 MB；只接受 HTML/XHTML/纯文本
+     与 `identity` 编码。失败类型全部显式入账。
+  3. 正文抽取：HTMLParser 去脚本/导航/页脚等噪声，正文至少 20 字符、最多 20 万字符；
+     不支持类型/编码、空正文、解析异常都写 `uncertain` 记录。
+  4. 候选判定 `terms-cues-v1`：目标词命中、同句共现、60 字符窗口内的方向线索；
+     支持与反驳冲突时判 `uncertain`；无线索不猜真值。
+  5. 独立性：按最终落点域名的可注册域分组，托管平台整站合并，IP 按地址；同正文/
+     同文本或无法解析域名不计独立；只有独立方向证据才 `evidence_counted=true`。
+  6. 只追加 `logs/verification.jsonl`（`alive-verification/1`）：任务/查询/来源 ID、
+     原始与最终 URL、重定向、正文/文本哈希、获取/事件时间、抽取状态、证据摘录、
+     判定与依据、独立性、失败类型、验证器版本、配置哈希，硬编码
+     `conclusion_status=candidate`、`promotion=none`。
+  7. 幂等：成功按任务+来源+正文哈希+验证器版本去重；失败按任务+来源+URL+失败类型+
+     验证器版本去重；验证器异常写 `verifier_exception`，不破坏其他来源记录。
+  8. 命名拆分：原 `selfdrive/verification.py`（教师 `[VERDICT]` 与探针）改名为
+     `selfdrive/teacher_verdict.py`；`skills.do_read_brain` 与旧测试同步更新。
+- 自动化测试（代码证据）：
+  - `py -m compileall -q selfdrive tests agent_v9.py semantics.py`：通过。
+  - `py -m unittest discover -s tests`：**189 项全部通过**
+    （阶段 1.1 为 99 项，阶段 2/2.1 为 64 项，阶段 3.0 新增 26 项）。
+  - 同一套 `compileall` 与全量测试在只复制 `.py` 的纯代码临时副本中重跑，仍为
+    189 项通过，确认不依赖仓库根目录的火星实时状态。
+  - Phase 3.0 覆盖：端到端任务→来源→账本可追溯；重复执行幂等；空/相对/非 HTTP(S)/
+    私有/localhost URL；重定向复检与落点分组；网络失败/超时/抓取器异常/正文截断/
+    读取截止；不支持类型/编码/空正文；同域、跨域同正文、无法解析来源的独立性；
+    支持+反驳冲突；共享来源 query_id 重绑定；当前与归档待验证任务；验证器异常安全。
+- 验证管线冒烟（隔离证据，`runs/phase3_verification_20261026/verify/`）：
+  - 代码指纹 `a311f004e44b50aa5c5258892693c044ef86312aa9c1780905fc941984573ad4`；
+    验证器配置哈希 `af82789a82e6701b60e271cc61b01475208a67276d458b23b697812655ad6ae2`。
+  - 合成预测落空任务经真实 `research.record_execution` 入账两条来源；假 HTML 抓取后
+    账本 2 行、支持/反驳各 1 个独立组，结论 `candidate_conflict`。
+  - 22 项检查全 true：状态 JSON 不变、任务仍 `pending_verification`、来源仍
+    `unverified`、无 `claims`/`evidence`/`relations`/`laws`、无教师/LLM 痕迹、
+    重复执行不追加、非法 URL 显式失败且不晋升。
+  - 真实网络观察 `https://example.com/`：HTTP 200、正文 577 字节、标题
+    `Example Domain`、文本 156 字符；仅作环境观察，不参与通过/失败。
+- Teacherless 冒烟（隔离证据，`runs/phase3_verification_20261026/teacherless/`）：
+  - `from_zero` 新实验 `TL-PHASE3-20261026`，代码版本 `9.25.0`，指纹同上，3 轮。
+  - `status`：`clean=true`、`code_drift=false`、`seed_problems=[]`、
+    `code_migrations=[]`、`violations={}`、`blocked_channel_log_counts={}`；
+    8 项教师/LLM 痕迹全 0。
+  - 第 1/3 轮辅助动作 `build_site` 在本机启动服务失败（`[WinError 2]`，
+    缺少启动器），属环境限制，不影响隔离边界与研究/验证账本。
+  - 该冒烟只证明教师/LLM 通道仍关闭、验证模块未污染隔离状态，不证明学习发生。
+- 证据报告：`runs/phase3_verification_20261026/test_report.json` 与 `report.json`
+  （基线提交 `2500c4e`、代码指纹、配置快照、测试、两段冒烟；`runs/` 不提交）。
+- 边界：没有写 `claims`/`evidence`/`relations`/`laws`，没有改变任务/来源状态，
+  没有接入 `main.py`，没有自动晋升、回滚或留出评估。`candidate_support` 只是候选；
+  本阶段只证明验证管线可运行，不证明系统学会知识或发生进化。
+
 ## 下一门槛
 
-1. owner 复查 Phase 2.1 全链路审计补丁，确认是否进入阶段 3。
-2. 阶段 3 前必须先确定：
-   - 候选材料如何进入证据门禁（正文提取、来源可信度、同源去重、支持/反驳计数）；
-   - 命题/关系边更新的可撤销记录与回滚方式；
-   - 留出任务与对照评估的设计，避免把“搜到更多网页”当成能力提升。
+1. owner 复审 Phase 3.0 候选验证管线，确认是否进入下一小步。
+2. 下一小步前必须先确定：
+   - 统一验证器注册表：网络候选、算术探针、程序测试、形式规则各自的适用范围；
+   - 可撤销知识更新：命题/关系边更新的来源、验证器版本、独立证据数、回滚与失效条件；
+   - 候选验证是否/如何接入主循环或显式实验调度（预算、限流、失败退避）；
+   - 留出任务与对照评估，避免把“搜到更多网页/更多候选”当成能力提升。
 3. 正式开跑前冻结代码版本；升级只能 `accept-code` 留下迁移记录，
    重大算法变更新建实验。
-4. 在留出任务评估建立之前，任何“学会/进化”表述都不成立。
+4. 在留出任务评估与可撤销知识更新建立之前，任何“学会/进化”表述都不成立。

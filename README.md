@@ -8,8 +8,10 @@
 >
 > 另有**无教师实验基线**（`SELFDRIVE_MODE=teacherless`）：独立目录、独立状态，
 > 硬禁用教师与 LLM 通道，用于回答"没有老师时它还能学什么"。目前完成阶段 1.1
-> （隔离性、种子来源与代码版本可核验）与阶段 2 第一小步（研究任务队列 + 定向搜索 +
-> 候选材料来源账本）；证据门禁、统一验证器与留出评估尚未实现。
+> （隔离性、种子来源与代码版本可核验）、阶段 2（研究任务队列 + 定向搜索 + 候选材料
+> 来源账本）与阶段 3.0（安全抓取、正文抽取、候选判定、独立性分组、只追加验证账本）。
+> 阶段 3.0 只产出候选结论，不晋升知识、未接主循环；统一证据门禁、可撤销知识更新与
+> 留出评估尚未实现。
 
 ---
 
@@ -27,7 +29,7 @@
 | **moon** | 云端 `/home/qingwu/moon` | 1400+ | 无（路线 A） | 教师制·幼儿式（日常问答与纠错） |
 | **火星** | 本机 `D:\火星` | 从零 | qwen3:1.7b（路线 B） | 教师制·幼儿式 + LLM 提案 |
 
-## 架构（v9.24.5，模块化）
+## 架构（v9.25.0，模块化）
 
 ```
 selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是启动器）
@@ -42,7 +44,7 @@ selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是�
 ├── learning.py       # 概念晋升制/赫布建边/定律归纳/碎片合并/老变换复检
 ├── claims.py         # 命题与独立证据门禁、来源校准、证据日志
 ├── probes.py         # 可执行环境探针（封闭中文数词加法）
-├── verification.py   # 教师意见与环境裁决汇合（探针优先）
+├── teacher_verdict.py # 教师意见与环境裁决汇合（探针优先；旧路径）
 ├── conceptcard.py    # 七面概念卡 + Laws 定律表（提案/验证/毕业/反驳降级）
 ├── predictions.py    # 可失败预测（无边概念对下注→同现兑现/超时落空）
 ├── activation.py     # 并行扩散激活（4 路径撒网，赢家通吃，防垄断）
@@ -53,12 +55,14 @@ selfdrive/            # 认知包（所有逻辑在这里，agent_v9.py 只是�
 ├── emotions.py       # 情感演化/昼夜节律/能量内稳态
 ├── templates.py      # 提问模板库 + 查重
 ├── teacherless.py    # 无教师实验：独立初始化/种子溯源/污染拒绝/运行期审计
+├── verification.py   # 阶段 3.0 网页候选验证（安全抓取/抽取/线索/独立性/只追加账本）
 ├── state.py / kb.py  # 状态持久化 / 向量记忆库客户端
 ```
 
 **四权分立**（安全边界）：LLM/教师/做梦只有**提案权**——输出一律是待验证提案；
-**验证权**归探针与阅读消化（概念晋升制，同源重复不膨胀置信度）；**信念权**归
-中枢门禁；**行动权**归 `pick_action` 的候选后果仲裁。决策模式可用
+**验证权**归探针与阅读消化（概念晋升制，同源重复不膨胀置信度），阶段 3.0 的网页
+候选验证器只提供候选证据、不直接改变信念；**信念权**归中枢门禁；**行动权**归
+`pick_action` 的候选后果仲裁。决策模式可用
 `SELFDRIVE_DECISION_MODE=legacy|shadow|enforce` 切换，默认 `enforce`。
 
 ## 快速开始
@@ -112,7 +116,7 @@ LLM 的回答**不直接进概念库**——接口只接受含 `proposals`、`as
 模型不在线时自动降级为无 LLM 路径。火星需用 `SELFDRIVE_SIBLING=同伴目录名`
 显式配置通信对象，不会默认冒充 moon。
 
-### 无教师实验基线（Teacherless，阶段 1.1 + 阶段 2）
+### 无教师实验基线（Teacherless，阶段 1.1 + 阶段 2 + 阶段 3.0）
 
 该模式硬禁用教师问答、教师回答读取、LLM、兄弟信箱、外部目录扫描与共享向量库，
 并要求**独立工作目录 + 独立 state/logs**。它不会接管辉月/moon/火星的任何数据。
@@ -178,25 +182,50 @@ SELFDRIVE_MODE=teacherless python3 -m selfdrive.teacherless accept-code \
 成功、`result_count` 与 `pending_verification` 只由实际写入账本的有效来源决定，
 只有无效链接时按 `invalid_results` 失败，不进入 `materials_found`。搜索会依次尝试
 `cn.bing.com` 与 `www.bing.com`，单台“无结果”不会阻断另一台。`title_excerpt_sha256` 只覆盖标题+摘要，**不是网页正文哈希**；
-正文提取属于阶段 3。不写 `claims` 证据、不晋升定律、不改变概念置信度。影响研究调度与
+正文提取与独立正文哈希属于阶段 3.0 的 `verification.py`，阶段 2 不提供。不写
+`claims` 证据、不晋升定律、不改变概念置信度。影响研究调度与
 搜索策略的配置（含 `ask_config.json` 的 `web_search`/`research` 段）会写入
 `state.research.config_history`，只在哈希变化时记录。
 
 Teacherless 模式下 `kb_remember()` 直接返回 `False`，候选材料不会进入共享向量库；
-普通模式仍可能写入本地共享记忆库，阶段 3 不能把共享库召回自动视为已验证证据。
+普通模式仍可能写入本地共享记忆库，任何阶段都不能把共享库召回自动视为已验证证据。
+
+**阶段 3.0 第一小步（候选验证管线）**：新增独立 `selfdrive/verification.py`，消费阶段 2
+已有的研究任务与来源账本，不重写任务生成、查询调度或主循环。`verify_task()` 校验单个
+任务的当前/归档来源，`verify_pending()` 按优先级扫描 `pending_verification` 任务；每次
+抓取重新校验 URL 与 DNS，拒绝非 HTTP(S)、非 80/443、带凭据、localhost/内部域名及解析到
+非公网地址的目标；连接固定到已校验 IP 并保留 TLS SNI，每一跳重定向重新校验，限制 5 跳、
+单跳 10 秒、总时限 30 秒、正文 2 MB，只接受 `text/html` / `application/xhtml+xml` /
+`text/plain` 与 `identity` 编码。正文由内置 HTML 解析器去除脚本、导航、页脚等噪声；
+少于 20 字符、类型/编码不支持或抓取失败都写明确的失败记录，不猜内容。
+
+判定使用确定性线索规则（`terms-cues-v1`）：目标词至少命中 `min(2, 词数)` 个、至少两个词
+同句共现，方向线索须在 60 字符窗口内；强支持与反驳线索冲突时判 `uncertain`。每行账本
+记录任务/查询/来源 ID、原始与最终 URL、重定向、正文/文本哈希、获取与事件时间、抽取状态、
+证据摘录、判定与依据、独立性组、验证器版本和配置哈希，硬编码
+`conclusion_status=candidate`、`promotion=none`。同一任务+来源+正文哈希+验证器版本幂等；
+抓取失败按任务+来源+URL+失败类型+验证器版本去重。独立性按最终落点域名的可注册域分组
+（托管平台整站视为同一保守来源，IP 按地址分组）；同域、同正文或域名无法解析都不计为
+独立证据。`summarize_task()` 可汇总为 `candidate_support` / `candidate_contradict` /
+`candidate_conflict` / `candidate_uncertain`，但只统计 `evidence_counted=true` 的独立行，
+且不写 `claims`/`evidence`/`relations`/`laws`、不改任务状态、不把来源从 `unverified`
+升级。阶段 3.0 没有知识晋升门禁或回滚机制，因此**明确不自动晋升**；接主循环、统一
+验证器、可撤销知识更新与留出评估留待后续阶段。
 
 ```bash
-py -m unittest discover -s tests        # 163 项（阶段 2/2.1 新增 64 项）
+py -m unittest discover -s tests        # 189 项（阶段 3.0 新增 26 项）
 ```
 
-详见 [docs/teacherless/PHASE2_RESEARCH.md](docs/teacherless/PHASE2_RESEARCH.md)。
+详见 [docs/teacherless/PHASE3_VERIFICATION.md](docs/teacherless/PHASE3_VERIFICATION.md)
+与 [docs/teacherless/PHASE2_RESEARCH.md](docs/teacherless/PHASE2_RESEARCH.md)。
 
-**阶段边界**：当前完成阶段 1.1 的隔离性与种子/版本可核验性，以及阶段 2 的
-研究任务/定向查询/来源账本；统一验证器、证据门禁、留出评估尚未实现，
-不能据此宣称“已实现无教师自主学习”。
+**阶段边界**：当前完成阶段 1.1 的隔离性与种子/版本可核验性、阶段 2 的研究任务/定向查询/
+来源账本，以及阶段 3.0 的候选验证管线（只到候选结论）。统一证据门禁、可撤销知识更新、
+主循环接线、留出评估均未实现，不能据此宣称“已实现无教师自主学习”。
 设计与审计见 [docs/teacherless/MASTER_PROMPT.md](docs/teacherless/MASTER_PROMPT.md)、
 [docs/teacherless/PHASE0_AUDIT.md](docs/teacherless/PHASE0_AUDIT.md)、
 [docs/teacherless/PHASE2_RESEARCH.md](docs/teacherless/PHASE2_RESEARCH.md)、
+[docs/teacherless/PHASE3_VERIFICATION.md](docs/teacherless/PHASE3_VERIFICATION.md)、
 [docs/teacherless/EXPERIMENT_LOG.md](docs/teacherless/EXPERIMENT_LOG.md)。
 
 ### 老师如何教学（答疑协议）
@@ -215,14 +244,16 @@ py -m unittest discover -s tests        # 163 项（阶段 2/2.1 新增 64 项�
 2. **路线对照**：云端纯无 LLM vs 本地 LLM 提案——LLM 只提提案时的增量
 3. **消融**：任何模块（情绪/做梦/概念卡/LLM）没有可测贡献就移除，不因"像脑"保留
 4. **无教师基线**：`teacherless` 模式下教师/LLM 零调用、独立状态、种子来源与代码版本可追溯；
-   阶段 2 起搜索由研究任务驱动，结果只作为待验证候选材料。
-   当前验收隔离性、账本完整性与查询可追溯性；是否有自主学习增益，要等阶段 3–4 的
-   验证闭环与留出评估
+   阶段 2 起搜索由研究任务驱动，结果只作为待验证候选材料；阶段 3.0 起候选材料可被安全
+   抓取并写入独立验证账本，但结论仍是 `candidate`，不晋升知识、未接主循环。
+   当前验收隔离性、账本完整性、查询可追溯性与候选验证可追溯性；是否有自主学习增益，
+   要等统一证据门禁、可撤销知识更新与留出评估
 
 实验 4 的判据是"无教师、无 LLM 条件下在未参与训练的任务上是否变强"，
-不是轮次、概念数或日志体积。阶段 1.1/2 的冒烟与测试（163 项通过、隔离运行零违规、
-来源账本可回溯）只能证明通道关闭、状态未污染、种子与代码版本一致、搜索材料有出处，
-不能证明学习发生；阶段 2 的 `materials_found` 明确不等于“已验证”。
+不是轮次、概念数或日志体积。阶段 1.1/2/3.0 的冒烟与测试（189 项通过、隔离运行零违规、
+来源账本可回溯、候选验证可回溯）只能证明通道关闭、状态未污染、种子与代码版本一致、
+搜索材料有出处、验证管线可运行，不能证明学习发生；阶段 2 的 `materials_found` 与
+阶段 3.0 的 `candidate_support` 都明确不等于“已验证”。
 
 ## 目录结构
 
@@ -232,7 +263,7 @@ selfdrive/            # 认知包（见上）
 brain/                # 辉月的师生通道（inbox/outbox/PROTOCOL.md/模板）
 moon/                 # moon 的档案快照（云端运行时在 ~/moon）
 docs/                 # 行为诊断报告与设计文档（从 v9.15 到当前架构设计）
-  teacherless/        # 无教师实验：主提示词/阶段 0 审计/阶段 2 研究队列/实验日志
+  teacherless/        # 无教师实验：主提示词/阶段 0 审计/阶段 2 研究队列/阶段 3.0 候选验证/实验日志
 logs/                 # events.jsonl（每轮认知事件）+ console.txt
 state.json            # 辉月的长期记忆（概念/关系/定律/概念卡/预测/履历）
 workspace/            # 学生的"世界"（archive 口粮资料 + 自己搜的 web 缓存 + 笔记）
@@ -244,6 +275,7 @@ requirements.txt      # 唯一依赖：jieba（LLM 学生另需本机 Ollama）
 - `logs/events.jsonl`：每轮的认知事件（含预测结算/做梦/规则编译/自省）
 - `logs/research.jsonl`：研究任务/查询生命周期、去重拦截、失败改写、配置快照
 - `logs/research_sources.jsonl`：每次搜索的候选材料来源（URL/摘要/哈希/SERP/任务与查询 ID，全部 unverified）
+- `logs/verification.jsonl`：阶段 3.0 候选验证账本（只追加；抓取/抽取/判定/独立性/失败原因，全部 candidate）
 - `logs/teacherless_audit.jsonl`：仅 Teacherless 模式生成，记录初始化/启动/通道拦截
 - `workspace/notes/journey.md`：它的日记（含"概念使用""定律毕业""自省"条目）
 - 构建站：`build_site` 技能会生成 `workspace/web/index.html`（探索站网页）

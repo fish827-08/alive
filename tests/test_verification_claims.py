@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from selfdrive import claims, conceptcard, learning, state, verification
+from selfdrive import claims, conceptcard, learning, state, teacher_verdict
 
 
 class VerificationTests(unittest.TestCase):
@@ -26,7 +26,7 @@ class VerificationTests(unittest.TestCase):
 
     def verdict(self, expr, result, teacher):
         il = {"qid": "Q-test", "type": "transform", "premises": [expr], "result": result}
-        verification.apply_verdict(self.st, il, teacher, "Q-test")
+        teacher_verdict.apply_verdict(self.st, il, teacher, "Q-test")
         return il
 
     def test_false_arithmetic_never_enters_transforms(self):
@@ -69,7 +69,7 @@ class VerificationTests(unittest.TestCase):
 
     def test_teacher_inference_does_not_directly_change_beliefs(self):
         il = {"qid": "Q-infer", "premises": ["猫", "树"], "result": "天空"}
-        verification.apply_verdict(self.st, il, "真", "Q-infer")
+        teacher_verdict.apply_verdict(self.st, il, "真", "Q-infer")
         self.assertNotIn("天空", self.st["concepts"])
         self.assertEqual(self.st["relations"], {})
         self.assertEqual(il["verification_status"], "teacher_only")

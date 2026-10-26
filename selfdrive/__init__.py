@@ -25,8 +25,13 @@ v9.16（2026-10-24，owner 授权"按方案修改 + 项目模块化"）五大行
   rules_compiler  [RULE] 陈述→动作 编译器（③ 的实现）
   decision        决策门控（情感×技能 + 学习调制 + 编译规则乘子）
   skills          13 个技能的实现（探索/问答/搜索/整理/巩固/回望/自言自语…）
+  research        阶段 2：研究任务队列 / 查询调度 / 来源与配置账本
+  teacherless     无教师实验：隔离基线、执行层硬门禁、种子与代码指纹
+  teacher_verdict 教师 [VERDICT] 与确定性探针汇合（旧路径，探针优先）
+  verification    阶段 3.0：网页候选证据验证（安全抓取 / 线索判定 /
+                  独立性分组 / 只追加账本；只产出候选，不晋升知识）
   main            主循环（轮次编排 / 情绪结算 / 状态持久化）
 
 运行方式不变：python agent_v9.py [--once]，间隔 SELFDRIVE_INTERVAL（默认 180s）。
 """
-VERSION = "9.24.5"
+VERSION = "9.25.0"

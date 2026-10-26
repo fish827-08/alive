@@ -537,10 +537,10 @@ def do_read_brain(st):
                 verdict = v
                 break
         if verdict:
-            from . import verification
+            from . import teacher_verdict
             for il in st.get("infer_log", []):
                 if il.get("qid") == p.stem and "verdict" not in il:
-                    verification.apply_verdict(st, il, verdict, p.stem)
+                    teacher_verdict.apply_verdict(st, il, verdict, p.stem)
                     break
         # 关系学习：Q-/FEED- 都学；相反/先后问题的回答给边打类型（⑤ 表征入口）
         # v9.16.1 路径5 + v9.19 错误闭环：自问自答对拍——猜对加粗对的路，猜错降权错的路并排队重放
