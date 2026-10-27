@@ -42,12 +42,14 @@
 哈希契约、创建上限、共享记忆副作用说明、预算不阻断后续任务升级、旧状态显式迁移、
 碰撞任务生命周期合并、`attempt_history`/`kind_history` 有界迁入、候选不再按种类
 限额、落空补录、schema 3 审计式修复、来源 URL 双重校验、待验证材料归档、双 Bing
-主机回退）。阶段 3.0 第一小步已实现：新增独立 `selfdrive/verification.py`，把
+主机回退）。阶段 3.0 第一小步已实现（等待 owner 复审）：新增独立 `selfdrive/verification.py`，把
 `pending_verification` 候选材料安全抓取、抽取、判定并写入只追加
 `logs/verification.jsonl`；只产出 `candidate`，不晋升知识、不改任务状态、未接主循环。
 统一验证器注册表、可撤销知识更新、留出评估与阶段 4/5 未启动。
 为避免命名混淆，原教师 `[VERDICT]`/探针路径已改名为 `selfdrive/teacher_verdict.py`；
 `selfdrive/verification.py` 现在专指阶段 3.0 网页候选验证器。
+2026-10-27 复审：未发现 owner 对阶段 3.0 的复审通过记录；本轮只完成
+`PHASE3_REVIEW.md` 与 `PREREG_ARITHMETIC.md` 草案，未实现自动知识晋升，未接主循环。
 
 ## 二、总提示词原文（owner 提供）
 

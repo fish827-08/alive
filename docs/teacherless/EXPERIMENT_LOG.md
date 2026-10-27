@@ -491,14 +491,67 @@ SELFDRIVE_MODE=standard py -u agent_v9.py --once
   没有接入 `main.py`，没有自动晋升、回滚或留出评估。`candidate_support` 只是候选；
   本阶段只证明验证管线可运行，不证明系统学会知识或发生进化。
 
+## 2026-10-27 / Phase 3.0 复审与预注册草案（v9.25.0，无代码变更）
+
+- 触发：owner 提供 `NEXT_TASK_PROMPT.md`，要求先执行步骤 0（复审与基线复验）并给出
+  步骤 1 预注册草案；若没有 Phase 3.0 owner 复审通过记录，完成审查和草案后停止。
+- 复审状态：**未发现 owner 对 Phase 3.0 的复审通过记录**。`PHASE3_VERIFICATION.md`
+  写明“等待 owner 复审”，`EXPERIMENT_LOG.md` 的下一门槛仍要求 owner 复审，
+  `MASTER_PROMPT.md` 只记录“已实现”。按门禁停止：不实现自动知识晋升，不接主循环。
+- 基线复验（代码证据）：
+  - Python 3.14.7；`py -m compileall -q selfdrive tests agent_v9.py semantics.py` 通过。
+  - `py -m unittest discover -s tests`：**189 项全部通过**，2.152s。
+  - `py -m unittest discover -s tests -p "test_verification_phase3.py"`：**26 项通过**，0.244s。
+  - 代码指纹 `a311f004e44b50aa5c5258892693c044ef86312aa9c1780905fc941984573ad4`。
+- 隔离冒烟复验（隔离证据，`runs/phase3_review_20261027/verify/`）：
+  - 全新临时副本，22/22 项检查 true；配置哈希
+    `af82789a82e6701b60e271cc61b01475208a67276d458b23b697812655ad6ae2`。
+  - 账本 2 行，`candidate_conflict`（支持 1/反驳 1）；重复执行不追加；
+    非法 URL 显式 `non_public_address` 失败且不晋升。
+  - 可选真实网络观察 `https://example.com/` 在本机返回 `tls_error`
+    （`SSLCertVerificationError`，本地 CA 缺失）；失败关闭，不参与通过判定。
+- 四个潜在断点（详见 `PHASE3_REVIEW.md`）：
+  1. 网页缓存仍可进入 `learn_from_text`：`workspace/web` 由搜索写入未验证摘要
+     （`skills.py:832-851`），`scan_workspace` 扫描 WEB（`skills.py:46-58`），
+     `do_explore_file` 可调用 `learn_from_text`（`skills.py:191,208-211`）；
+     `learn_from_text` 会改概念/关系/规则（`learning.py:197-267`）。Teacherless
+     未禁用 `explore_file`/`web_search`（`teacherless.py:33-35`；`main.py:69-74`）。
+     这阻塞“现有主循环无教师学习”的表述；不阻塞显式调度器的封闭算术实验。
+  2. LLM 提案：`save_proposals` 只写 `llm_proposals`（`llm_bridge.py:266-269`），
+     但普通模式 `do_self_tune` 会直接写 `brain/` 配置（`skills.py:1258-1298`）。
+     Teacherless 下 `llm_consult` 硬禁用；不得写“LLM 永远只提案”。
+  3. Semantics/KB 仍是旁路：`main.py:25` 构造、`main.py:195` 只 `save()`；
+     无 `learn`/`encode`/`closest` 调用；`kb_recall` 无调用者；Teacherless 下
+     `kb_remember` 返回 `False`。不得计为有效认知能力。
+  4. 动作失败可能记成功：`build_site` 启动服务失败仍返回 `True`（`skills.py:908`）；
+     LLM 自改路径只要有提案就返回 `True`（`skills.py:1294-1298`）；`ok` 驱动
+     能量/情绪/结算（`main.py:156,172,192`）。不得用动作成功率/情绪当学习证据。
+- 其他阻塞“可撤销更新”的问题：
+  - `claims.add_evidence` 按独立组去重，同组后来的相反极性只增加 `repeat_count`
+    （`claims.py:40-83`）；算术组是 `probe:<expr>`（`claims.py:106`），反例会丢失。
+  - `record_transform_verdict` 直接改写 claim 状态/置信度（`claims.py:101-112`），
+    没有前后快照与回滚。
+  - `conceptcard.on_transform_verdict` 只被教师路径调用（`teacher_verdict.py:57,70`），
+    普通无教师路径不触发 L001 毕业。
+  - 探针仅支持中文数词 1..10、单个数词结果；和超过 10 返回 `None`（未知），
+    不是反驳（`probes.py`）。`transform_compose` 不是通用加法器（`learning.py:412-458`）。
+  - Phase 3.0 无调度器/限流，符合当前授权；验证账本路径依赖 `config.BASE`，
+    实验必须隔离。
+- 本轮文档：
+  - 新增 `PHASE3_REVIEW.md`（复审报告）与 `PREREG_ARITHMETIC.md`（预注册草案，
+    **DRAFT，未获 owner 批准**）。
+  - 更新 `PHASE3_VERIFICATION.md` 状态/复验/下一门槛、`MASTER_PROMPT.md` 当前进度、
+    `README.md` 状态、本日志。
+- 边界：**无代码变更**；未运行正式实验；未写 `claims`/`evidence`/`relations`/`laws`；
+  未接主循环；不声称学习增益或进化。
+
 ## 下一门槛
 
-1. owner 复审 Phase 3.0 候选验证管线，确认是否进入下一小步。
-2. 下一小步前必须先确定：
-   - 统一验证器注册表：网络候选、算术探针、程序测试、形式规则各自的适用范围；
-   - 可撤销知识更新：命题/关系边更新的来源、验证器版本、独立证据数、回滚与失效条件；
-   - 候选验证是否/如何接入主循环或显式实验调度（预算、限流、失败退避）；
-   - 留出任务与对照评估，避免把“搜到更多网页/更多候选”当成能力提升。
-3. 正式开跑前冻结代码版本；升级只能 `accept-code` 留下迁移记录，
-   重大算法变更新建实验。
-4. 在留出任务评估与可撤销知识更新建立之前，任何“学会/进化”表述都不成立。
+1. owner 复审 Phase 3.0 候选验证管线与 `PHASE3_REVIEW.md`，明确批准或要求修正。
+2. owner 确认 `PREREG_ARITHMETIC.md` 草案；在批准前不实现候选规则消除、不写自动
+   知识更新、不接主循环。
+3. 若批准：先建独立评估器与基线（步骤 2），再做最小验证器注册表（步骤 3），再做
+   可撤销知识更新（步骤 4）；每一步停下等 owner 复审，不自动进入下一模块。
+4. 正式开跑前冻结代码版本；升级只能 `accept-code` 留下迁移记录，重大算法变更新建实验。
+5. 在留出任务评估与可撤销知识更新建立之前，`candidate_support` 只是候选；
+   任何“学会/进化”表述都不成立。

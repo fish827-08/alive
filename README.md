@@ -11,7 +11,8 @@
 > （隔离性、种子来源与代码版本可核验）、阶段 2（研究任务队列 + 定向搜索 + 候选材料
 > 来源账本）与阶段 3.0（安全抓取、正文抽取、候选判定、独立性分组、只追加验证账本）。
 > 阶段 3.0 只产出候选结论，不晋升知识、未接主循环；统一证据门禁、可撤销知识更新与
-> 留出评估尚未实现。
+> 留出评估尚未实现。阶段 3.0 等待 owner 复审；2026-10-27 只完成 AI 复审与预注册草案，
+> 没有修改学习/晋升逻辑。
 
 ---
 
@@ -210,7 +211,10 @@ Teacherless 模式下 `kb_remember()` 直接返回 `False`，候选材料不会�
 `candidate_conflict` / `candidate_uncertain`，但只统计 `evidence_counted=true` 的独立行，
 且不写 `claims`/`evidence`/`relations`/`laws`、不改任务状态、不把来源从 `unverified`
 升级。阶段 3.0 没有知识晋升门禁或回滚机制，因此**明确不自动晋升**；接主循环、统一
-验证器、可撤销知识更新与留出评估留待后续阶段。
+验证器、可撤销知识更新与留出评估留待后续阶段。2026-10-27 完成 AI 复审与基线复验
+（未发现 owner 批准记录），复审报告见 `docs/teacherless/PHASE3_REVIEW.md`，下一步
+预注册草案见 `docs/teacherless/PREREG_ARITHMETIC.md`（DRAFT，未批准）；本轮未改
+学习逻辑。
 
 ```bash
 py -m unittest discover -s tests        # 189 项（阶段 3.0 新增 26 项）
@@ -226,6 +230,8 @@ py -m unittest discover -s tests        # 189 项（阶段 3.0 新增 26 项）
 [docs/teacherless/PHASE0_AUDIT.md](docs/teacherless/PHASE0_AUDIT.md)、
 [docs/teacherless/PHASE2_RESEARCH.md](docs/teacherless/PHASE2_RESEARCH.md)、
 [docs/teacherless/PHASE3_VERIFICATION.md](docs/teacherless/PHASE3_VERIFICATION.md)、
+[docs/teacherless/PHASE3_REVIEW.md](docs/teacherless/PHASE3_REVIEW.md)、
+[docs/teacherless/PREREG_ARITHMETIC.md](docs/teacherless/PREREG_ARITHMETIC.md)、
 [docs/teacherless/EXPERIMENT_LOG.md](docs/teacherless/EXPERIMENT_LOG.md)。
 
 ### 老师如何教学（答疑协议）
